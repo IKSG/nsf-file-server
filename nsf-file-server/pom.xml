@@ -52,61 +52,40 @@
 				<scope>import</scope>
 				<type>pom</type>
 			</dependency>
+			
+			<dependency>
+				<groupId>com.ibm.xsp</groupId>
+				<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
+				<version>[10.0.1,)</version>
+				<classifier>Notes</classifier>
+			</dependency>
+			<dependency>
+				<groupId>com.ibm.sbt</groupId>
+				<artifactId>com.ibm.commons</artifactId>
+				<version>9.0.0</version>
+			</dependency>
+			
+			<dependency>
+				<groupId>org.projectlombok</groupId>
+				<artifactId>lombok</artifactId>
+				<version>1.18.10</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.sshd</groupId>
+				<artifactId>sshd-sftp</artifactId>
+				<version>2.3.0</version>
+			</dependency>
+			
+			<dependency>
+				<groupId>org.junit.jupiter</groupId>
+				<artifactId>junit-jupiter-engine</artifactId>
+				<version>5.5.1</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 	
-	<dependencies>
-		<dependency>
-			<groupId>jakarta.servlet</groupId>
-			<artifactId>jakarta.servlet-api</artifactId>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.microprofile.config</groupId>
-			<artifactId>microprofile-config-api</artifactId>
-			<scope>provided</scope>
-		</dependency>
-        <dependency>
-            <groupId>jakarta.enterprise</groupId>
-            <artifactId>jakarta.enterprise.cdi-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-		
-		<dependency>
-			<groupId>com.ibm.xsp</groupId>
-			<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
-			<version>[10.0.1,)</version>
-			<classifier>Notes</classifier>
-		</dependency>
-		<dependency>
-			<groupId>com.ibm.sbt</groupId>
-			<artifactId>com.ibm.commons</artifactId>
-			<version>9.0.0</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<version>1.18.10</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.sshd</groupId>
-			<artifactId>sshd-sftp</artifactId>
-			<version>2.3.0</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-engine</artifactId>
-			<version>5.5.1</version>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
-	
 	<build>
-		<finalName>nsffileserver</finalName>
-		
 		<pluginManagement>
 			<plugins>
 				<plugin>

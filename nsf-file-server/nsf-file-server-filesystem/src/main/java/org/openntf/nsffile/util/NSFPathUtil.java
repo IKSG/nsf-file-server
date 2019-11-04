@@ -1,4 +1,4 @@
-package org.openntf.nsffile.uril;
+package org.openntf.nsffile.util;
 
 import java.net.URI;
 import java.util.Objects;

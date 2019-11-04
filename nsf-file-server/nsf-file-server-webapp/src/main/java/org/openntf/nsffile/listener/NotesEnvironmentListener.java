@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile;
+package org.openntf.nsffile.listener;
 
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+
+import org.openntf.nsffile.util.NotesThreadFactory;
 
 import lombok.SneakyThrows;
 import lotus.notes.NotesThread;

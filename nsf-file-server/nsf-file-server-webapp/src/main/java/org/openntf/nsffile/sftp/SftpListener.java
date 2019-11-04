@@ -30,7 +30,7 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.openntf.nsffile.NotesThreadFactory;
+import org.openntf.nsffile.util.NotesThreadFactory;
 
 import lombok.SneakyThrows;
 import lotus.domino.NotesFactory;

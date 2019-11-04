@@ -19,7 +19,7 @@ import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordChangeRequiredException;
 import org.apache.sshd.server.session.ServerSession;
-import org.openntf.nsffile.NotesThreadFactory;
+import org.openntf.nsffile.util.NotesThreadFactory;
 
 import com.ibm.commons.util.StringUtil;
 

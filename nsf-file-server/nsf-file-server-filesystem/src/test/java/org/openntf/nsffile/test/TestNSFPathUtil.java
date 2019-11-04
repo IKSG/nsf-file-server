@@ -7,7 +7,7 @@ import java.net.URI;
 
 import org.junit.jupiter.api.Test;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
-import org.openntf.nsffile.uril.NSFPathUtil;
+import org.openntf.nsffile.util.NSFPathUtil;
 
 public class TestNSFPathUtil {
 	@Test
