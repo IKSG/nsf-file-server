@@ -1,0 +1,20 @@
+NSF File Server
+
+Copyright 2019 Jesse Gallagher
+
+This product includes software contributed to
+OpenNTF Alliance (http://www.OpenNTF.org/)
+
+This product is licensed under the terms of the Apache 2.0 license.
+
+The project contains the following third-party code:
+
+- Snippets taken from the Apache Mina project, which is copyright The Apache Software Foundation, licensed under the Apache 2.0 license, and is available from https://mina.apache.org
+
+The binary distribution contains the following third-party code:
+
+- Apache Mina Core and SSHD, which are copyright The Apache Software Foundation, licensed under the Apache 2.0 license, and are available from https://mina.apache.org
+- IBM Commons 9.0.0, which is licensed under the Apache 2.0 license and is available from https://mvnrepository.com/artifact/com.ibm.sbt/com.ibm.commons/9.0.0
+- The Darwino Domino NAPI, which is licensed under the Apache 2.0 license and is available from https://github.com/darwino/domino-napi
+- SLF4J API, which is licensed under the MIT license and is available from https://mvnrepository.com/artifact/org.slf4j/slf4j-api/1.7.26
+- Notes.jar and com.ibm.domino.napi, which are licensed under HCL's proprietary Domino license and used under your entitlement
