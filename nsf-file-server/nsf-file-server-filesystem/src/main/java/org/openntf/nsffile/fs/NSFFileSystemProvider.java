@@ -2,6 +2,7 @@ package org.openntf.nsffile.fs;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessMode;
 import java.nio.file.CopyOption;
@@ -119,6 +120,12 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+	@Override
+	public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
+			throws IOException {
+		return new NSFFileChannel(this, (NSFPath)path, options, attrs);
+	}
 
 	@Override
 	public DirectoryStream<Path> newDirectoryStream(Path dir, Filter<? super Path> filter) throws IOException {
@@ -134,18 +141,21 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void delete(Path path) throws IOException {
+		System.out.println("delete " + path);
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void copy(Path source, Path target, CopyOption... options) throws IOException {
+		System.out.println("copy " + source + " -> " + target);
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void move(Path source, Path target, CopyOption... options) throws IOException {
+		System.out.println("move " + source + " -> " + target);
 		// TODO Auto-generated method stub
 
 	}
@@ -172,6 +182,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
+		// TODO cache these?
 		return type.cast(new NSFPosixFileAttributeView(this, (NSFPath)path, options));
 	}
 
