@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.sftp;
+package org.openntf.nsffile.ssh;
 
 import java.io.IOException;
 import java.net.URI;
@@ -49,8 +49,8 @@ import lombok.SneakyThrows;
 import lotus.domino.NotesFactory;
 import lotus.domino.Session;
 
-public class SftpListener implements ServletContextListener {
-	public static final Logger log = Logger.getLogger(SftpListener.class.getPackage().getName());
+public class SshListener implements ServletContextListener {
+	public static final Logger log = Logger.getLogger(SshListener.class.getPackage().getName());
 	static {
 		log.setLevel(Level.ALL);
 	}
