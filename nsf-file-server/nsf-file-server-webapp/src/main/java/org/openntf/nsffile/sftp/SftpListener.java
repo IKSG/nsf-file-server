@@ -43,6 +43,8 @@ import org.openntf.nsffile.fs.NSFFileSystemProvider;
 import org.openntf.nsffile.util.NSFPathUtil;
 import org.openntf.nsffile.util.NotesThreadFactory;
 
+import com.ibm.commons.util.StringUtil;
+
 import lombok.SneakyThrows;
 import lotus.domino.NotesFactory;
 import lotus.domino.Session;
@@ -133,11 +135,17 @@ public class SftpListener implements ServletContextListener {
 				@Override
 				public Path resolveLocalPath(org.apache.sshd.common.session.Session session, FileSystem fileSystem,
 						String commandPath) throws IOException, InvalidPathException {
-					if(".".equals(commandPath)) {
+					if(".".equals(commandPath) || StringUtil.isEmpty(commandPath)) {
 						return fileSystem.getPath("/");
 					} else {
 						return fileSystem.getPath(commandPath);
 					}
+				}
+				
+				@Override
+				public Iterable<Path> getMatchingFilesToSend(org.apache.sshd.common.session.Session session,
+						Path basedir, String pattern) throws IOException {
+					return super.getMatchingFilesToSend(session, basedir, pattern);
 				}
 			})
 			.build();
