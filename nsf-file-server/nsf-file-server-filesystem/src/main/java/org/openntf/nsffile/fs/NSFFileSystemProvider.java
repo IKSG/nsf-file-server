@@ -141,9 +141,21 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void delete(Path path) throws IOException {
-		System.out.println("delete " + path);
-		// TODO Auto-generated method stub
-
+		try {
+			NotesThreadFactory.executor.submit(() -> {
+				Document doc = getDocument((NSFPath)path);
+				if(!doc.isNewNote()) {
+					if(doc.getParentDatabase().isDocumentLockingEnabled()) {
+						doc.lock();
+					}
+					doc.remove(false);
+				}
+				return null;
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+			throw new IOException(e);
+		}
 	}
 
 	@Override
@@ -347,7 +359,14 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 			Database database = getDatabase(path.getFileSystem());
 			View view = database.getView("Files by Path");
 			view.setAutoUpdate(false);
-			return view.getDocumentByKey(path.toAbsolutePath().toString(), true);
+			Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
+			if(doc == null) {
+				doc = database.createDocument();
+				doc.replaceItemValue("Form", "File");
+				doc.replaceItemValue("Parent", path.getParent().toAbsolutePath().toString());
+				doc.replaceItemValue("$$Title", path.getFileName().toString());
+			}
+			return doc;
 		} catch(NotesException e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

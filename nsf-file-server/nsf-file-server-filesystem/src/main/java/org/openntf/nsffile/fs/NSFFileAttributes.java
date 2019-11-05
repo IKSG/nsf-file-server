@@ -9,12 +9,12 @@ import java.nio.file.attribute.UserPrincipal;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
 import org.apache.sshd.server.subsystem.sftp.DefaultUserPrincipal;
 import org.openntf.nsffile.util.NotesThreadFactory;
 
+import lotus.domino.DateTime;
 import lotus.domino.Document;
 
 /**
@@ -30,9 +30,9 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 	private String owner;
 	private String group;
 	private Type type;
-	private long lastModified;
-	private long lastAccessed;
-	private long created;
+	private FileTime lastModified;
+	private FileTime lastAccessed;
+	private FileTime created;
 	private long size;
 	
 	public NSFFileAttributes(NSFFileSystemProvider provider, NSFPath path) {
@@ -42,12 +42,27 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 					Document doc = provider.getDocument(path);
 					@SuppressWarnings("unchecked")
 					List<String> updatedBy = doc.getItemValue("$UpdatedBy");
-					owner = provider.shortCn(updatedBy.get(0));
+					if(doc.hasItem("$UpdatedBy")) {
+						owner = provider.shortCn(updatedBy.get(0));
+					} else {
+						owner = provider.shortCn(doc.getParentDatabase().getParent().getEffectiveUserName());
+					}
 					group = "wheel"; // TODO implement
 					type = Type.valueOf(doc.getItemValueString("Form"));
-					lastModified = doc.getLastModified().toJavaDate().getTime();
-					lastAccessed = doc.getLastAccessed().toJavaDate().getTime();
-					created = doc.getCreated().toJavaDate().getTime();
+					DateTime mod = doc.getLastModified();
+					if(mod != null) {
+						lastModified = FileTime.fromMillis(mod.toJavaDate().getTime());
+					} else {
+						lastModified = FileTime.fromMillis(System.currentTimeMillis());
+					}
+					DateTime acc = doc.getLastAccessed();
+					if(acc != null) {
+						lastAccessed = FileTime.fromMillis(acc.toJavaDate().getTime());
+					} else {
+						lastAccessed = FileTime.fromMillis(System.currentTimeMillis());
+					}
+					created = FileTime.fromMillis(doc.getCreated().toJavaDate().getTime());
+					// TODO check attachment size
 					size = doc.getSize();
 				} catch(Throwable t) {
 					t.printStackTrace(System.out);
@@ -79,17 +94,17 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 
 	@Override
 	public FileTime lastModifiedTime() {
-		return FileTime.from(lastModified, TimeUnit.MILLISECONDS);
+		return lastModified;
 	}
 
 	@Override
 	public FileTime lastAccessTime() {
-		return FileTime.from(lastAccessed, TimeUnit.MILLISECONDS);
+		return lastAccessed;
 	}
 
 	@Override
 	public FileTime creationTime() {
-		return FileTime.from(created, TimeUnit.MILLISECONDS);
+		return created;
 	}
 
 	@Override

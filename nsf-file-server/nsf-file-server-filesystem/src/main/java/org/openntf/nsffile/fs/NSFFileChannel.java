@@ -13,6 +13,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileAttribute;
+import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -31,16 +32,22 @@ public class NSFFileChannel extends FileChannel {
 	
 	private final NSFFileSystemProvider provider;
 	private final NSFPath path;
-	private Path tempFile;
+	private final Path tempFile;
+	private final Instant tempFileCreated;
+	// maintain a modification flag as file modification dates are 1s precision on JDK < 9
+	private boolean modified;
+	private Set<? extends OpenOption> options;
 	
 	public NSFFileChannel(NSFFileSystemProvider provider, NSFPath path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) {
 		this.provider = provider;
 		this.path = path;
+		this.options = options;
 		
 		try {
 			this.tempFile = NotesThreadFactory.executor.submit(() -> {
 				Document doc = provider.getDocument(path);
-				Path result = Files.createTempFile(path.getFileName().toString(), ".tmp");
+				Path resultParent = Files.createTempDirectory(path.getFileName().toString());
+				Path result = resultParent.resolve(path.getFileName().toString());
 				if(doc.hasItem("File")) {
 					// TODO add sanity checks
 					RichTextItem rtitem = (RichTextItem)doc.getFirstItem("File");
@@ -48,11 +55,14 @@ public class NSFFileChannel extends FileChannel {
 					try(InputStream is = eo.getInputStream()) {
 						Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
 					}
+				} else {
+					Files.createFile(result, attrs);
 				}
 				
 				return result;
 			}).get();
-		} catch (InterruptedException | ExecutionException e) {
+			this.tempFileCreated = Files.getLastModifiedTime(this.tempFile).toInstant();
+		} catch (InterruptedException | ExecutionException | IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
@@ -70,11 +80,13 @@ public class NSFFileChannel extends FileChannel {
 
 	@Override
 	public int write(ByteBuffer src) throws IOException {
+		this.modified = true;
 		return getTempFileChannel().write(src);
 	}
 
 	@Override
 	public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
+		this.modified = true;
 		return getTempFileChannel().write(srcs, offset, length);
 	}
 
@@ -96,13 +108,14 @@ public class NSFFileChannel extends FileChannel {
 
 	@Override
 	public FileChannel truncate(long size) throws IOException {
+		this.modified = true;
 		getTempFileChannel().truncate(size);
 		return this;
 	}
 
 	@Override
 	public void force(boolean metaData) throws IOException {
-		// TODO ???
+		// TODO update backend doc
 		getTempFileChannel().force(metaData);
 	}
 
@@ -113,6 +126,7 @@ public class NSFFileChannel extends FileChannel {
 
 	@Override
 	public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
+		this.modified = true;
 		return getTempFileChannel().transferFrom(src, position, count);
 	}
 
@@ -123,11 +137,13 @@ public class NSFFileChannel extends FileChannel {
 
 	@Override
 	public int write(ByteBuffer src, long position) throws IOException {
+		this.modified = true;
 		return getTempFileChannel().write(src, position);
 	}
 
 	@Override
 	public MappedByteBuffer map(MapMode mode, long position, long size) throws IOException {
+		// TODO add wrapper MappedByteBuffer to capture modifications
 		return getTempFileChannel().map(mode, position, size);
 	}
 
@@ -145,8 +161,30 @@ public class NSFFileChannel extends FileChannel {
 
 	@Override
 	protected void implCloseChannel() throws IOException {
-		// TODO Save back to the DB if updated
 		getTempFileChannel().close();
+		this.tempFileChannel = null;
+		
+		if(this.modified || Files.getLastModifiedTime(this.tempFile).toInstant().isAfter(this.tempFileCreated)) {
+			// Write back to the DB
+			try {
+				NotesThreadFactory.executor.submit(() -> {
+					Document doc = provider.getDocument(this.path);
+					if(doc.hasItem("File")) {
+						doc.removeItem("File");
+					}
+					RichTextItem item = doc.createRichTextItem("File");
+					item.embedObject(EmbeddedObject.EMBED_ATTACHMENT, "", this.tempFile.toAbsolutePath().toString(), null);
+					
+					doc.save();
+					
+					return null;
+				}).get();
+			} catch (InterruptedException | ExecutionException e) {
+				throw new IOException(e);
+			}
+		}
+		
+		Files.deleteIfExists(this.tempFile);
 	}
 
 	// *******************************************************************************
@@ -158,7 +196,7 @@ public class NSFFileChannel extends FileChannel {
 	private synchronized FileChannel getTempFileChannel() throws IOException {
 		if(this.tempFileChannel == null) {
 			// TODO pass through options
-			this.tempFileChannel = FileChannel.open(this.tempFile);
+			this.tempFileChannel = FileChannel.open(this.tempFile, this.options.toArray(new OpenOption[this.options.size()]));
 		}
 		return this.tempFileChannel;
 	}
