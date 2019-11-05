@@ -169,6 +169,9 @@ public class NSFFileChannel extends FileChannel {
 			try {
 				NotesThreadFactory.executor.submit(() -> {
 					Document doc = provider.getDocument(this.path);
+					if(doc.isNewNote()) {
+						doc.replaceItemValue("Form", "File");
+					}
 					if(doc.hasItem("File")) {
 						doc.removeItem("File");
 					}

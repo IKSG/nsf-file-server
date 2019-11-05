@@ -46,6 +46,7 @@ import lotus.domino.NotesException;
 import lotus.domino.NotesFactory;
 import lotus.domino.Session;
 import lotus.domino.View;
+import lotus.domino.ViewEntry;
 
 /**
  * Java NIO Filesystem implementation for NSF file storage.
@@ -61,6 +62,10 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	
 	private Map<String, FileSystem> fileSystems = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
+	// *******************************************************************************
+	// * Filesystem Operations
+	// *******************************************************************************
+	
 	@Override
 	public String getScheme() {
 		return SCHEME;
@@ -112,13 +117,15 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	public Path getPath(URI uri) {
 		return getFileSystem(uri).getPath(NSFPathUtil.extractPathInfo(uri));
 	}
+	
+	// *******************************************************************************
+	// * File Operations
+	// *******************************************************************************
 
 	@Override
 	public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
 			throws IOException {
-		System.out.println("newByteChannel for " + path);
-		// TODO Auto-generated method stub
-		return null;
+		return newFileChannel(path, options, attrs);
 	}
 	
 	@Override
@@ -134,9 +141,18 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
-		System.out.println("createDirectory " + dir);
-		// TODO Auto-generated method stub
-
+		try {
+			NotesThreadFactory.executor.submit(() -> {
+				Document doc = getDocument((NSFPath)dir);
+				if(doc.isNewNote()) {
+					doc.replaceItemValue("Form", "Folder");
+					doc.save();
+				}
+				return null;
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new IOException(e);
+		}
 	}
 
 	@Override
@@ -160,15 +176,41 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void copy(Path source, Path target, CopyOption... options) throws IOException {
-		System.out.println("copy " + source + " -> " + target);
-		// TODO Auto-generated method stub
-
+		try {
+			NotesThreadFactory.executor.submit(() -> {
+				Document targetDoc = getDocument((NSFPath)target);
+				if(!targetDoc.isNewNote()) {
+					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
+						targetDoc.lock();
+					}
+					targetDoc.remove(false);
+				}
+				
+				Document doc = getDocument((NSFPath)source);
+				doc = doc.copyToDatabase(doc.getParentDatabase());
+				doc.replaceItemValue("Parent", target.getParent().toAbsolutePath().toString());
+				doc.replaceItemValue("$$Title", target.getFileName().toString());
+				doc.save();
+				return null;
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+			throw new IOException(e);
+		}
 	}
 
 	@Override
 	public void move(Path source, Path target, CopyOption... options) throws IOException {
 		try {
 			NotesThreadFactory.executor.submit(() -> {
+				Document targetDoc = getDocument((NSFPath)target);
+				if(!targetDoc.isNewNote()) {
+					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
+						targetDoc.lock();
+					}
+					targetDoc.remove(false);
+				}
+				
 				Document doc = getDocument((NSFPath)source);
 				doc.replaceItemValue("Parent", target.getParent().toAbsolutePath().toString());
 				doc.replaceItemValue("$$Title", target.getFileName().toString());
@@ -204,6 +246,9 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	@Override
 	public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
 		// TODO cache these?
+		if(!exists((NSFPath)path)) {
+			return type.cast(new NonePosixFileAttributeView(path));
+		}
 		return type.cast(new NSFPosixFileAttributeView(this, (NSFPath)path, options));
 	}
 
@@ -214,7 +259,11 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 			return type.cast(new RootFileAttributes());
 		}
 		if (type.isAssignableFrom(PosixFileAttributes.class)) {
-            return type.cast(getFileAttributeView(path, PosixFileAttributeView.class, options).readAttributes());
+			PosixFileAttributeView view = getFileAttributeView(path, PosixFileAttributeView.class, options);
+			if(view == null) {
+				throw new IOException("File does not exist: " + path);
+			}
+            return type.cast(view.readAttributes());
         }
 		return null;
 	}
@@ -255,6 +304,9 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	protected NavigableMap<String, Object> readPosixViewAttributes(NSFPath path, String view, String attrs,
 			LinkOption... options) throws IOException {
 		PosixFileAttributes v = readAttributes(path, PosixFileAttributes.class, options);
+		if(v == null) {
+			throw new IOException("File does not exist: " + path);
+		}
 		if ("*".equals(attrs)) {
 			attrs = "lastModifiedTime,lastAccessTime,creationTime,size,isRegularFile,isDirectory,isSymbolicLink,isOther,fileKey,owner,permissions,group";
 		}
@@ -312,7 +364,20 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	@Override
 	public void setAttribute(Path path, String attribute, Object value, LinkOption... options) throws IOException {
 		// TODO Auto-generated method stub
-
+	}
+	
+	// *******************************************************************************
+	// * Links
+	// *******************************************************************************
+	
+	@Override
+	public void createLink(Path link, Path existing) throws IOException {
+		super.createLink(link, existing);
+	}
+	
+	@Override
+	public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs) throws IOException {
+		super.createSymbolicLink(link, target, attrs);
 	}
 	
 	// *******************************************************************************
@@ -368,16 +433,31 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 			Database database = getDatabase(path.getFileSystem());
 			View view = database.getView("Files by Path");
 			view.setAutoUpdate(false);
+			view.refresh();
 			Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
 			if(doc == null) {
 				doc = database.createDocument();
-				doc.replaceItemValue("Form", "File");
 				doc.replaceItemValue("Parent", path.getParent().toAbsolutePath().toString());
 				doc.replaceItemValue("$$Title", path.getFileName().toString());
 			}
 			return doc;
 		} catch(NotesException e) {
 			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public boolean exists(NSFPath path) {
+		try {
+			return NotesThreadFactory.executor.submit(() -> {
+				Database database = getDatabase(path.getFileSystem());
+				View view = database.getView("Files by Path");
+				view.setAutoUpdate(false);
+				view.refresh();
+				ViewEntry entry = view.getEntryByKey(path.toAbsolutePath().toString(), true);
+				return entry != null;
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
 		}
 	}

@@ -1,7 +1,8 @@
 package org.openntf.nsffile.fs;
 
 import java.io.IOException;
-import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileOwnerAttributeView;
 import java.nio.file.attribute.FileTime;
@@ -12,15 +13,34 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Set;
 
-public class NSFPosixFileAttributeView implements PosixFileAttributeView, BasicFileAttributeView, FileOwnerAttributeView {
+/**
+ * 
+ * @author Jesse Gallagher
+ * @since 1.0.0
+ */
+public class NonePosixFileAttributeView implements PosixFileAttributeView, BasicFileAttributeView, FileOwnerAttributeView {
 	
-	private final NSFFileSystemProvider provider;
-	private final NSFPath path;
+	private final Path path;
 	
-	public NSFPosixFileAttributeView(NSFFileSystemProvider provider, NSFPath path, LinkOption... options) {
-		this.provider = provider;
+	public NonePosixFileAttributeView(Path path) {
 		this.path = path;
-    }
+		
+	}
+
+	@Override
+	public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
+		throw new NoSuchFileException(path.toString());
+	}
+
+	@Override
+	public UserPrincipal getOwner() throws IOException {
+		throw new NoSuchFileException(path.toString());
+	}
+
+	@Override
+	public void setOwner(UserPrincipal owner) throws IOException {
+		throw new NoSuchFileException(path.toString());
+	}
 
 	@Override
 	public String name() {
@@ -28,36 +48,18 @@ public class NSFPosixFileAttributeView implements PosixFileAttributeView, BasicF
 	}
 
 	@Override
-	public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
-	public UserPrincipal getOwner() throws IOException {
-		return this.readAttributes().owner();
-	}
-
-	@Override
-	public void setOwner(UserPrincipal owner) throws IOException {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
-	public synchronized PosixFileAttributes readAttributes() throws IOException {
-		// TODO cache?
-		return new NSFFileAttributes(provider, path);
+	public PosixFileAttributes readAttributes() throws IOException {
+		throw new NoSuchFileException(path.toString());
 	}
 
 	@Override
 	public void setPermissions(Set<PosixFilePermission> perms) throws IOException {
-		// TODO Auto-generated method stub
-
+		throw new NoSuchFileException(path.toString());
 	}
 
 	@Override
 	public void setGroup(GroupPrincipal group) throws IOException {
-		// TODO Auto-generated method stub
-
+		throw new NoSuchFileException(path.toString());
 	}
-	
+
 }

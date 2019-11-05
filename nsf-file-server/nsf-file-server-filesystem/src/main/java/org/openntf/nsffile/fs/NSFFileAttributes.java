@@ -6,6 +6,7 @@ import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -13,6 +14,8 @@ import java.util.Set;
 import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
 import org.apache.sshd.server.subsystem.sftp.DefaultUserPrincipal;
 import org.openntf.nsffile.util.NotesThreadFactory;
+
+import com.ibm.commons.util.StringUtil;
 
 import lotus.domino.DateTime;
 import lotus.domino.Document;
@@ -42,37 +45,50 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 			NotesThreadFactory.executor.submit(() -> {
 				try {
 					Document doc = provider.getDocument(path);
-					@SuppressWarnings("unchecked")
-					List<String> updatedBy = doc.getItemValue("$UpdatedBy");
-					if(doc.hasItem("$UpdatedBy")) {
-						owner = provider.shortCn(updatedBy.get(0));
-					} else {
-						owner = provider.shortCn(doc.getParentDatabase().getParent().getEffectiveUserName());
-					}
-					group = "wheel"; // TODO implement
-					type = Type.valueOf(doc.getItemValueString("Form"));
-					DateTime mod = doc.getLastModified();
-					if(mod != null) {
-						lastModified = FileTime.fromMillis(mod.toJavaDate().getTime());
-					} else {
-						lastModified = FileTime.fromMillis(System.currentTimeMillis());
-					}
-					DateTime acc = doc.getLastAccessed();
-					if(acc != null) {
-						lastAccessed = FileTime.fromMillis(acc.toJavaDate().getTime());
-					} else {
-						lastAccessed = FileTime.fromMillis(System.currentTimeMillis());
-					}
-					created = FileTime.fromMillis(doc.getCreated().toJavaDate().getTime());
-					
-					// TODO check attachment size
-					if(doc.hasItem("File")) {
-						RichTextItem item = (RichTextItem)doc.getFirstItem("File");
+					if(!doc.isNewNote()) {
 						@SuppressWarnings("unchecked")
-						List<EmbeddedObject> eos = item.getEmbeddedObjects();
-						if(!eos.isEmpty()) {
-							size = eos.get(0).getFileSize();
+						List<String> updatedBy = doc.getItemValue("$UpdatedBy");
+						if(doc.hasItem("$UpdatedBy")) {
+							owner = provider.shortCn(updatedBy.get(0));
+						} else {
+							owner = provider.shortCn(doc.getParentDatabase().getParent().getEffectiveUserName());
 						}
+						group = "wheel"; // TODO implement
+						String form = doc.getItemValueString("Form");
+						if(StringUtil.isNotEmpty(form)) {
+							type = Type.valueOf(form);
+						} else {
+							type = null;
+						}
+						DateTime mod = doc.getLastModified();
+						if(mod != null) {
+							lastModified = FileTime.fromMillis(mod.toJavaDate().getTime());
+						} else {
+							lastModified = FileTime.fromMillis(System.currentTimeMillis());
+						}
+						DateTime acc = doc.getLastAccessed();
+						if(acc != null) {
+							lastAccessed = FileTime.fromMillis(acc.toJavaDate().getTime());
+						} else {
+							lastAccessed = FileTime.fromMillis(System.currentTimeMillis());
+						}
+						created = FileTime.fromMillis(doc.getCreated().toJavaDate().getTime());
+						
+						// TODO check attachment size
+						if(doc.hasItem("File")) {
+							RichTextItem item = (RichTextItem)doc.getFirstItem("File");
+							@SuppressWarnings("unchecked")
+							List<EmbeddedObject> eos = item.getEmbeddedObjects();
+							if(!eos.isEmpty()) {
+								size = eos.get(0).getFileSize();
+							}
+						}
+					} else {
+						owner = "root";
+						group = "wheel";
+						lastModified = FileTime.from(Instant.EPOCH);
+						lastAccessed = FileTime.from(Instant.EPOCH);
+						created = FileTime.from(Instant.EPOCH);
 					}
 				} catch(Throwable t) {
 					t.printStackTrace(System.out);
@@ -146,5 +162,4 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 	public Object fileKey() {
 		return null;
 	}
-
 }
