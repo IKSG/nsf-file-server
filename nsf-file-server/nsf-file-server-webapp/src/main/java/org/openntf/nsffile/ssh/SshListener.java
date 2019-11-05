@@ -15,16 +15,11 @@
  */
 package org.openntf.nsffile.ssh;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.FileSystem;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collections;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,18 +27,15 @@ import javax.inject.Inject;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
-import org.apache.sshd.common.scp.ScpTimestamp;
-import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
+import org.openntf.nsffile.ssh.scp.NSFScpFileOpener;
 import org.openntf.nsffile.util.NSFPathUtil;
 import org.openntf.nsffile.util.NotesThreadFactory;
-
-import com.ibm.commons.util.StringUtil;
 
 import lombok.SneakyThrows;
 import lotus.domino.NotesFactory;
@@ -62,8 +54,7 @@ public class SshListener implements ServletContextListener {
 	
 	private SshServer server;
 
-	@Inject @ConfigProperty(name=ENV_DBPATH, defaultValue=DEFAULT_DBPATH)
-	private String nsfPath;
+	@Inject @ConfigProperty(name=ENV_DBPATH, defaultValue=DEFAULT_DBPATH) String nsfPath;
 	@Inject @ConfigProperty(name=ENV_PORT, defaultValue=DEFAULT_PORT+"")
 	private int port;
 	
@@ -109,38 +100,7 @@ public class SshListener implements ServletContextListener {
 		server.setSubsystemFactories(Collections.singletonList(sftp));
 		
 		ScpCommandFactory scp = new ScpCommandFactory.Builder()
-			.withFileOpener(new DefaultScpFileOpener() {
-				@Override
-				public Path resolveIncomingFilePath(org.apache.sshd.common.session.Session session, Path localPath,
-						String name, boolean preserve, Set<PosixFilePermission> permissions, ScpTimestamp time)
-						throws IOException {
-					return super.resolveIncomingFilePath(session, localPath, name, preserve, permissions, time);
-				}
-				
-				@Override
-				public Path resolveIncomingReceiveLocation(org.apache.sshd.common.session.Session session, Path path,
-						boolean recursive, boolean shouldBeDir, boolean preserve) throws IOException {
-					try {
-						URI uri = NSFPathUtil.toFileSystemURI(session.getUsername(), nsfPath);
-						FileSystem fs = NSFFileSystemProvider.instance.getOrCreateFileSystem(uri, Collections.emptyMap());
-						Path nsfPath = fs.getPath(path.toString());
-						return super.resolveIncomingReceiveLocation(session, nsfPath, recursive, shouldBeDir, preserve);
-					} catch(URISyntaxException e) {
-						e.printStackTrace();
-						throw new RuntimeException(e);
-					}
-				}
-				
-				@Override
-				public Path resolveLocalPath(org.apache.sshd.common.session.Session session, FileSystem fileSystem,
-						String commandPath) throws IOException, InvalidPathException {
-					if(".".equals(commandPath) || StringUtil.isEmpty(commandPath)) {
-						return fileSystem.getPath("/");
-					} else {
-						return fileSystem.getPath(commandPath);
-					}
-				}
-			})
+			.withFileOpener(new NSFScpFileOpener(nsfPath))
 			.build();
 		server.setCommandFactory(scp);
 		
