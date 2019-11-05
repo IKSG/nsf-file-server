@@ -26,6 +26,7 @@ import java.nio.file.DirectoryStream.Filter;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.AclFileAttributeView;
@@ -256,6 +257,9 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void checkAccess(Path path, AccessMode... modes) throws IOException {
+		if(!exists((NSFPath)path)) {
+			throw new NoSuchFileException(path.toString());
+		}
 	}
 
 	@Override
@@ -463,6 +467,9 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	}
 	
 	public boolean exists(NSFPath path) {
+		if("/".equals(path.toString())) {
+			return true;
+		}
 		try {
 			return NotesThreadFactory.executor.submit(() -> {
 				Database database = getDatabase(path.getFileSystem());
