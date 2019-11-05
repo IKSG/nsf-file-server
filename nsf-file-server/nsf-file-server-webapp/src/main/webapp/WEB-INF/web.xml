@@ -29,7 +29,7 @@
     	<listener-class>org.openntf.nsffile.listener.NotesEnvironmentListener</listener-class>
     </listener>
     <listener>
-    	<description>Notes Environment Initializer</description>
-    	<listener-class>org.openntf.nsffile.sftp.SftpListener</listener-class>
+    	<description>SSH Server Manager</description>
+    	<listener-class>org.openntf.nsffile.ssh.SshListener</listener-class>
     </listener>
 </web-app>
