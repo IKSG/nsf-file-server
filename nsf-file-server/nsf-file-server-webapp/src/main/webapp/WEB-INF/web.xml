@@ -26,7 +26,7 @@
     <!-- Declare listeners here to ensure that the Notes listener is first -->
     <listener>
     	<description>Notes Environment Initializer</description>
-    	<listener-class>org.openntf.nsffile.NotesEnvironmentListener</listener-class>
+    	<listener-class>org.openntf.nsffile.listener.NotesEnvironmentListener</listener-class>
     </listener>
     <listener>
     	<description>Notes Environment Initializer</description>

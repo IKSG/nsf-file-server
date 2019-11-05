@@ -64,6 +64,12 @@
 				<artifactId>com.ibm.commons</artifactId>
 				<version>9.0.0</version>
 			</dependency>
+			<dependency>
+				<groupId>com.ibm.xsp</groupId>
+				<artifactId>com.ibm.domino.napi</artifactId>
+				<version>[10.0.1,)</version>
+				<classifier>lwpd.domino.napi</classifier>
+			</dependency>
 			
 			<dependency>
 				<groupId>org.projectlombok</groupId>

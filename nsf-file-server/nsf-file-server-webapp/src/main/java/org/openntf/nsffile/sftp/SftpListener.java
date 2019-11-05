@@ -15,6 +15,8 @@
  */
 package org.openntf.nsffile.sftp;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -25,11 +27,12 @@ import javax.inject.Inject;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
-import org.apache.sshd.common.util.threads.NoCloseExecutor;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.openntf.nsffile.fs.NSFFileSystemProvider;
+import org.openntf.nsffile.util.NSFPathUtil;
 import org.openntf.nsffile.util.NotesThreadFactory;
 
 import lombok.SneakyThrows;
@@ -81,10 +84,17 @@ public class SftpListener implements ServletContextListener {
 		server.setPort(port);
 		server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(keyPath));
 		server.setPasswordAuthenticator(new NotesPasswordAuthenticator());
+		server.setFileSystemFactory(session -> {
+			try {
+				URI uri = NSFPathUtil.toFileSystemURI(session.getUsername(), nsfPath);
+				return NSFFileSystemProvider.instance.getOrCreateFileSystem(uri, Collections.emptyMap());
+			} catch (URISyntaxException e) {
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
+		});
 		
 		SftpSubsystemFactory sftp = new SftpSubsystemFactory.Builder()
-			.withFileSystemAccessor(new NSFFileSystemAccessor(nsfPath))
-			.withExecutorService(new NoCloseExecutor(NotesThreadFactory.executor))
 			.build();
 		server.setSubsystemFactories(Collections.singletonList(sftp));
 		
