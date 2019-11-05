@@ -71,7 +71,7 @@ public class NSFFileChannel extends FileChannel {
 						Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
 					}
 				} else {
-					Files.createFile(result, attrs);
+					Files.createFile(result);
 				}
 				
 				return result;
