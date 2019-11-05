@@ -42,7 +42,8 @@ public class NSFFileSystem extends BaseFileSystem<NSFPath> {
 
 	@Override
 	protected NSFPath create(String root, List<String> names) {
-		return new NSFPath(this, root, names);
+		List<String> bits = names == null || names.isEmpty() ? Arrays.asList("") : names;
+		return new NSFPath(this, root, bits);
 	}
 
 	@Override
