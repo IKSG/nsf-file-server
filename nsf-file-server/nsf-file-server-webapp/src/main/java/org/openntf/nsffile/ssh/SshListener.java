@@ -33,6 +33,8 @@ import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
+import org.openntf.nsffile.ssh.auth.NotesPasswordAuthenticator;
+import org.openntf.nsffile.ssh.auth.NotesPublicKeyAuthenticator;
 import org.openntf.nsffile.ssh.scp.NSFScpFileOpener;
 import org.openntf.nsffile.util.NSFPathUtil;
 import org.openntf.nsffile.util.NotesThreadFactory;
@@ -85,6 +87,7 @@ public class SshListener implements ServletContextListener {
 		server.setPort(port);
 		server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(keyPath));
 		server.setPasswordAuthenticator(new NotesPasswordAuthenticator());
+		server.setPublickeyAuthenticator(new NotesPublicKeyAuthenticator());
 		server.setFileSystemFactory(session -> {
 			try {
 				URI uri = NSFPathUtil.toFileSystemURI(session.getUsername(), nsfPath);

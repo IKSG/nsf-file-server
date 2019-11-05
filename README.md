@@ -1,6 +1,6 @@
 # NSF File Server
 
-This project is a WAR web application that launches an SFTP server backed by a file storage NSF, storing the files and directories as user-side documents. The server uses the running Domino environment for authentication.
+This project is a WAR web application that launches an SFTP server backed by a file storage NSF, storing the files and directories as user-side documents.
 
 ### Running
 
@@ -14,6 +14,13 @@ The server supports two configuration properties loaded via [MicroProfile Config
 
 * `SFTPNSFPath`: the path to the NSF to use as a file store. Defaults to `filestore.nsf` and can be either a base database path or an API path in "server!!path.nsf" format
 * `SFTPNSFPort`: the port used by the SFTP server. Defaults to `9022`
+
+### Authentication
+
+The spawned SSH server uses the current server's Domino directories for authentication. It supports two methods:
+
+- Password authentication using the "HTTPPassword" item in the user's person document
+- RSA public key authentication using a public key stored in the "sshPublicKey" item in the user's person document. This should be a text item containing the same contents as a "id_rsa.pub" file from OpenSSH
 
 ## Building
 
