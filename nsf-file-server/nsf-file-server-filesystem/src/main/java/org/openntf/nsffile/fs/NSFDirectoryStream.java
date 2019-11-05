@@ -27,6 +27,7 @@ public class NSFDirectoryStream implements DirectoryStream<Path> {
 					Database database = provider.getDatabase(dir.getFileSystem());
 					View filesByParent = database.getView("Files By Parent");
 					filesByParent.setAutoUpdate(false);
+					filesByParent.refresh();
 					
 					String category = dir.toAbsolutePath().toString();
 					ViewNavigator nav = filesByParent.createViewNavFromCategory(category);

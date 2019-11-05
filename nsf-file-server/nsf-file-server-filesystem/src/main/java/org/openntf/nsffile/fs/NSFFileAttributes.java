@@ -16,6 +16,8 @@ import org.openntf.nsffile.util.NotesThreadFactory;
 
 import lotus.domino.DateTime;
 import lotus.domino.Document;
+import lotus.domino.EmbeddedObject;
+import lotus.domino.RichTextItem;
 
 /**
  * 
@@ -62,8 +64,16 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 						lastAccessed = FileTime.fromMillis(System.currentTimeMillis());
 					}
 					created = FileTime.fromMillis(doc.getCreated().toJavaDate().getTime());
+					
 					// TODO check attachment size
-					size = doc.getSize();
+					if(doc.hasItem("File")) {
+						RichTextItem item = (RichTextItem)doc.getFirstItem("File");
+						@SuppressWarnings("unchecked")
+						List<EmbeddedObject> eos = item.getEmbeddedObjects();
+						if(!eos.isEmpty()) {
+							size = eos.get(0).getFileSize();
+						}
+					}
 				} catch(Throwable t) {
 					t.printStackTrace(System.out);
 					throw t;
