@@ -35,6 +35,7 @@
 		<module>nsf-file-server-db</module>
 		<module>nsf-file-server-filesystem</module>
 		<module>nsf-file-server-webapp</module>
+		<module>nsf-file-server-dist</module>
 	</modules>
 	
 	<pluginRepositories>
@@ -103,6 +104,11 @@
 	<build>
 		<pluginManagement>
 			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-assembly-plugin</artifactId>
+					<version>3.1.0</version>
+				</plugin>
 				<plugin>
 					<groupId>org.openntf.maven</groupId>
 					<artifactId>nsfodp-maven-plugin</artifactId>

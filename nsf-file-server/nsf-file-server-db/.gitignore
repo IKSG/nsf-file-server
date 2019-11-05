@@ -1,2 +1,7 @@
 /META-INF/
 /build.properties
+/target/
+/.classpath
+/.project
+/.settings/
+/target/
