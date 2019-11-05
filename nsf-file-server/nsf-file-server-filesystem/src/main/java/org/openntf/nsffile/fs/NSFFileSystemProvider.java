@@ -167,9 +167,18 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void move(Path source, Path target, CopyOption... options) throws IOException {
-		System.out.println("move " + source + " -> " + target);
-		// TODO Auto-generated method stub
-
+		try {
+			NotesThreadFactory.executor.submit(() -> {
+				Document doc = getDocument((NSFPath)source);
+				doc.replaceItemValue("Parent", target.getParent().toAbsolutePath().toString());
+				doc.replaceItemValue("$$Title", target.getFileName().toString());
+				doc.save();
+				return null;
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			e.printStackTrace();
+			throw new IOException(e);
+		}
 	}
 
 	@Override
