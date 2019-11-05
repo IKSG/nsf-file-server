@@ -124,8 +124,7 @@ public class SftpListener implements ServletContextListener {
 						URI uri = NSFPathUtil.toFileSystemURI(session.getUsername(), nsfPath);
 						FileSystem fs = NSFFileSystemProvider.instance.getOrCreateFileSystem(uri, Collections.emptyMap());
 						Path nsfPath = fs.getPath(path.toString());
-						Path result = super.resolveIncomingReceiveLocation(session, nsfPath, recursive, shouldBeDir, preserve);
-						return result;
+						return super.resolveIncomingReceiveLocation(session, nsfPath, recursive, shouldBeDir, preserve);
 					} catch(URISyntaxException e) {
 						e.printStackTrace();
 						throw new RuntimeException(e);
@@ -140,12 +139,6 @@ public class SftpListener implements ServletContextListener {
 					} else {
 						return fileSystem.getPath(commandPath);
 					}
-				}
-				
-				@Override
-				public Iterable<Path> getMatchingFilesToSend(org.apache.sshd.common.session.Session session,
-						Path basedir, String pattern) throws IOException {
-					return super.getMatchingFilesToSend(session, basedir, pattern);
 				}
 			})
 			.build();
