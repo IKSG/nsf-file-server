@@ -32,9 +32,18 @@
 	</properties>
 	
 	<modules>
+		<module>nsf-file-server-db</module>
 		<module>nsf-file-server-filesystem</module>
 		<module>nsf-file-server-webapp</module>
 	</modules>
+	
+	<pluginRepositories>
+		<pluginRepository>
+			<id>artifactory.openntf.org</id>
+			<name>artifactory.openntf.org</name>
+			<url>https://artifactory.openntf.org/openntf</url>
+		</pluginRepository>
+	</pluginRepositories>
 	
 	<dependencyManagement>
 		<dependencies>
@@ -94,6 +103,13 @@
 	<build>
 		<pluginManagement>
 			<plugins>
+				<plugin>
+					<groupId>org.openntf.maven</groupId>
+					<artifactId>nsfodp-maven-plugin</artifactId>
+					<version>2.1.0</version>
+					<extensions>true</extensions>
+				</plugin>
+			
 				<plugin>
 					<groupId>com.mycila</groupId>
 					<artifactId>license-maven-plugin</artifactId>
