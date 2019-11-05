@@ -15,8 +15,6 @@
  */
 package org.openntf.nsffile.ssh;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -32,33 +30,37 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.openntf.nsffile.fs.NSFFileSystemProvider;
+import org.openntf.nsffile.config.NSFConfiguration;
 import org.openntf.nsffile.ssh.auth.NotesPasswordAuthenticator;
 import org.openntf.nsffile.ssh.auth.NotesPublicKeyAuthenticator;
 import org.openntf.nsffile.ssh.scp.NSFScpFileOpener;
-import org.openntf.nsffile.util.NSFPathUtil;
 import org.openntf.nsffile.util.NotesThreadFactory;
 
 import lombok.SneakyThrows;
 import lotus.domino.NotesFactory;
 import lotus.domino.Session;
 
+/**
+ * Manages the lifecycle of the SCP/SFTP server.
+ * 
+ * @author Jesse Gallagher
+ * @since 1.0.0
+ */
 public class SshListener implements ServletContextListener {
 	public static final Logger log = Logger.getLogger(SshListener.class.getPackage().getName());
 	static {
 		log.setLevel(Level.ALL);
 	}
 	
-	public static final String ENV_DBPATH = "SFTPNSFPath";
-	public static final String DEFAULT_DBPATH = "filestore.nsf";
 	public static final String ENV_PORT = "SFTPNSFPort";
 	public static final int DEFAULT_PORT = 9022;
 	
 	private SshServer server;
 
-	@Inject @ConfigProperty(name=ENV_DBPATH, defaultValue=DEFAULT_DBPATH) String nsfPath;
 	@Inject @ConfigProperty(name=ENV_PORT, defaultValue=DEFAULT_PORT+"")
 	private int port;
+	
+	@Inject private NSFConfiguration config;
 	
 	@Override
 	@SneakyThrows
@@ -77,6 +79,7 @@ public class SshListener implements ServletContextListener {
 		}).get();
 		Path keyPath = Paths.get(dataDir, getClass().getPackage().getName() + ".keys");
 
+		String nsfPath = config.getNsfPath();
 		if(log.isLoggable(Level.INFO)) {
 			log.info(getClass().getSimpleName() + ": Using NSF path " + nsfPath);
 			log.info(getClass().getSimpleName() + ": Using port " + port);
@@ -88,15 +91,7 @@ public class SshListener implements ServletContextListener {
 		server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(keyPath));
 		server.setPasswordAuthenticator(new NotesPasswordAuthenticator());
 		server.setPublickeyAuthenticator(new NotesPublicKeyAuthenticator());
-		server.setFileSystemFactory(session -> {
-			try {
-				URI uri = NSFPathUtil.toFileSystemURI(session.getUsername(), nsfPath);
-				return NSFFileSystemProvider.instance.getOrCreateFileSystem(uri, Collections.emptyMap());
-			} catch (URISyntaxException e) {
-				e.printStackTrace();
-				throw new RuntimeException(e);
-			}
-		});
+		server.setFileSystemFactory(session -> config.getFileSystem(session.getUsername()));
 		
 		SftpSubsystemFactory sftp = new SftpSubsystemFactory.Builder()
 			.build();
