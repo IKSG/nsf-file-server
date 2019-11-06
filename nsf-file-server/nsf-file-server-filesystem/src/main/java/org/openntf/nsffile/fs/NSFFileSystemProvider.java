@@ -259,7 +259,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		if(!exists((NSFPath)path)) {
 			return type.cast(new NonePosixFileAttributeView(path));
 		}
-		return type.cast(new NSFPosixFileAttributeView(this, (NSFPath)path, options));
+		return type.cast(new NSFPosixFileAttributeView((NSFPath)path, options));
 	}
 
 	@Override

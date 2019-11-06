@@ -28,7 +28,6 @@ import java.util.Set;
 
 import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
 import org.apache.sshd.server.subsystem.sftp.DefaultUserPrincipal;
-import org.openntf.nsffile.fs.NSFFileSystemProvider;
 import org.openntf.nsffile.fs.NSFPath;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 
@@ -59,7 +58,7 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 	private FileTime created;
 	private long size;
 	
-	public NSFFileAttributes(NSFFileSystemProvider provider, NSFPath path) {
+	public NSFFileAttributes(NSFPath path) {
 		try {
 			NSFPathUtil.runWithDocument(path, doc -> {
 				try {

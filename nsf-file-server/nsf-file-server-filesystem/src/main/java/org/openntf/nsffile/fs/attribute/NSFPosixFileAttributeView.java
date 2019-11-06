@@ -27,7 +27,6 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Set;
 
-import org.openntf.nsffile.fs.NSFFileSystemProvider;
 import org.openntf.nsffile.fs.NSFPath;
 
 /**
@@ -36,11 +35,9 @@ import org.openntf.nsffile.fs.NSFPath;
  */
 public class NSFPosixFileAttributeView implements PosixFileAttributeView, BasicFileAttributeView, FileOwnerAttributeView {
 	
-	private final NSFFileSystemProvider provider;
 	private final NSFPath path;
 	
-	public NSFPosixFileAttributeView(NSFFileSystemProvider provider, NSFPath path, LinkOption... options) {
-		this.provider = provider;
+	public NSFPosixFileAttributeView(NSFPath path, LinkOption... options) {
 		this.path = path;
     }
 
@@ -67,7 +64,7 @@ public class NSFPosixFileAttributeView implements PosixFileAttributeView, BasicF
 	@Override
 	public synchronized PosixFileAttributes readAttributes() throws IOException {
 		// TODO cache?
-		return new NSFFileAttributes(provider, path);
+		return new NSFFileAttributes(path);
 	}
 
 	@Override
