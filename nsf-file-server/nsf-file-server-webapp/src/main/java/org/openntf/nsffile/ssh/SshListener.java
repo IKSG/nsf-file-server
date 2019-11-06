@@ -67,8 +67,8 @@ public class SshListener implements ServletContextListener {
 			log.info(getClass().getSimpleName() + " init");
 		}
 		
-		String dataDir = NotesThreadFactory.call(session -> session.getEnvironmentString("Directory", true));
-		Path keyPath = Paths.get(dataDir, getClass().getPackage().getName() + ".keys");
+		String dataDir = NotesThreadFactory.call(session -> session.getEnvironmentString("Directory", true)); //$NON-NLS-1$
+		Path keyPath = Paths.get(dataDir, getClass().getPackage().getName() + ".keys"); //$NON-NLS-1$
 
 		String nsfPath = config.getNsfPath();
 		if(log.isLoggable(Level.INFO)) {
