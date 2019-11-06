@@ -8,9 +8,6 @@ AQCU7G6FoWlsP/FjaADvdyWF
   <item name="$FormulaClass" sign="true">
     <text>1</text>
   </item>
-  <item name="$TITLE" sign="true">
-    <text>Files by Path</text>
-  </item>
   <item name="$Index" sign="true">
     <text/>
   </item>
@@ -50,5 +47,8 @@ AB8AAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAPz/OgAAAAAAAQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAEAAAAAAAAAAAAAAAAAAAA=
 </rawitemdata>
+  </item>
+  <item name="$TITLE" sign="true">
+    <text>(Files by Path)</text>
   </item>
 </note>

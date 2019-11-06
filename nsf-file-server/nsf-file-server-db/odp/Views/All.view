@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<note class="view" default="true" xmlns="http://www.lotus.com/dxl">
+<note class="view" xmlns="http://www.lotus.com/dxl">
   <item name="$FormulaClass" sign="true">
     <text>1</text>
   </item>
@@ -40,7 +40,7 @@ AAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAuLCQA
     <text/>
   </item>
   <item name="$Flags">
-    <text>Y</text>
+    <text>Yd</text>
   </item>
   <item name="$V5ACTIONS" sign="true">
     <rawitemdata type="1">
