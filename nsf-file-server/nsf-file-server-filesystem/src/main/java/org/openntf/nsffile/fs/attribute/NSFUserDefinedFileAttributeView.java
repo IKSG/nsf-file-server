@@ -89,6 +89,7 @@ public class NSFUserDefinedFileAttributeView implements UserDefinedFileAttribute
 			String itemName = PREFIX_USERITEM + name;
 			byte[] data = src.array();
 			doc.replaceItemValueCustomDataBytes(itemName, DATATYPE_NAME, data);
+			doc.computeWithForm(false, false);
 			return data.length;
 		});
 	}
@@ -99,6 +100,7 @@ public class NSFUserDefinedFileAttributeView implements UserDefinedFileAttribute
 			String itemName = PREFIX_USERITEM + name;
 			if(doc.hasItem(itemName)) {
 				doc.removeItem(itemName);
+				doc.computeWithForm(false, false);
 			}
 		});
 	}

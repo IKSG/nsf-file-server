@@ -160,6 +160,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 			NSFPathUtil.runWithDocument((NSFPath)dir, doc -> {
 				if(doc.isNewNote()) {
 					doc.replaceItemValue(NotesConstants.FIELD_FORM, FORM_FOLDER);
+					doc.computeWithForm(false, false);
 					doc.save();
 				}
 			});
@@ -201,6 +202,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 				doc = doc.copyToDatabase(database);
 				doc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
 				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
+				doc.computeWithForm(false, false);
 				doc.save();
 			});
 		} catch (RuntimeException e) {
@@ -224,6 +226,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 				Document doc = NSFPathUtil.getDocument((NSFPath)source, database);
 				doc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
 				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
+				doc.computeWithForm(false, false);
 				doc.save();
 			});
 		} catch (RuntimeException e) {

@@ -190,7 +190,8 @@ public class NSFFileChannel extends FileChannel {
 					}
 					RichTextItem item = doc.createRichTextItem(ITEM_FILE);
 					item.embedObject(EmbeddedObject.EMBED_ATTACHMENT, "", this.tempFile.toAbsolutePath().toString(), null); //$NON-NLS-1$
-					
+
+					doc.computeWithForm(false, false);
 					doc.save();
 				});
 			} catch (RuntimeException e) {

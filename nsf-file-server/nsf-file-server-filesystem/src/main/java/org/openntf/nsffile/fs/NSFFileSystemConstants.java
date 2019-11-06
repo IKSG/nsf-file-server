@@ -39,4 +39,13 @@ public enum NSFFileSystemConstants {
 	public static final String VIEW_FILESBYPARENT = "Files by Parent"; //$NON-NLS-1$
 	/** The index in the column values in {@link #VIEW_FILESBYPARENT} holding the file name */
 	public static final int VIEW_FILESBYPARENT_INDEX_NAME = 2;
+	
+	/** The item used to store the file modification date */
+	public static final String ITEM_MODIFIED = "DateModified"; //$NON-NLS-1$
+	/** The item used to store the file creation date */
+	public static final String ITEM_CREATED = "DateComposed"; //$NON-NLS-1$
+	/** The item used to store the file owner */
+	public static final String ITEM_OWNER = "Owner"; //$NON-NLS-1$
+	/** The item used to store the file owner */
+	public static final String ITEM_GROUP = "Group"; //$NON-NLS-1$
 }

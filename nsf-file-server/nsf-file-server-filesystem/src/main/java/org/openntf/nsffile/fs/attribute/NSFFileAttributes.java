@@ -63,33 +63,34 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 			NSFPathUtil.runWithDocument(path, doc -> {
 				try {
 					if(!doc.isNewNote()) {
-						@SuppressWarnings("unchecked")
-						List<String> updatedBy = doc.getItemValue(NotesConstants.FIELD_UPDATED_BY);
-						if(updatedBy != null && !updatedBy.isEmpty()) {
-							owner = NSFPathUtil.shortCn(updatedBy.get(0));
-						} else {
-							owner = NSFPathUtil.shortCn(doc.getParentDatabase().getParent().getEffectiveUserName());
-						}
-						group = "wheel"; // TODO implement //$NON-NLS-1$
+						owner = NSFPathUtil.shortCn(doc.getItemValueString(ITEM_OWNER));
+						group = NSFPathUtil.shortCn(doc.getItemValueString(ITEM_GROUP));
+						
 						String form = doc.getItemValueString(NotesConstants.FIELD_FORM);
 						if(StringUtil.isNotEmpty(form)) {
 							type = Type.valueOf(form);
 						} else {
 							type = null;
 						}
-						DateTime mod = doc.getLastModified();
-						if(mod != null) {
+						if(doc.hasItem(ITEM_MODIFIED)) {
+							DateTime mod = (DateTime)doc.getItemValueDateTimeArray(ITEM_MODIFIED).get(0);
 							lastModified = FileTime.fromMillis(mod.toJavaDate().getTime());
 						} else {
-							lastModified = FileTime.fromMillis(System.currentTimeMillis());
+							lastModified = FileTime.from(Instant.now());
 						}
 						DateTime acc = doc.getLastAccessed();
 						if(acc != null) {
 							lastAccessed = FileTime.fromMillis(acc.toJavaDate().getTime());
 						} else {
-							lastAccessed = FileTime.fromMillis(System.currentTimeMillis());
+							lastAccessed = FileTime.from(Instant.now());
 						}
-						created = FileTime.fromMillis(doc.getCreated().toJavaDate().getTime());
+						if(doc.hasItem(ITEM_CREATED)) {
+							DateTime c = (DateTime)doc.getItemValueDateTimeArray(ITEM_CREATED).get(0);
+							created = FileTime.fromMillis(c.toJavaDate().getTime());
+						} else {
+							created = FileTime.from(Instant.now());
+						}
+						
 						
 						// TODO check attachment size
 						if(doc.hasItem(ITEM_FILE)) {
