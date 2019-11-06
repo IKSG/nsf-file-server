@@ -60,11 +60,19 @@ public class NSFPosixFileAttributeView implements PosixFileAttributeView, BasicF
 			Session session = doc.getParentDatabase().getParent();
 			if(lastModifiedTime != null) {
 				DateTime mod = session.createDateTime(new Date(lastModifiedTime.toMillis()));
-				doc.replaceItemValue(ITEM_MODIFIED, mod);
+				try {
+					doc.replaceItemValue(ITEM_MODIFIED, mod);
+				} finally {
+					mod.recycle();
+				}
 			}
 			if(createTime != null) {
 				DateTime created = session.createDateTime(new Date(createTime.toMillis()));
-				doc.replaceItemValue(ITEM_CREATED, created);
+				try {
+					doc.replaceItemValue(ITEM_CREATED, created);
+				} finally {
+					created.recycle();
+				}
 			}
 			
 			doc.save();
