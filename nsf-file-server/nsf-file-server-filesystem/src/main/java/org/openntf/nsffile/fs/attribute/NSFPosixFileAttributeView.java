@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs;
+package org.openntf.nsffile.fs.attribute;
 
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
+import java.nio.file.LinkOption;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileOwnerAttributeView;
 import java.nio.file.attribute.FileTime;
@@ -28,34 +27,22 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Set;
 
+import org.openntf.nsffile.fs.NSFFileSystemProvider;
+import org.openntf.nsffile.fs.NSFPath;
+
 /**
- * 
  * @author Jesse Gallagher
  * @since 1.0.0
  */
-public class NonePosixFileAttributeView implements PosixFileAttributeView, BasicFileAttributeView, FileOwnerAttributeView {
+public class NSFPosixFileAttributeView implements PosixFileAttributeView, BasicFileAttributeView, FileOwnerAttributeView {
 	
-	private final Path path;
+	private final NSFFileSystemProvider provider;
+	private final NSFPath path;
 	
-	public NonePosixFileAttributeView(Path path) {
+	public NSFPosixFileAttributeView(NSFFileSystemProvider provider, NSFPath path, LinkOption... options) {
+		this.provider = provider;
 		this.path = path;
-		
-	}
-
-	@Override
-	public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
-		throw new NoSuchFileException(path.toString());
-	}
-
-	@Override
-	public UserPrincipal getOwner() throws IOException {
-		throw new NoSuchFileException(path.toString());
-	}
-
-	@Override
-	public void setOwner(UserPrincipal owner) throws IOException {
-		throw new NoSuchFileException(path.toString());
-	}
+    }
 
 	@Override
 	public String name() {
@@ -63,18 +50,36 @@ public class NonePosixFileAttributeView implements PosixFileAttributeView, Basic
 	}
 
 	@Override
-	public PosixFileAttributes readAttributes() throws IOException {
-		throw new NoSuchFileException(path.toString());
+	public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public UserPrincipal getOwner() throws IOException {
+		return this.readAttributes().owner();
+	}
+
+	@Override
+	public void setOwner(UserPrincipal owner) throws IOException {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public synchronized PosixFileAttributes readAttributes() throws IOException {
+		// TODO cache?
+		return new NSFFileAttributes(provider, path);
 	}
 
 	@Override
 	public void setPermissions(Set<PosixFilePermission> perms) throws IOException {
-		throw new NoSuchFileException(path.toString());
+		// TODO Auto-generated method stub
+
 	}
 
 	@Override
 	public void setGroup(GroupPrincipal group) throws IOException {
-		throw new NoSuchFileException(path.toString());
-	}
+		// TODO Auto-generated method stub
 
+	}
+	
 }

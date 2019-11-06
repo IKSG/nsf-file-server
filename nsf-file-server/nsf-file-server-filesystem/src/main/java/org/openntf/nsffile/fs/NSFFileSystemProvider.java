@@ -50,6 +50,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.openntf.nsffile.fs.attribute.NSFPosixFileAttributeView;
+import org.openntf.nsffile.fs.attribute.NonePosixFileAttributeView;
 import org.openntf.nsffile.util.NSFPathUtil;
 import org.openntf.nsffile.util.NotesThreadFactory;
 import org.openntf.nsffile.util.SudoUtils;

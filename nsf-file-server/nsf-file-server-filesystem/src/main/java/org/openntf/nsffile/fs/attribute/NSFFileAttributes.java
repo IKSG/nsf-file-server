@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs;
+package org.openntf.nsffile.fs.attribute;
 
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
@@ -28,6 +28,8 @@ import java.util.Set;
 
 import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
 import org.apache.sshd.server.subsystem.sftp.DefaultUserPrincipal;
+import org.openntf.nsffile.fs.NSFFileSystemProvider;
+import org.openntf.nsffile.fs.NSFPath;
 import org.openntf.nsffile.util.NotesThreadFactory;
 
 import com.ibm.commons.util.StringUtil;
