@@ -46,6 +46,7 @@ public enum NSFPathUtil {
 	
 	public static final String LOCAL_SERVER = "LOCALSERVER"; //$NON-NLS-1$
 	public static final String NAME_DELIM = "NAMEDELIM"; //$NON-NLS-1$
+	public static final String PREFIX_REPID = "REPLICAID"; //$NON-NLS-1$
 	
 	/**
 	 * Extracts the NSF API path from the provided URI. For example:
@@ -74,11 +75,19 @@ public enum NSFPathUtil {
 			throw new IllegalArgumentException("URI path info cannot be empty");
 		}
 		
+		String nsfPath;
 		int nsfIndex = pathInfo.toLowerCase().indexOf(".nsf"); //$NON-NLS-1$
 		if(nsfIndex < 2) {
-			throw new IllegalArgumentException("Unable to extract NSF path from " + uri);
+			// Check if it's a replica ID
+			String repId = pathInfo.substring(1);
+			if(repId.startsWith(PREFIX_REPID)) {
+				nsfPath = repId.substring(PREFIX_REPID.length());
+			} else {
+				throw new IllegalArgumentException("Unable to extract NSF path from " + uri);
+			}
+		} else {
+			nsfPath = pathInfo.substring(1, nsfIndex+4);
 		}
-		String nsfPath = pathInfo.substring(1, nsfIndex+4);
 		if(host == null || host.isEmpty()) {
 			return nsfPath;
 		} else {
@@ -130,13 +139,26 @@ public enum NSFPathUtil {
 		}
 		
 		int bangIndex = apiPath.indexOf("!!"); //$NON-NLS-1$
+		String host;
+		String nsfPath;
 		if(bangIndex < 0) {
-			return new URI(NSFFileSystemProvider.SCHEME, userName, LOCAL_SERVER, -1, "/" + apiPath.replace('\\', '/'), null, null); //$NON-NLS-1$
+			host = LOCAL_SERVER;
+			nsfPath = "/" + apiPath //$NON-NLS-1$
+				.replace('\\', '/')
+				.replace(":", ""); //$NON-NLS-1$ //$NON-NLS-2$
 		} else {
-			String server = apiPath.substring(0, bangIndex);
-			String filePath = apiPath.substring(bangIndex+2);
-			return new URI(NSFFileSystemProvider.SCHEME, userName, server.replace("/", NAME_DELIM), -1, "/" + filePath.replace('\\', '/'), null, null); //$NON-NLS-1$
+			host = apiPath
+				.substring(0, bangIndex)
+				.replace("/", NAME_DELIM); //$NON-NLS-1$
+			nsfPath = "/" + apiPath //$NON-NLS-1$
+				.substring(bangIndex+2)
+				.replace('\\', '/')
+				.replace(":", ""); //$NON-NLS-1$ //$NON-NLS-2$
 		}
+		if(isReplicaID(nsfPath.substring(1))) {
+			nsfPath = "/" + PREFIX_REPID + nsfPath.substring(1); //$NON-NLS-1$
+		}
+		return new URI(NSFFileSystemProvider.SCHEME, userName, host, -1, nsfPath, null, null);
 	}
 	
 	/**
@@ -159,11 +181,20 @@ public enum NSFPathUtil {
 		String nsfPath;
 		if(bangIndex < 0) {
 			host = LOCAL_SERVER;
-			nsfPath = apiPath.replace('\\', '/');
-			
+			nsfPath = "/" + apiPath //$NON-NLS-1$
+				.replace('\\', '/')
+				.replace(":", ""); //$NON-NLS-1$ //$NON-NLS-2$
 		} else {
-			host = apiPath.substring(0, bangIndex).replace("/", NAME_DELIM); //$NON-NLS-1$
-			nsfPath = apiPath.substring(bangIndex+2);
+			host = apiPath
+				.substring(0, bangIndex)
+				.replace("/", NAME_DELIM); //$NON-NLS-1$
+			nsfPath = "/" + apiPath //$NON-NLS-1$
+				.substring(bangIndex+2)
+				.replace('\\', '/')
+				.replace(":", ""); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		if(isReplicaID(nsfPath.substring(1))) {
+			nsfPath = "/" + PREFIX_REPID + nsfPath.substring(1); //$NON-NLS-1$
 		}
 		
 		String pathInfo = concat("/", nsfPath); //$NON-NLS-1$
@@ -313,6 +344,10 @@ public enum NSFPathUtil {
 		}
 		return doc;
 	}
+
+	public static String shortCn(String name) {
+		return NotesThreadFactory.call(session -> session.createName(name).getCommon().replaceAll("\\s+", "")); //$NON-NLS-1$ //$NON-NLS-2$
+	}
 	
 	// *******************************************************************************
 	// * Internal utilities
@@ -326,14 +361,51 @@ public enum NSFPathUtil {
 		String nsfPath = fileSystem.getNsfPath();
 		
 		int bangIndex = nsfPath.indexOf("!!"); //$NON-NLS-1$
+		String server;
+		String dbPath;
 		if(bangIndex < 0) {
-			return session.getDatabase("", nsfPath); //$NON-NLS-1$
+			server = ""; //$NON-NLS-1$
+			dbPath = nsfPath;
 		} else {
-			return session.getDatabase(nsfPath.substring(0, bangIndex), nsfPath.substring(bangIndex+2));
+			server = nsfPath.substring(0, bangIndex);
+			dbPath = nsfPath.substring(bangIndex+2);
+		}
+		if(isReplicaID(dbPath)) {
+			Database database = session.getDatabase(null, null);
+			database.openByReplicaID(server, dbPath);
+			return database;
+		} else {
+			return session.getDatabase(server, dbPath);
 		}
 	}
+	
+	private static boolean isReplicaID(String dbPath) {
+		String id = normalizeReplicaID(dbPath);
+		if (id == null) {
+			return false;
+		} else {
+			for (int i = 0; i < 16; ++i) {
+				if ("0123456789ABCDEF".indexOf(id.charAt(i)) < 0) { //$NON-NLS-1$
+					return false;
+				}
+			}
 
-	public static String shortCn(String name) {
-		return NotesThreadFactory.call(session -> session.createName(name).getCommon().replaceAll("\\s+", "")); //$NON-NLS-1$ //$NON-NLS-2$
+			return true;
+		}
+	}
+	
+	private static String normalizeReplicaID(String id) {
+		String replicaId = id;
+		if (StringUtil.isNotEmpty(replicaId)) {
+			if (replicaId.indexOf(':') == 8 && replicaId.length() == 17) {
+				replicaId = replicaId.substring(0, 8) + replicaId.substring(9, 17);
+			}
+
+			if (replicaId.length() == 16) {
+				return replicaId.toUpperCase();
+			}
+		}
+
+		return null;
 	}
 }
