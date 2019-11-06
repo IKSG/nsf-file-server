@@ -24,8 +24,6 @@ package org.openntf.nsffile.fs;
 public enum NSFFileSystemConstants {
 	;
 	
-	
-	
 	/** The form name used for file documents */
 	public static final String FORM_FILE = "File"; //$NON-NLS-1$
 	/** The form name used for folder documents */
