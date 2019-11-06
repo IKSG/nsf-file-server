@@ -26,12 +26,15 @@ import org.openntf.nsffile.util.NotesThreadFactory;
 
 import com.ibm.commons.util.PathUtil;
 import com.ibm.commons.util.StringUtil;
+import com.ibm.designer.domino.napi.NotesConstants;
 
 import lotus.domino.Database;
 import lotus.domino.Document;
 import lotus.domino.NotesException;
 import lotus.domino.Session;
 import lotus.domino.View;
+
+import static org.openntf.nsffile.fs.NSFFileSystemConstants.*;
 
 /**
  * 
@@ -41,8 +44,8 @@ import lotus.domino.View;
 public enum NSFPathUtil {
 	;
 	
-	public static final String LOCAL_SERVER = "LOCALSERVER";
-	public static final String NAME_DELIM = "NAMEDELIM";
+	public static final String LOCAL_SERVER = "LOCALSERVER"; //$NON-NLS-1$
+	public static final String NAME_DELIM = "NAMEDELIM"; //$NON-NLS-1$
 	
 	/**
 	 * Extracts the NSF API path from the provided URI. For example:
@@ -64,14 +67,14 @@ public enum NSFPathUtil {
 		if(LOCAL_SERVER.equals(host)) {
 			host = null;
 		} else if(StringUtil.isNotEmpty(host)) {
-			host = host.replace(NAME_DELIM, "/");
+			host = host.replace(NAME_DELIM, "/"); //$NON-NLS-1$
 		}
 		String pathInfo = uri.getPath();
 		if(pathInfo == null || pathInfo.isEmpty()) {
 			throw new IllegalArgumentException("URI path info cannot be empty");
 		}
 		
-		int nsfIndex = pathInfo.toLowerCase().indexOf(".nsf");
+		int nsfIndex = pathInfo.toLowerCase().indexOf(".nsf"); //$NON-NLS-1$
 		if(nsfIndex < 2) {
 			throw new IllegalArgumentException("Unable to extract NSF path from " + uri);
 		}
@@ -79,7 +82,7 @@ public enum NSFPathUtil {
 		if(host == null || host.isEmpty()) {
 			return nsfPath;
 		} else {
-			return host + "!!" + nsfPath;
+			return host + "!!" + nsfPath; //$NON-NLS-1$
 		}
 	}
 	
@@ -104,7 +107,7 @@ public enum NSFPathUtil {
 			throw new IllegalArgumentException("URI path info cannot be empty");
 		}
 		
-		int nsfIndex = pathInfo.toLowerCase().indexOf(".nsf");
+		int nsfIndex = pathInfo.toLowerCase().indexOf(".nsf"); //$NON-NLS-1$
 		if(nsfIndex < 2) {
 			throw new IllegalArgumentException("Unable to extract NSF path from " + uri);
 		}
@@ -126,13 +129,13 @@ public enum NSFPathUtil {
 			throw new IllegalArgumentException("apiPath cannot be empty");
 		}
 		
-		int bangIndex = apiPath.indexOf("!!");
+		int bangIndex = apiPath.indexOf("!!"); //$NON-NLS-1$
 		if(bangIndex < 0) {
-			return new URI(NSFFileSystemProvider.SCHEME, userName, LOCAL_SERVER, -1, "/" + apiPath.replace('\\', '/'), null, null);
+			return new URI(NSFFileSystemProvider.SCHEME, userName, LOCAL_SERVER, -1, "/" + apiPath.replace('\\', '/'), null, null); //$NON-NLS-1$
 		} else {
 			String server = apiPath.substring(0, bangIndex);
 			String filePath = apiPath.substring(bangIndex+2);
-			return new URI(NSFFileSystemProvider.SCHEME, userName, server.replace("/", NAME_DELIM), -1, "/" + filePath.replace('\\', '/'), null, null);
+			return new URI(NSFFileSystemProvider.SCHEME, userName, server.replace("/", NAME_DELIM), -1, "/" + filePath.replace('\\', '/'), null, null); //$NON-NLS-1$
 		}
 	}
 	
@@ -151,7 +154,7 @@ public enum NSFPathUtil {
 			throw new IllegalArgumentException("apiPath cannot be empty");
 		}
 		
-		int bangIndex = apiPath.indexOf("!!");
+		int bangIndex = apiPath.indexOf("!!"); //$NON-NLS-1$
 		String host;
 		String nsfPath;
 		if(bangIndex < 0) {
@@ -159,11 +162,11 @@ public enum NSFPathUtil {
 			nsfPath = apiPath.replace('\\', '/');
 			
 		} else {
-			host = apiPath.substring(0, bangIndex).replace("/", NAME_DELIM);
+			host = apiPath.substring(0, bangIndex).replace("/", NAME_DELIM); //$NON-NLS-1$
 			nsfPath = apiPath.substring(bangIndex+2);
 		}
 		
-		String pathInfo = concat("/", nsfPath);
+		String pathInfo = concat("/", nsfPath); //$NON-NLS-1$
 		if(StringUtil.isNotEmpty(pathBit)) {
 			pathInfo = concat(pathInfo, pathBit);
 		}
@@ -222,14 +225,14 @@ public enum NSFPathUtil {
 	 */
 	public static <T> T callWithDocument(NSFPath path, NotesDocumentFunction<T> func) {
 		return callWithDatabase(path, database-> {
-			View view = database.getView("Files by Path");
+			View view = database.getView(VIEW_FILESBYPATH);
 			view.setAutoUpdate(false);
 			view.refresh();
 			Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
 			if(doc == null) {
 				doc = database.createDocument();
-				doc.replaceItemValue("Parent", path.getParent().toAbsolutePath().toString());
-				doc.replaceItemValue("$$Title", path.getFileName().toString());
+				doc.replaceItemValue(ITEM_PARENT, path.getParent().toAbsolutePath().toString());
+				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, path.getFileName().toString());
 			}
 			return func.apply(doc);
 		});
@@ -244,14 +247,14 @@ public enum NSFPathUtil {
 	 */
 	public static void runWithDocument(NSFPath path, NotesDocumentConsumer consumer) {
 		runWithDatabase(path, database-> {
-			View view = database.getView("Files by Path");
+			View view = database.getView(VIEW_FILESBYPATH);
 			view.setAutoUpdate(false);
 			view.refresh();
 			Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
 			if(doc == null) {
 				doc = database.createDocument();
-				doc.replaceItemValue("Parent", path.getParent().toAbsolutePath().toString());
-				doc.replaceItemValue("$$Title", path.getFileName().toString());
+				doc.replaceItemValue(ITEM_PARENT, path.getParent().toAbsolutePath().toString());
+				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, path.getFileName().toString());
 			}
 			consumer.accept(doc);
 		});
@@ -299,14 +302,14 @@ public enum NSFPathUtil {
 	 * @throws NotesException 
 	 */
 	public static Document getDocument(NSFPath path, Database database) throws NotesException {
-		View view = database.getView("Files by Path");
+		View view = database.getView(VIEW_FILESBYPATH);
 		view.setAutoUpdate(false);
 		view.refresh();
 		Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
 		if(doc == null) {
 			doc = database.createDocument();
-			doc.replaceItemValue("Parent", path.getParent().toAbsolutePath().toString());
-			doc.replaceItemValue("$$Title", path.getFileName().toString());
+			doc.replaceItemValue(ITEM_PARENT, path.getParent().toAbsolutePath().toString());
+			doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, path.getFileName().toString());
 		}
 		return doc;
 	}
@@ -322,15 +325,15 @@ public enum NSFPathUtil {
 	private static Database getDatabase(Session session, NSFFileSystem fileSystem) throws NotesException {
 		String nsfPath = fileSystem.getNsfPath();
 		
-		int bangIndex = nsfPath.indexOf("!!");
+		int bangIndex = nsfPath.indexOf("!!"); //$NON-NLS-1$
 		if(bangIndex < 0) {
-			return session.getDatabase("", nsfPath);
+			return session.getDatabase("", nsfPath); //$NON-NLS-1$
 		} else {
 			return session.getDatabase(nsfPath.substring(0, bangIndex), nsfPath.substring(bangIndex+2));
 		}
 	}
 
 	public static String shortCn(String name) {
-		return NotesThreadFactory.call(session -> session.createName(name).getCommon().replaceAll("\\s+", ""));
+		return NotesThreadFactory.call(session -> session.createName(name).getCommon().replaceAll("\\s+", "")); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 }
