@@ -27,7 +27,7 @@ import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
-import org.openntf.nsffile.util.NSFPathUtil;
+import org.openntf.nsffile.fs.util.NSFPathUtil;
 
 /**
  * @author Jesse Gallagher

@@ -45,24 +45,18 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.openntf.nsffile.fs.attribute.NSFPosixFileAttributeView;
 import org.openntf.nsffile.fs.attribute.NonePosixFileAttributeView;
-import org.openntf.nsffile.util.NSFPathUtil;
+import org.openntf.nsffile.fs.util.NSFPathUtil;
 import org.openntf.nsffile.util.NotesThreadFactory;
-import org.openntf.nsffile.util.SudoUtils;
 
 import com.ibm.commons.util.StringUtil;
 
-import lotus.domino.Database;
 import lotus.domino.Document;
-import lotus.domino.NotesException;
-import lotus.domino.NotesFactory;
-import lotus.domino.Session;
 import lotus.domino.View;
 import lotus.domino.ViewEntry;
 
@@ -149,7 +143,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	@Override
 	public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
 			throws IOException {
-		return new NSFFileChannel(this, (NSFPath)path, options, attrs);
+		return new NSFFileChannel((NSFPath)path, options, attrs);
 	}
 
 	@Override
@@ -160,15 +154,13 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	@Override
 	public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
 		try {
-			NotesThreadFactory.executor.submit(() -> {
-				Document doc = getDocument((NSFPath)dir);
+			NSFPathUtil.runWithDocument((NSFPath)dir, doc -> {
 				if(doc.isNewNote()) {
 					doc.replaceItemValue("Form", "Folder");
 					doc.save();
 				}
-				return null;
-			}).get();
-		} catch (InterruptedException | ExecutionException e) {
+			});
+		} catch (RuntimeException e) {
 			throw new IOException(e);
 		}
 	}
@@ -176,17 +168,15 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	@Override
 	public void delete(Path path) throws IOException {
 		try {
-			NotesThreadFactory.executor.submit(() -> {
-				Document doc = getDocument((NSFPath)path);
+			NSFPathUtil.runWithDocument((NSFPath)path, doc -> {
 				if(!doc.isNewNote()) {
 					if(doc.getParentDatabase().isDocumentLockingEnabled()) {
 						doc.lock();
 					}
 					doc.remove(false);
 				}
-				return null;
-			}).get();
-		} catch (InterruptedException | ExecutionException e) {
+			});
+		} catch (RuntimeException e) {
 			e.printStackTrace();
 			throw new IOException(e);
 		}
@@ -195,8 +185,8 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	@Override
 	public void copy(Path source, Path target, CopyOption... options) throws IOException {
 		try {
-			NotesThreadFactory.executor.submit(() -> {
-				Document targetDoc = getDocument((NSFPath)target);
+			NSFPathUtil.runWithDatabase((NSFPath)source, database -> {
+				Document targetDoc = NSFPathUtil.getDocument((NSFPath)target, database);
 				if(!targetDoc.isNewNote()) {
 					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
 						targetDoc.lock();
@@ -204,14 +194,13 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 					targetDoc.remove(false);
 				}
 				
-				Document doc = getDocument((NSFPath)source);
-				doc = doc.copyToDatabase(doc.getParentDatabase());
+				Document doc = NSFPathUtil.getDocument((NSFPath)source, database);
+				doc = doc.copyToDatabase(database);
 				doc.replaceItemValue("Parent", target.getParent().toAbsolutePath().toString());
 				doc.replaceItemValue("$$Title", target.getFileName().toString());
 				doc.save();
-				return null;
-			}).get();
-		} catch (InterruptedException | ExecutionException e) {
+			});
+		} catch (RuntimeException e) {
 			e.printStackTrace();
 			throw new IOException(e);
 		}
@@ -220,8 +209,8 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	@Override
 	public void move(Path source, Path target, CopyOption... options) throws IOException {
 		try {
-			NotesThreadFactory.executor.submit(() -> {
-				Document targetDoc = getDocument((NSFPath)target);
+			NSFPathUtil.runWithDatabase((NSFPath)source, database -> {
+				Document targetDoc = NSFPathUtil.getDocument((NSFPath)target, database);
 				if(!targetDoc.isNewNote()) {
 					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
 						targetDoc.lock();
@@ -229,13 +218,12 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 					targetDoc.remove(false);
 				}
 				
-				Document doc = getDocument((NSFPath)source);
+				Document doc = NSFPathUtil.getDocument((NSFPath)source, database);
 				doc.replaceItemValue("Parent", target.getParent().toAbsolutePath().toString());
 				doc.replaceItemValue("$$Title", target.getFileName().toString());
 				doc.save();
-				return null;
-			}).get();
-		} catch (InterruptedException | ExecutionException e) {
+			});
+		} catch (RuntimeException e) {
 			e.printStackTrace();
 			throw new IOException(e);
 		}
@@ -429,92 +417,21 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	// *******************************************************************************
 	// * Internal utility methods
 	// *******************************************************************************
-
-	public Database getDatabase(NSFFileSystem fileSystem) {
-		try {
-			String userName = fileSystem.getUserName();
-			String nsfPath = fileSystem.getNsfPath();
-			
-			Session session = SudoUtils.getSessionAs(dn(userName), null);
-			
-			int bangIndex = nsfPath.indexOf("!!");
-			if(bangIndex < 0) {
-				return session.getDatabase("", nsfPath);
-			} else {
-				return session.getDatabase(nsfPath.substring(0, bangIndex), nsfPath.substring(bangIndex+2));
-			}
-		} catch(NotesException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
-		}
-	}
-	
-	public Document getDocument(NSFPath path) {
-		try {
-			Database database = getDatabase(path.getFileSystem());
-			View view = database.getView("Files by Path");
-			view.setAutoUpdate(false);
-			view.refresh();
-			Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
-			if(doc == null) {
-				doc = database.createDocument();
-				doc.replaceItemValue("Parent", path.getParent().toAbsolutePath().toString());
-				doc.replaceItemValue("$$Title", path.getFileName().toString());
-			}
-			return doc;
-		} catch(NotesException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
-		}
-	}
 	
 	public boolean exists(NSFPath path) {
 		if("/".equals(path.toString())) {
 			return true;
 		}
-		try {
-			return NotesThreadFactory.executor.submit(() -> {
-				Database database = getDatabase(path.getFileSystem());
-				View view = database.getView("Files by Path");
-				view.setAutoUpdate(false);
-				view.refresh();
-				ViewEntry entry = view.getEntryByKey(path.toAbsolutePath().toString(), true);
-				return entry != null;
-			}).get();
-		} catch (InterruptedException | ExecutionException e) {
-			throw new RuntimeException(e);
-		}
-	}
-	
-	private String dn(String name) {
-		try {
-			return NotesThreadFactory.executor.submit(() -> {
-				Session s = NotesFactory.createSession();
-				try {
-					return s.createName(name).getCanonical();
-				} finally {
-					s.recycle();
-				}
-			}).get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
-		}
+		return NSFPathUtil.callWithDatabase(path, database -> {
+			View view = database.getView("Files by Path");
+			view.setAutoUpdate(false);
+			view.refresh();
+			ViewEntry entry = view.getEntryByKey(path.toAbsolutePath().toString(), true);
+			return entry != null;
+		});
 	}
 
-	public String shortCn(String name) {
-		try {
-			return NotesThreadFactory.executor.submit(() -> {
-				Session s = NotesFactory.createSession();
-				try {
-					return s.createName(name).getCommon().replaceAll("\\s+", "");
-				} finally {
-					s.recycle();
-				}
-			}).get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
-		}
+	public static String shortCn(String name) {
+		return NotesThreadFactory.call(session -> session.createName(name).getCommon().replaceAll("\\s+", ""));
 	}
 }

@@ -24,6 +24,10 @@ import com.ibm.domino.napi.c.xsp.XSPNative;
 
 import lotus.domino.Session;
 
+/**
+ * @author Jesse Gallagher
+ * @since 1.0.0
+ */
 public class SudoUtils {
 
 	/**
@@ -33,6 +37,7 @@ public class SudoUtils {
 	 *            a collection to hold the allocated Domino handle, for later
 	 *            discarding
 	 * @return the created session
+	 * @author Tim Tripcony
 	 */
 	public static Session getSessionAs(final String userName, final Collection<Long> handleTracker) {
 		Session result = null;

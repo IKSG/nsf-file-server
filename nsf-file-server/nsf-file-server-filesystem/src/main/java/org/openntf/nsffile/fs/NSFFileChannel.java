@@ -30,11 +30,9 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileAttribute;
 import java.time.Instant;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
-import org.openntf.nsffile.util.NotesThreadFactory;
+import org.openntf.nsffile.fs.util.NSFPathUtil;
 
-import lotus.domino.Document;
 import lotus.domino.EmbeddedObject;
 import lotus.domino.RichTextItem;
 
@@ -45,7 +43,6 @@ import lotus.domino.RichTextItem;
  */
 public class NSFFileChannel extends FileChannel {
 	
-	private final NSFFileSystemProvider provider;
 	private final NSFPath path;
 	private final Path tempFile;
 	private final Instant tempFileCreated;
@@ -53,14 +50,12 @@ public class NSFFileChannel extends FileChannel {
 	private boolean modified;
 	private Set<? extends OpenOption> options;
 	
-	public NSFFileChannel(NSFFileSystemProvider provider, NSFPath path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) {
-		this.provider = provider;
+	public NSFFileChannel(NSFPath path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) {
 		this.path = path;
 		this.options = options;
 		
 		try {
-			this.tempFile = NotesThreadFactory.executor.submit(() -> {
-				Document doc = provider.getDocument(path);
+			this.tempFile = NSFPathUtil.callWithDocument(path, doc -> {
 				Path resultParent = Files.createTempDirectory(path.getFileName().toString());
 				Path result = resultParent.resolve(path.getFileName().toString());
 				if(doc.hasItem("File")) {
@@ -75,9 +70,9 @@ public class NSFFileChannel extends FileChannel {
 				}
 				
 				return result;
-			}).get();
+			});
 			this.tempFileCreated = Files.getLastModifiedTime(this.tempFile).toInstant();
-		} catch (InterruptedException | ExecutionException | IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
@@ -182,8 +177,7 @@ public class NSFFileChannel extends FileChannel {
 		if(this.modified || Files.getLastModifiedTime(this.tempFile).toInstant().isAfter(this.tempFileCreated)) {
 			// Write back to the DB
 			try {
-				NotesThreadFactory.executor.submit(() -> {
-					Document doc = provider.getDocument(this.path);
+				NSFPathUtil.runWithDocument(this.path, doc -> {
 					if(doc.isNewNote()) {
 						doc.replaceItemValue("Form", "File");
 					}
@@ -194,10 +188,8 @@ public class NSFFileChannel extends FileChannel {
 					item.embedObject(EmbeddedObject.EMBED_ATTACHMENT, "", this.tempFile.toAbsolutePath().toString(), null);
 					
 					doc.save();
-					
-					return null;
-				}).get();
-			} catch (InterruptedException | ExecutionException e) {
+				});
+			} catch (RuntimeException e) {
 				throw new IOException(e);
 			}
 		}

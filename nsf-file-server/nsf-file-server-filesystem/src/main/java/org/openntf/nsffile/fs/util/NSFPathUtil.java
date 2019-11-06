@@ -13,16 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.util;
+package org.openntf.nsffile.fs.util;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
+import org.openntf.nsffile.fs.NSFFileSystem;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
+import org.openntf.nsffile.fs.NSFPath;
+import org.openntf.nsffile.util.NotesThreadFactory;
 
 import com.ibm.commons.util.PathUtil;
 import com.ibm.commons.util.StringUtil;
+
+import lotus.domino.Database;
+import lotus.domino.Document;
+import lotus.domino.NotesException;
+import lotus.domino.Session;
+import lotus.domino.View;
 
 /**
  * 
@@ -180,5 +189,144 @@ public enum NSFPathUtil {
 
 	public static String concat(final String... parts) {
 		return concat('/', parts);
+	}
+	
+	@FunctionalInterface
+	public static interface NotesDocumentFunction<T> {
+		T apply(Document doc) throws Exception;
+	}
+	
+	@FunctionalInterface
+	public static interface NotesDocumentConsumer {
+		void accept(Document doc) throws Exception;
+	}
+	
+	@FunctionalInterface
+	public static interface NotesDatabaseFunction<T> {
+		T apply(Database doc) throws Exception;
+	}
+	
+	@FunctionalInterface
+	public static interface NotesDatabaseConsumer {
+		void accept(Database doc) throws Exception;
+	}
+	
+	/**
+	 * Executes the provided function with a document for the provided path.
+	 * 
+	 * @param <T> the type returned by {@code func}
+	 * @param path the context {@link NSFPath}
+	 * @param func the function to call
+	 * @return the return value of {@code func}
+	 * @throws RuntimeException wrapping any exception thrown by the main body
+	 */
+	public static <T> T callWithDocument(NSFPath path, NotesDocumentFunction<T> func) {
+		return callWithDatabase(path, database-> {
+			View view = database.getView("Files by Path");
+			view.setAutoUpdate(false);
+			view.refresh();
+			Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
+			if(doc == null) {
+				doc = database.createDocument();
+				doc.replaceItemValue("Parent", path.getParent().toAbsolutePath().toString());
+				doc.replaceItemValue("$$Title", path.getFileName().toString());
+			}
+			return func.apply(doc);
+		});
+	}
+	
+	/**
+	 * Executes the provided function with a document for the provided path.
+	 * 
+	 * @param path the context {@link NSFPath}
+	 * @param consumer the consumer to call
+	 * @throws RuntimeException wrapping any exception thrown by the main body
+	 */
+	public static void runWithDocument(NSFPath path, NotesDocumentConsumer consumer) {
+		runWithDatabase(path, database-> {
+			View view = database.getView("Files by Path");
+			view.setAutoUpdate(false);
+			view.refresh();
+			Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
+			if(doc == null) {
+				doc = database.createDocument();
+				doc.replaceItemValue("Parent", path.getParent().toAbsolutePath().toString());
+				doc.replaceItemValue("$$Title", path.getFileName().toString());
+			}
+			consumer.accept(doc);
+		});
+	}
+
+	/**
+	 * Executes the provided function with the database for the provided path.
+	 * 
+	 * @param <T> the type returned by {@code func}
+	 * @param path the context {@link NSFPath}
+	 * @param func the function to call
+	 * @return the return value of {@code func}
+	 * @throws RuntimeException wrapping any exception thrown by the main body
+	 */
+	public static <T> T callWithDatabase(NSFPath path, NotesDatabaseFunction<T> func) {
+		return NotesThreadFactory.callAs(dn(path.getFileSystem().getUserName()), session -> {
+			Database database = getDatabase(session, path.getFileSystem());
+			return func.apply(database);
+		});
+	}
+
+	/**
+	 * Executes the provided function with the database for the provided path.
+	 * 
+	 * @param <T> the type returned by {@code func}
+	 * @param path the context {@link NSFPath}
+	 * @param func the function to call
+	 * @return the return value of {@code func}
+	 * @throws RuntimeException wrapping any exception thrown by the main body
+	 */
+	public static void runWithDatabase(NSFPath path, NotesDatabaseConsumer consumer) {
+		NotesThreadFactory.runAs(dn(path.getFileSystem().getUserName()), session -> {
+			Database database = getDatabase(session, path.getFileSystem());
+			consumer.accept(database);
+		});
+	}
+	
+	/**
+	 * Retrieves the document for the provided path, creating a new in-memory document
+	 * if needed.
+	 * 
+	 * @param path the path to find the document for
+	 * @param database the database housing the document
+	 * @return a document representing the note
+	 * @throws NotesException 
+	 */
+	public static Document getDocument(NSFPath path, Database database) throws NotesException {
+		View view = database.getView("Files by Path");
+		view.setAutoUpdate(false);
+		view.refresh();
+		Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
+		if(doc == null) {
+			doc = database.createDocument();
+			doc.replaceItemValue("Parent", path.getParent().toAbsolutePath().toString());
+			doc.replaceItemValue("$$Title", path.getFileName().toString());
+		}
+		return doc;
+	}
+	
+	// *******************************************************************************
+	// * Internal utilities
+	// *******************************************************************************
+	
+	private static String dn(String name) {
+		return NotesThreadFactory.call(session -> session.createName(name).getCanonical());
+	}
+	
+	private static Database getDatabase(Session session, NSFFileSystem fileSystem) throws NotesException {
+		String nsfPath = fileSystem.getNsfPath();
+		
+		int bangIndex = nsfPath.indexOf("!!");
+		if(bangIndex < 0) {
+			return session.getDatabase("", nsfPath);
+		} else {
+			return session.getDatabase(nsfPath.substring(0, bangIndex), nsfPath.substring(bangIndex+2));
+		}
 	}
 }

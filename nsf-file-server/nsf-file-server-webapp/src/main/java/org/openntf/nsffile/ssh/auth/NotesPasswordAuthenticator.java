@@ -25,7 +25,6 @@ import com.ibm.commons.util.StringUtil;
 
 import lombok.SneakyThrows;
 import lotus.domino.NotesException;
-import lotus.domino.NotesFactory;
 import lotus.domino.Session;
 
 /**
@@ -38,27 +37,19 @@ public class NotesPasswordAuthenticator extends AbstractNotesAuthenticator imple
 	@SneakyThrows
 	public boolean authenticate(String username, String password, ServerSession sshSession)
 			throws PasswordChangeRequiredException, AsyncAuthException {
-		return NotesThreadFactory.executor.submit(() -> {
-			try {
-				Session session = NotesFactory.createSession();
-				try {
-					String hashPassword = getHashPasswordForUser(session, username);
-					if(StringUtil.isEmpty(hashPassword)) {
-						return false;
-					} else {
-						String verifyFormula = StringUtil.format(" @VerifyPassword(\"{0}\"; \"{1}\") ", escapeForFormulaString(password), hashPassword); //$NON-NLS-1$
-						Object result = session.evaluate(verifyFormula).get(0);
-						if(Double.valueOf(1).equals(result)) {
-							return true;
-						}
-					}
-				} finally {
-					session.recycle();
+		return NotesThreadFactory.call(session -> {
+			String hashPassword = getHashPasswordForUser(session, username);
+			if(StringUtil.isEmpty(hashPassword)) {
+				return false;
+			} else {
+				String verifyFormula = StringUtil.format(" @VerifyPassword(\"{0}\"; \"{1}\") ", escapeForFormulaString(password), hashPassword); //$NON-NLS-1$
+				Object result = session.evaluate(verifyFormula).get(0);
+				if(Double.valueOf(1).equals(result)) {
+					return true;
 				}
-			} catch(NotesException e) {
 			}
 			return false;
-		}).get();
+		});
 	}
 	
 	/**

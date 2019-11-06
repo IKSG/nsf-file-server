@@ -25,8 +25,6 @@ import org.openntf.nsffile.util.NotesThreadFactory;
 import com.ibm.domino.napi.c.C;
 
 import lombok.SneakyThrows;
-import lotus.domino.NotesFactory;
-import lotus.domino.Session;
 import lotus.notes.NotesThread;
 
 /**
@@ -41,14 +39,7 @@ public class NotesEnvironmentListener implements ServletContextListener {
 	@SneakyThrows
 	public void contextInitialized(ServletContextEvent sce) {
 		NotesThread.sinitThread();
-		String path = NotesThreadFactory.executor.submit(() -> {
-			Session s = NotesFactory.createSession();
-			try {
-				return s.getEnvironmentString("NotesProgram", true);
-			} finally {
-				s.recycle();
-			}
-		}).get();
+		String path = NotesThreadFactory.call(session -> session.getEnvironmentString("NotesProgram", true));
 		System.setProperty("java.library.path", path);
 		C.initLibrary(null);
 	}

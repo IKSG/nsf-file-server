@@ -23,9 +23,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.openntf.nsffile.util.NotesThreadFactory;
+import org.openntf.nsffile.fs.util.NSFPathUtil;
 
-import lotus.domino.Database;
 import lotus.domino.View;
 import lotus.domino.ViewEntry;
 import lotus.domino.ViewNavigator;
@@ -37,9 +36,8 @@ public class NSFDirectoryStream implements DirectoryStream<Path> {
 	@SuppressWarnings("unchecked")
 	public NSFDirectoryStream(NSFFileSystemProvider provider, NSFPath dir) {
 		try {
-			this.paths = NotesThreadFactory.executor.submit(() -> {
+			this.paths = NSFPathUtil.callWithDatabase(dir, database -> {
 				try {
-					Database database = provider.getDatabase(dir.getFileSystem());
 					View filesByParent = database.getView("Files By Parent");
 					filesByParent.setAutoUpdate(false);
 					filesByParent.refresh();
@@ -64,7 +62,7 @@ public class NSFDirectoryStream implements DirectoryStream<Path> {
 					t.printStackTrace();
 					return Collections.EMPTY_LIST;
 				}
-			}).get();
+			});
 		} catch(Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

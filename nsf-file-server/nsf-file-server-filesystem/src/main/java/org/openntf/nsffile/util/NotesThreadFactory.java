@@ -15,17 +15,146 @@
  */
 package org.openntf.nsffile.util;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 
-import lotus.domino.NotesThread;
+import com.ibm.domino.napi.c.Os;
 
+import lotus.domino.NotesFactory;
+import lotus.domino.NotesThread;
+import lotus.domino.Session;
+
+/**
+ * @author Jesse Gallagher
+ * @since 1.0.0
+ */
 public class NotesThreadFactory implements ThreadFactory {
 	public static final NotesThreadFactory instance = new NotesThreadFactory();
 	public static final ExecutorService executor = Executors.newCachedThreadPool(instance);
 	public static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5, instance);
+	
+	@FunctionalInterface
+	public static interface NotesFunction<T> {
+		T apply(Session session) throws Exception;
+	}
+	
+	@FunctionalInterface
+	public static interface NotesConsumer {
+		void accept(Session session) throws Exception;
+	}
+	
+	/**
+	 * Evaluates the provided function in a separate {@link NotesThread} with
+	 * a {@link Session} for the active Notes ID.
+	 * 
+	 * @param <T> the type of object returned by {@code func}
+	 * @param func the function to call
+	 * @return the return value of {@code func}
+	 * @throws RuntimeException wrapping any exception thrown by the main body
+	 */
+	public static <T> T call(NotesFunction<T> func) {
+		try {
+			return NotesThreadFactory.executor.submit(() -> {
+				Session session = NotesFactory.createSession();
+				try {
+					return func.apply(session);
+				} finally {
+					session.recycle();
+				}
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	/**
+	 * Evaluates the provided consumer in a separate {@link NotesThread} with
+	 * a {@link Session} for the active Notes ID.
+	 * 
+	 * @param func the consumer to call
+	 * @throws RuntimeException wrapping any exception thrown by the main body
+	 */
+	public static void run(NotesConsumer func) {
+		try {
+			NotesThreadFactory.executor.submit(() -> {
+				Session session = NotesFactory.createSession();
+				try {
+					func.accept(session);
+				} finally {
+					session.recycle();
+				}
+				return null;
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	/**
+	 * Evaluates the provided function in a separate {@link NotesThread} with
+	 * a {@link Session} for the provided Notes user name.
+	 * 
+	 * @param <T> the type of object returned by {@code func}
+	 * @param userName the user to run the provided function as
+	 * @param func the function to call
+	 * @return the return value of {@code func}
+	 * @throws RuntimeException wrapping any exception thrown by the main body
+	 */
+	public static <T> T callAs(String userName, NotesFunction<T> func) {
+		try {
+			return NotesThreadFactory.executor.submit(() -> {
+				Set<Long> handles = new HashSet<>();
+				
+				Session session = SudoUtils.getSessionAs(userName, handles);
+				try {
+					return func.apply(session);
+				} finally {
+					session.recycle();
+					
+					long hName = handles.iterator().next();
+					Os.OSUnlock(hName);
+					Os.OSMemFree(hName);
+				}
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	/**
+	 * Evaluates the provided consumer in a separate {@link NotesThread} with
+	 * a {@link Session} for the provided Notes user name.
+	 * 
+	 * @param userName the user to run the provided function as
+	 * @param func the consumer to call
+	 * @throws RuntimeException wrapping any exception thrown by the main body
+	 */
+	public static void runAs(String userName, NotesConsumer func) {
+		try {
+			NotesThreadFactory.executor.submit(() -> {
+				Set<Long> handles = new HashSet<>();
+				
+				Session session = SudoUtils.getSessionAs(userName, handles);
+				try {
+					func.accept(session);
+				} finally {
+					session.recycle();
+					
+					long hName = handles.iterator().next();
+					Os.OSUnlock(hName);
+					Os.OSMemFree(hName);
+				}
+				return null;
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Override
 	public Thread newThread(Runnable r) {

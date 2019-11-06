@@ -28,7 +28,7 @@ import java.util.Set;
 import org.apache.sshd.common.scp.ScpTimestamp;
 import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
-import org.openntf.nsffile.util.NSFPathUtil;
+import org.openntf.nsffile.fs.util.NSFPathUtil;
 
 import com.ibm.commons.util.StringUtil;
 

@@ -30,12 +30,11 @@ import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
 import org.apache.sshd.server.subsystem.sftp.DefaultUserPrincipal;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
 import org.openntf.nsffile.fs.NSFPath;
-import org.openntf.nsffile.util.NotesThreadFactory;
+import org.openntf.nsffile.fs.util.NSFPathUtil;
 
 import com.ibm.commons.util.StringUtil;
 
 import lotus.domino.DateTime;
-import lotus.domino.Document;
 import lotus.domino.EmbeddedObject;
 import lotus.domino.RichTextItem;
 
@@ -59,16 +58,15 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 	
 	public NSFFileAttributes(NSFFileSystemProvider provider, NSFPath path) {
 		try {
-			NotesThreadFactory.executor.submit(() -> {
+			NSFPathUtil.runWithDocument(path, doc -> {
 				try {
-					Document doc = provider.getDocument(path);
 					if(!doc.isNewNote()) {
 						@SuppressWarnings("unchecked")
 						List<String> updatedBy = doc.getItemValue("$UpdatedBy");
 						if(doc.hasItem("$UpdatedBy")) {
-							owner = provider.shortCn(updatedBy.get(0));
+							owner = NSFFileSystemProvider.shortCn(updatedBy.get(0));
 						} else {
-							owner = provider.shortCn(doc.getParentDatabase().getParent().getEffectiveUserName());
+							owner = NSFFileSystemProvider.shortCn(doc.getParentDatabase().getParent().getEffectiveUserName());
 						}
 						group = "wheel"; // TODO implement
 						String form = doc.getItemValueString("Form");
@@ -108,12 +106,10 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 						created = FileTime.from(Instant.EPOCH);
 					}
 				} catch(Throwable t) {
-					t.printStackTrace(System.out);
+					t.printStackTrace();
 					throw t;
 				}
-				
-				return null;
-			}).get();
+			});
 		} catch(Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

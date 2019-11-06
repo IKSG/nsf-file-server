@@ -37,8 +37,6 @@ import org.openntf.nsffile.ssh.scp.NSFScpFileOpener;
 import org.openntf.nsffile.util.NotesThreadFactory;
 
 import lombok.SneakyThrows;
-import lotus.domino.NotesFactory;
-import lotus.domino.Session;
 
 /**
  * Manages the lifecycle of the SCP/SFTP server.
@@ -69,14 +67,7 @@ public class SshListener implements ServletContextListener {
 			log.info(getClass().getSimpleName() + " init");
 		}
 		
-		String dataDir = NotesThreadFactory.executor.submit(() -> {
-			Session session = NotesFactory.createSession();
-			try {
-				return session.getEnvironmentString("Directory", true);
-			} finally {
-				session.recycle();
-			}
-		}).get();
+		String dataDir = NotesThreadFactory.call(session -> session.getEnvironmentString("Directory", true));
 		Path keyPath = Paths.get(dataDir, getClass().getPackage().getName() + ".keys");
 
 		String nsfPath = config.getNsfPath();

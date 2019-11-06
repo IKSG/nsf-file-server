@@ -23,7 +23,7 @@ import java.net.URISyntaxException;
 
 import org.junit.jupiter.api.Test;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
-import org.openntf.nsffile.util.NSFPathUtil;
+import org.openntf.nsffile.fs.util.NSFPathUtil;
 
 public class TestNSFPathUtil {
 	@Test
