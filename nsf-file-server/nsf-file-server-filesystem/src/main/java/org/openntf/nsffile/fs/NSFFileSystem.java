@@ -21,6 +21,7 @@ import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.client.subsystem.sftp.fs.SftpFileSystem.DefaultUserPrincipalLookupService;
@@ -68,6 +69,20 @@ public class NSFFileSystem extends BaseFileSystem<NSFPath> {
 	@Override
 	public Iterable<FileStore> getFileStores() {
 		return fileStores;
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(userName, nsfPath);
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(!(obj instanceof NSFFileSystem)) {
+			return false;
+		}
+		NSFFileSystem o = (NSFFileSystem)obj;
+		return userName.equals(o.userName) && nsfPath.equals(o.nsfPath);
 	}
 	
 	// *******************************************************************************

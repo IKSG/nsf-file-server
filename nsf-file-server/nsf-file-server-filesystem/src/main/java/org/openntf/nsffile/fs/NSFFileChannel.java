@@ -65,9 +65,15 @@ public class NSFFileChannel extends FileChannel {
 				if(doc.hasItem(ITEM_FILE)) {
 					// TODO add sanity checks
 					RichTextItem rtitem = (RichTextItem)doc.getFirstItem(ITEM_FILE);
-					EmbeddedObject eo = (EmbeddedObject) rtitem.getEmbeddedObjects().get(0);
-					try(InputStream is = eo.getInputStream()) {
-						Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
+					try {
+						EmbeddedObject eo = (EmbeddedObject) rtitem.getEmbeddedObjects().get(0);
+						try(InputStream is = eo.getInputStream()) {
+							Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
+						} finally {
+							eo.recycle();
+						}
+					} finally {
+						rtitem.recycle();
 					}
 				} else {
 					Files.createFile(result);
@@ -189,8 +195,11 @@ public class NSFFileChannel extends FileChannel {
 						doc.removeItem(ITEM_FILE);
 					}
 					RichTextItem item = doc.createRichTextItem(ITEM_FILE);
-					item.embedObject(EmbeddedObject.EMBED_ATTACHMENT, "", this.tempFile.toAbsolutePath().toString(), null); //$NON-NLS-1$
-
+					try {
+						item.embedObject(EmbeddedObject.EMBED_ATTACHMENT, "", this.tempFile.toAbsolutePath().toString(), null); //$NON-NLS-1$
+					} finally {
+						item.recycle();
+					}
 					doc.computeWithForm(false, false);
 					doc.save();
 				});

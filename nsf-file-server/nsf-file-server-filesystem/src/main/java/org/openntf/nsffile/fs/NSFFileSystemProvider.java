@@ -196,14 +196,23 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 						targetDoc.lock();
 					}
 					targetDoc.remove(false);
+					targetDoc.recycle();
 				}
 				
 				Document doc = NSFPathUtil.getDocument((NSFPath)source, database);
-				doc = doc.copyToDatabase(database);
-				doc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
-				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
-				doc.computeWithForm(false, false);
-				doc.save();
+				try {
+					targetDoc = doc.copyToDatabase(database);
+					try {
+						targetDoc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
+						targetDoc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
+						targetDoc.computeWithForm(false, false);
+						targetDoc.save();
+					} finally {
+						targetDoc.recycle();
+					}
+				} finally {
+					doc.recycle();
+				}
 			});
 		} catch (RuntimeException e) {
 			e.printStackTrace();
@@ -221,13 +230,18 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 						targetDoc.lock();
 					}
 					targetDoc.remove(false);
+					targetDoc.recycle();
 				}
 				
 				Document doc = NSFPathUtil.getDocument((NSFPath)source, database);
-				doc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
-				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
-				doc.computeWithForm(false, false);
-				doc.save();
+				try {
+					doc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
+					doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
+					doc.computeWithForm(false, false);
+					doc.save();
+				} finally {
+					doc.recycle();
+				}
 			});
 		} catch (RuntimeException e) {
 			e.printStackTrace();
@@ -435,10 +449,22 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		}
 		return NSFPathUtil.callWithDatabase(path, database -> {
 			View view = database.getView(VIEW_FILESBYPATH);
-			view.setAutoUpdate(false);
-			view.refresh();
-			ViewEntry entry = view.getEntryByKey(path.toAbsolutePath().toString(), true);
-			return entry != null;
+			try {
+				view.setAutoUpdate(false);
+				view.refresh();
+				ViewEntry entry = view.getEntryByKey(path.toAbsolutePath().toString(), true);
+				try {
+					return entry != null;
+				} finally {
+					if(entry != null) {
+						entry.recycle();
+					}
+				}
+			} finally {
+				if(view != null) {
+					view.recycle();
+				}
+			}
 		});
 	}
 }

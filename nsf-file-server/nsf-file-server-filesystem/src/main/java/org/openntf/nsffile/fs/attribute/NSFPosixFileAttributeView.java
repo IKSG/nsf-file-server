@@ -24,10 +24,18 @@ import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
+import java.util.Date;
 import java.util.Set;
 
 import org.openntf.nsffile.fs.NSFPath;
+import org.openntf.nsffile.fs.util.NSFPathUtil;
+
+import lotus.domino.DateTime;
+import lotus.domino.Session;
+
+import static org.openntf.nsffile.fs.NSFFileSystemConstants.*;
 
 /**
  * @author Jesse Gallagher
@@ -48,7 +56,19 @@ public class NSFPosixFileAttributeView implements PosixFileAttributeView, BasicF
 
 	@Override
 	public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
-		// TODO Auto-generated method stub
+		NSFPathUtil.runWithDocument(this.path, doc -> {
+			Session session = doc.getParentDatabase().getParent();
+			if(lastModifiedTime != null) {
+				DateTime mod = session.createDateTime(new Date(lastModifiedTime.toMillis()));
+				doc.replaceItemValue(ITEM_MODIFIED, mod);
+			}
+			if(createTime != null) {
+				DateTime created = session.createDateTime(new Date(createTime.toMillis()));
+				doc.replaceItemValue(ITEM_CREATED, created);
+			}
+			
+			doc.save();
+		});
 	}
 
 	@Override
@@ -58,7 +78,10 @@ public class NSFPosixFileAttributeView implements PosixFileAttributeView, BasicF
 
 	@Override
 	public void setOwner(UserPrincipal owner) throws IOException {
-		// TODO Auto-generated method stub
+		NSFPathUtil.runWithDocument(this.path, doc -> {
+			doc.replaceItemValue(ITEM_OWNER, owner.getName());
+			doc.save();
+		});
 	}
 
 	@Override
@@ -69,14 +92,18 @@ public class NSFPosixFileAttributeView implements PosixFileAttributeView, BasicF
 
 	@Override
 	public void setPermissions(Set<PosixFilePermission> perms) throws IOException {
-		// TODO Auto-generated method stub
-
+		NSFPathUtil.runWithDocument(this.path, doc -> {
+			doc.replaceItemValue(ITEM_PERMISSIONS, PosixFilePermissions.toString(perms));
+			doc.save();
+		});
 	}
 
 	@Override
 	public void setGroup(GroupPrincipal group) throws IOException {
-		// TODO Auto-generated method stub
-
+		NSFPathUtil.runWithDocument(this.path, doc -> {
+			doc.replaceItemValue(ITEM_GROUP, group.getName());
+			doc.save();
+		});
 	}
 	
 }

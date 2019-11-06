@@ -15,7 +15,9 @@
  */
 package org.openntf.nsffile.util;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -23,8 +25,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 
+import com.ibm.domino.napi.NException;
 import com.ibm.domino.napi.c.Os;
 
+import lotus.domino.NotesException;
 import lotus.domino.NotesFactory;
 import lotus.domino.NotesThread;
 import lotus.domino.Session;
@@ -48,6 +52,9 @@ public class NotesThreadFactory implements ThreadFactory {
 		void accept(Session session) throws Exception;
 	}
 	
+	private static final ThreadLocal<Map<String, Session>> THREAD_SESSION_MAP = ThreadLocal.withInitial(HashMap::new);
+	private static final ThreadLocal<Set<Long>> THREAD_HANDLES = ThreadLocal.withInitial(HashSet::new);
+	
 	/**
 	 * Evaluates the provided function in a separate {@link NotesThread} with
 	 * a {@link Session} for the active Notes ID.
@@ -60,12 +67,14 @@ public class NotesThreadFactory implements ThreadFactory {
 	public static <T> T call(NotesFunction<T> func) {
 		try {
 			return NotesThreadFactory.executor.submit(() -> {
-				Session session = NotesFactory.createSession();
-				try {
-					return func.apply(session);
-				} finally {
-					session.recycle();
-				}
+				Session session = THREAD_SESSION_MAP.get().computeIfAbsent(null, key -> {
+					try {
+						return NotesFactory.createSession();
+					} catch (NotesException e) {
+						throw new RuntimeException(e);
+					}
+				});
+				return func.apply(session);
 			}).get();
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
@@ -80,19 +89,10 @@ public class NotesThreadFactory implements ThreadFactory {
 	 * @throws RuntimeException wrapping any exception thrown by the main body
 	 */
 	public static void run(NotesConsumer func) {
-		try {
-			NotesThreadFactory.executor.submit(() -> {
-				Session session = NotesFactory.createSession();
-				try {
-					func.accept(session);
-				} finally {
-					session.recycle();
-				}
-				return null;
-			}).get();
-		} catch (InterruptedException | ExecutionException e) {
-			throw new RuntimeException(e);
-		}
+		call(session -> {
+			func.accept(session);
+			return null;
+		});
 	}
 	
 	/**
@@ -108,18 +108,10 @@ public class NotesThreadFactory implements ThreadFactory {
 	public static <T> T callAs(String userName, NotesFunction<T> func) {
 		try {
 			return NotesThreadFactory.executor.submit(() -> {
-				Set<Long> handles = new HashSet<>();
-				
-				Session session = SudoUtils.getSessionAs(userName, handles);
-				try {
-					return func.apply(session);
-				} finally {
-					session.recycle();
-					
-					long hName = handles.iterator().next();
-					Os.OSUnlock(hName);
-					Os.OSMemFree(hName);
-				}
+				Session session = THREAD_SESSION_MAP.get().computeIfAbsent(userName, key -> {
+					return SudoUtils.getSessionAs(key, THREAD_HANDLES.get());
+				});
+				return func.apply(session);
 			}).get();
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
@@ -135,30 +127,36 @@ public class NotesThreadFactory implements ThreadFactory {
 	 * @throws RuntimeException wrapping any exception thrown by the main body
 	 */
 	public static void runAs(String userName, NotesConsumer func) {
-		try {
-			NotesThreadFactory.executor.submit(() -> {
-				Set<Long> handles = new HashSet<>();
-				
-				Session session = SudoUtils.getSessionAs(userName, handles);
-				try {
-					func.accept(session);
-				} finally {
-					session.recycle();
-					
-					long hName = handles.iterator().next();
-					Os.OSUnlock(hName);
-					Os.OSMemFree(hName);
-				}
-				return null;
-			}).get();
-		} catch (InterruptedException | ExecutionException e) {
-			throw new RuntimeException(e);
-		}
+		callAs(userName, session -> {
+			func.accept(session);
+			return null;
+		});
 	}
 
 	@Override
 	public Thread newThread(Runnable r) {
-		return new NotesThread(r);
+		return new NotesThread(r) {
+			@Override
+			public void termThread() {
+				for(Session session : THREAD_SESSION_MAP.get().values()) {
+					try {
+						session.recycle();
+					} catch(NotesException e) {
+					}
+				}
+				THREAD_SESSION_MAP.get().clear();
+				for(long hName : THREAD_HANDLES.get()) {
+					try {
+						Os.OSUnlock(hName);
+						Os.OSMemFree(hName);
+					} catch (NException e) {
+					}
+				}
+				THREAD_HANDLES.get().clear();
+				
+				super.termThread();
+			}
+		};
 	}
 
 }

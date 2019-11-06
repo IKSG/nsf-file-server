@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -35,34 +34,38 @@ public class NSFDirectoryStream implements DirectoryStream<Path> {
 	
 	private final List<Path> paths;
 
-	@SuppressWarnings("unchecked")
 	public NSFDirectoryStream(NSFFileSystemProvider provider, NSFPath dir) {
 		try {
 			this.paths = NSFPathUtil.callWithDatabase(dir, database -> {
+				View filesByParent = database.getView(VIEW_FILESBYPARENT);
 				try {
-					View filesByParent = database.getView(VIEW_FILESBYPARENT);
 					filesByParent.setAutoUpdate(false);
 					filesByParent.refresh();
 					
 					String category = dir.toAbsolutePath().toString();
 					ViewNavigator nav = filesByParent.createViewNavFromCategory(category);
-					nav.setBufferMaxEntries(400);
-					List<Path> result = new ArrayList<>(nav.getCount());
-					ViewEntry entry = nav.getFirst();
-					while(entry != null) {
-						entry.setPreferJavaDates(true);
-						String name = String.valueOf(entry.getColumnValues().get(VIEW_FILESBYPARENT_INDEX_NAME));
-						result.add(dir.resolve(name));
+					try {
+						nav.setBufferMaxEntries(400);
+						List<Path> result = new ArrayList<>(nav.getCount());
+						ViewEntry entry = nav.getFirst();
+						while(entry != null) {
+							entry.setPreferJavaDates(true);
+							String name = String.valueOf(entry.getColumnValues().get(VIEW_FILESBYPARENT_INDEX_NAME));
+							result.add(dir.resolve(name));
+							
+							ViewEntry tempEntry = entry;
+							entry = nav.getNext();
+							tempEntry.recycle();
+						}
 						
-						ViewEntry tempEntry = entry;
-						entry = nav.getNext();
-						tempEntry.recycle();
+						return result;
+					} finally {
+						nav.recycle();
 					}
-					
-					return result;
-				} catch(Throwable t) {
-					t.printStackTrace();
-					return Collections.EMPTY_LIST;
+				} finally {
+					if(filesByParent != null) {
+						filesByParent.recycle();
+					}
 				}
 			});
 		} catch(Exception e) {

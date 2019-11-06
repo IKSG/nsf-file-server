@@ -48,4 +48,6 @@ public enum NSFFileSystemConstants {
 	public static final String ITEM_OWNER = "Owner"; //$NON-NLS-1$
 	/** The item used to store the file owner */
 	public static final String ITEM_GROUP = "Group"; //$NON-NLS-1$
+	/** The item used to store POSIX-format permissions */
+	public static final String ITEM_PERMISSIONS = "Permissions"; //$NON-NLS-1$
 }

@@ -17,6 +17,8 @@ package org.openntf.nsffile.fs.util;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import org.openntf.nsffile.fs.NSFFileSystem;
@@ -30,6 +32,7 @@ import com.ibm.designer.domino.napi.NotesConstants;
 
 import lotus.domino.Database;
 import lotus.domino.Document;
+import lotus.domino.Name;
 import lotus.domino.NotesException;
 import lotus.domino.Session;
 import lotus.domino.View;
@@ -256,16 +259,12 @@ public enum NSFPathUtil {
 	 */
 	public static <T> T callWithDocument(NSFPath path, NotesDocumentFunction<T> func) {
 		return callWithDatabase(path, database-> {
-			View view = database.getView(VIEW_FILESBYPATH);
-			view.setAutoUpdate(false);
-			view.refresh();
-			Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
-			if(doc == null) {
-				doc = database.createDocument();
-				doc.replaceItemValue(ITEM_PARENT, path.getParent().toAbsolutePath().toString());
-				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, path.getFileName().toString());
+			Document doc = getDocument(path, database);
+			try {
+				return func.apply(doc);
+			} finally {
+				doc.recycle();
 			}
-			return func.apply(doc);
 		});
 	}
 	
@@ -277,17 +276,13 @@ public enum NSFPathUtil {
 	 * @throws RuntimeException wrapping any exception thrown by the main body
 	 */
 	public static void runWithDocument(NSFPath path, NotesDocumentConsumer consumer) {
-		runWithDatabase(path, database-> {
-			View view = database.getView(VIEW_FILESBYPATH);
-			view.setAutoUpdate(false);
-			view.refresh();
-			Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
-			if(doc == null) {
-				doc = database.createDocument();
-				doc.replaceItemValue(ITEM_PARENT, path.getParent().toAbsolutePath().toString());
-				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, path.getFileName().toString());
+		runWithDatabase(path, database -> {
+			Document doc = getDocument(path, database);
+			try {
+				consumer.accept(doc);
+			} finally {
+				doc.recycle();
 			}
-			consumer.accept(doc);
 		});
 	}
 
@@ -306,6 +301,8 @@ public enum NSFPathUtil {
 			return func.apply(database);
 		});
 	}
+	
+	private static final ThreadLocal<Map<String, Database>> THREAD_DATABASES = ThreadLocal.withInitial(HashMap::new);
 
 	/**
 	 * Executes the provided function with the database for the provided path.
@@ -334,19 +331,32 @@ public enum NSFPathUtil {
 	 */
 	public static Document getDocument(NSFPath path, Database database) throws NotesException {
 		View view = database.getView(VIEW_FILESBYPATH);
-		view.setAutoUpdate(false);
-		view.refresh();
-		Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
-		if(doc == null) {
-			doc = database.createDocument();
-			doc.replaceItemValue(ITEM_PARENT, path.getParent().toAbsolutePath().toString());
-			doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, path.getFileName().toString());
+		try {
+			view.setAutoUpdate(false);
+			view.refresh();
+			Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
+			if(doc == null) {
+				doc = database.createDocument();
+				doc.replaceItemValue(ITEM_PARENT, path.getParent().toAbsolutePath().toString());
+				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, path.getFileName().toString());
+			}
+			return doc;
+		} finally {
+			if(view != null) {
+				view.recycle();
+			}
 		}
-		return doc;
 	}
 
 	public static String shortCn(String name) {
-		return NotesThreadFactory.call(session -> session.createName(name).getCommon().replaceAll("\\s+", "")); //$NON-NLS-1$ //$NON-NLS-2$
+		return NotesThreadFactory.call(session -> {
+			Name n = session.createName(name);
+			try {
+				return n.getCommon().replaceAll("\\s+", ""); //$NON-NLS-1$ //$NON-NLS-2$
+			} finally {
+				n.recycle();
+			}
+		});
 	}
 	
 	// *******************************************************************************
@@ -359,24 +369,30 @@ public enum NSFPathUtil {
 	
 	private static Database getDatabase(Session session, NSFFileSystem fileSystem) throws NotesException {
 		String nsfPath = fileSystem.getNsfPath();
-		
-		int bangIndex = nsfPath.indexOf("!!"); //$NON-NLS-1$
-		String server;
-		String dbPath;
-		if(bangIndex < 0) {
-			server = ""; //$NON-NLS-1$
-			dbPath = nsfPath;
-		} else {
-			server = nsfPath.substring(0, bangIndex);
-			dbPath = nsfPath.substring(bangIndex+2);
-		}
-		if(isReplicaID(dbPath)) {
-			Database database = session.getDatabase(null, null);
-			database.openByReplicaID(server, dbPath);
-			return database;
-		} else {
-			return session.getDatabase(server, dbPath);
-		}
+		String key = session.getEffectiveUserName() + nsfPath;
+		return THREAD_DATABASES.get().computeIfAbsent(key, k -> {
+			try {
+				int bangIndex = nsfPath.indexOf("!!"); //$NON-NLS-1$
+				String server;
+				String dbPath;
+				if(bangIndex < 0) {
+					server = ""; //$NON-NLS-1$
+					dbPath = nsfPath;
+				} else {
+					server = nsfPath.substring(0, bangIndex);
+					dbPath = nsfPath.substring(bangIndex+2);
+				}
+				if(isReplicaID(dbPath)) {
+					Database database = session.getDatabase(null, null);
+					database.openByReplicaID(server, dbPath);
+					return database;
+				} else {
+					return session.getDatabase(server, dbPath);
+				}
+			} catch(NotesException e) {
+				throw new RuntimeException(e);
+			}
+		});
 	}
 	
 	private static boolean isReplicaID(String dbPath) {

@@ -20,11 +20,12 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.time.Instant;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
+import java.util.Vector;
 
 import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
 import org.apache.sshd.server.subsystem.sftp.DefaultUserPrincipal;
@@ -57,6 +58,7 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 	private FileTime lastAccessed;
 	private FileTime created;
 	private long size;
+	private Set<PosixFilePermission> permissions;
 	
 	public NSFFileAttributes(NSFPath path) {
 		try {
@@ -73,40 +75,64 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 							type = null;
 						}
 						if(doc.hasItem(ITEM_MODIFIED)) {
-							DateTime mod = (DateTime)doc.getItemValueDateTimeArray(ITEM_MODIFIED).get(0);
-							lastModified = FileTime.fromMillis(mod.toJavaDate().getTime());
+							@SuppressWarnings("unchecked")
+							Vector<DateTime> mod = (Vector<DateTime>)doc.getItemValueDateTimeArray(ITEM_MODIFIED);
+							try {
+								lastModified = FileTime.fromMillis(mod.get(0).toJavaDate().getTime());
+							} finally {
+								doc.recycle(mod);;
+							}
 						} else {
 							lastModified = FileTime.from(Instant.now());
 						}
 						DateTime acc = doc.getLastAccessed();
 						if(acc != null) {
-							lastAccessed = FileTime.fromMillis(acc.toJavaDate().getTime());
+							try {
+								lastAccessed = FileTime.fromMillis(acc.toJavaDate().getTime());
+							} finally {
+								acc.recycle();
+							}
 						} else {
 							lastAccessed = FileTime.from(Instant.now());
 						}
 						if(doc.hasItem(ITEM_CREATED)) {
-							DateTime c = (DateTime)doc.getItemValueDateTimeArray(ITEM_CREATED).get(0);
-							created = FileTime.fromMillis(c.toJavaDate().getTime());
+							@SuppressWarnings("unchecked")
+							Vector<DateTime> c = (Vector<DateTime>)doc.getItemValueDateTimeArray(ITEM_CREATED);
+							try {
+								created = FileTime.fromMillis(c.get(0).toJavaDate().getTime());
+							} finally {
+								doc.recycle(c);
+							}
 						} else {
 							created = FileTime.from(Instant.now());
 						}
 						
-						
 						// TODO check attachment size
 						if(doc.hasItem(ITEM_FILE)) {
 							RichTextItem item = (RichTextItem)doc.getFirstItem(ITEM_FILE);
-							@SuppressWarnings("unchecked")
-							List<EmbeddedObject> eos = item.getEmbeddedObjects();
-							if(!eos.isEmpty()) {
-								size = eos.get(0).getFileSize();
+							try {
+								@SuppressWarnings("unchecked")
+								Vector<EmbeddedObject> eos = item.getEmbeddedObjects();
+								try {
+									if(!eos.isEmpty()) {
+										size = eos.get(0).getFileSize();
+									}
+								} finally {
+									item.recycle(eos);
+								}
+							} finally {
+								item.recycle();
 							}
 						}
+						
+						permissions = PosixFilePermissions.fromString(doc.getItemValueString(ITEM_PERMISSIONS));
 					} else {
 						owner = "root"; //$NON-NLS-1$
 						group = "wheel"; //$NON-NLS-1$
 						lastModified = FileTime.from(Instant.EPOCH);
 						lastAccessed = FileTime.from(Instant.EPOCH);
 						created = FileTime.from(Instant.EPOCH);
+						permissions = EnumSet.allOf(PosixFilePermission.class);
 					}
 				} catch(Throwable t) {
 					t.printStackTrace();
@@ -131,7 +157,7 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 
 	@Override
 	public Set<PosixFilePermission> permissions() {
-		return EnumSet.allOf(PosixFilePermission.class);
+		return permissions;
 	}
 
 	@Override
