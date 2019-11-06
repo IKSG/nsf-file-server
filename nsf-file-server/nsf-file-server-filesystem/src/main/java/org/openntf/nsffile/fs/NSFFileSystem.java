@@ -57,7 +57,7 @@ public class NSFFileSystem extends BaseFileSystem<NSFPath> {
 
 	@Override
 	public Set<String> supportedFileAttributeViews() {
-		return new HashSet<>(Arrays.asList("basic", "posix", "owner")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		return new HashSet<>(Arrays.asList("basic", "posix", "owner", "user")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	}
 
 	@Override

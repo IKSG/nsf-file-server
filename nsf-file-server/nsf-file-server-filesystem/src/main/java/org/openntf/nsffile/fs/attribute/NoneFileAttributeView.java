@@ -16,6 +16,7 @@
 package org.openntf.nsffile.fs.attribute;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
@@ -25,7 +26,9 @@ import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.nio.file.attribute.UserPrincipal;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -33,11 +36,11 @@ import java.util.Set;
  * @author Jesse Gallagher
  * @since 1.0.0
  */
-public class NonePosixFileAttributeView implements PosixFileAttributeView, BasicFileAttributeView, FileOwnerAttributeView {
+public class NoneFileAttributeView implements PosixFileAttributeView, BasicFileAttributeView, FileOwnerAttributeView, UserDefinedFileAttributeView {
 	
 	private final Path path;
 	
-	public NonePosixFileAttributeView(Path path) {
+	public NoneFileAttributeView(Path path) {
 		this.path = path;
 		
 	}
@@ -74,6 +77,31 @@ public class NonePosixFileAttributeView implements PosixFileAttributeView, Basic
 
 	@Override
 	public void setGroup(GroupPrincipal group) throws IOException {
+		throw new NoSuchFileException(path.toString());
+	}
+
+	@Override
+	public List<String> list() throws IOException {
+		throw new NoSuchFileException(path.toString());
+	}
+
+	@Override
+	public int size(String name) throws IOException {
+		throw new NoSuchFileException(path.toString());
+	}
+
+	@Override
+	public int read(String name, ByteBuffer dst) throws IOException {
+		throw new NoSuchFileException(path.toString());
+	}
+
+	@Override
+	public int write(String name, ByteBuffer src) throws IOException {
+		throw new NoSuchFileException(path.toString());
+	}
+
+	@Override
+	public void delete(String name) throws IOException {
 		throw new NoSuchFileException(path.toString());
 	}
 

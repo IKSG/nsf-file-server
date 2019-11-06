@@ -36,6 +36,7 @@ import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileOwnerAttributeView;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,7 +50,8 @@ import java.util.logging.Logger;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.openntf.nsffile.fs.attribute.NSFPosixFileAttributeView;
-import org.openntf.nsffile.fs.attribute.NonePosixFileAttributeView;
+import org.openntf.nsffile.fs.attribute.NSFUserDefinedFileAttributeView;
+import org.openntf.nsffile.fs.attribute.NoneFileAttributeView;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 
 import com.ibm.commons.util.StringUtil;
@@ -257,9 +259,13 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
 		// TODO cache these?
 		if(!exists((NSFPath)path)) {
-			return type.cast(new NonePosixFileAttributeView(path));
+			return type.cast(new NoneFileAttributeView(path));
 		}
-		return type.cast(new NSFPosixFileAttributeView((NSFPath)path, options));
+		if(type.isAssignableFrom(UserDefinedFileAttributeView.class)) {
+			return type.cast(new NSFUserDefinedFileAttributeView((NSFPath)path, options));
+		} else {
+			return type.cast(new NSFPosixFileAttributeView((NSFPath)path, options));
+		}
 	}
 
 	@Override
@@ -293,6 +299,29 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 		return readAttributes(path, view, attrs, options);
 	}
+
+	@Override
+	public void setAttribute(Path path, String attribute, Object value, LinkOption... options) throws IOException {
+		// TODO Auto-generated method stub
+	}
+	
+	// *******************************************************************************
+	// * Links
+	// *******************************************************************************
+	
+	@Override
+	public void createLink(Path link, Path existing) throws IOException {
+		super.createLink(link, existing);
+	}
+	
+	@Override
+	public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs) throws IOException {
+		super.createSymbolicLink(link, target, attrs);
+	}
+	
+	// *******************************************************************************
+	// * Custom methods from Apache Mina
+	// *******************************************************************************
 	
 	public Map<String, Object> readAttributes(Path path, String view, String attrs, LinkOption... options)
 			throws IOException {
@@ -370,29 +399,6 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		}
 		return map;
 	}
-
-	@Override
-	public void setAttribute(Path path, String attribute, Object value, LinkOption... options) throws IOException {
-		// TODO Auto-generated method stub
-	}
-	
-	// *******************************************************************************
-	// * Links
-	// *******************************************************************************
-	
-	@Override
-	public void createLink(Path link, Path existing) throws IOException {
-		super.createLink(link, existing);
-	}
-	
-	@Override
-	public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs) throws IOException {
-		super.createSymbolicLink(link, target, attrs);
-	}
-	
-	// *******************************************************************************
-	// * Custom methods from Apache Mina
-	// *******************************************************************************
 	
 	public boolean isSupportedFileAttributeView(Path path, Class<? extends FileAttributeView> type) {
         return isSupportedFileAttributeView(((NSFPath)path).getFileSystem(), type);
