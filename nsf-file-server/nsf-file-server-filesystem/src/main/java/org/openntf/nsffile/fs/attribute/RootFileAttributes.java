@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs;
+package org.openntf.nsffile.fs.attribute;
 
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
@@ -25,8 +25,7 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Set;
 
-import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
-import org.apache.sshd.server.subsystem.sftp.DefaultUserPrincipal;
+import org.openntf.nsffile.fs.acl.NotesPrincipal;
 
 public class RootFileAttributes implements BasicFileAttributes, PosixFileAttributes {
 	
@@ -34,12 +33,12 @@ public class RootFileAttributes implements BasicFileAttributes, PosixFileAttribu
 
 	@Override
 	public UserPrincipal owner() {
-		return new DefaultUserPrincipal("root");
+		return new NotesPrincipal("CN=root"); //$NON-NLS-1$
 	}
 
 	@Override
 	public GroupPrincipal group() {
-		return new DefaultGroupPrincipal("wheel");
+		return new NotesPrincipal("CN=wheel"); //$NON-NLS-1$
 	}
 
 	@Override

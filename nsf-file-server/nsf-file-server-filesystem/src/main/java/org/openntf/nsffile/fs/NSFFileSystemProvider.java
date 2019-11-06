@@ -52,6 +52,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.openntf.nsffile.fs.attribute.NSFPosixFileAttributeView;
 import org.openntf.nsffile.fs.attribute.NSFUserDefinedFileAttributeView;
 import org.openntf.nsffile.fs.attribute.NoneFileAttributeView;
+import org.openntf.nsffile.fs.attribute.RootFileAttributes;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 
 import com.ibm.commons.util.StringUtil;

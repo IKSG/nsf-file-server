@@ -15,6 +15,13 @@
  */
 package org.openntf.nsffile.fs.attribute;
 
+import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_CREATED;
+import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_FILE;
+import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_GROUP;
+import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_MODIFIED;
+import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_OWNER;
+import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_PERMISSIONS;
+
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
@@ -27,9 +34,8 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.Vector;
 
-import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
-import org.apache.sshd.server.subsystem.sftp.DefaultUserPrincipal;
 import org.openntf.nsffile.fs.NSFPath;
+import org.openntf.nsffile.fs.acl.NotesPrincipal;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 
 import com.ibm.commons.util.StringUtil;
@@ -38,8 +44,6 @@ import com.ibm.designer.domino.napi.NotesConstants;
 import lotus.domino.DateTime;
 import lotus.domino.EmbeddedObject;
 import lotus.domino.RichTextItem;
-
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.*;
 
 /**
  * 
@@ -51,8 +55,8 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 		File, Folder
 	}
 	
-	private String owner;
-	private String group;
+	private UserPrincipal owner;
+	private GroupPrincipal group;
 	private Type type;
 	private FileTime lastModified;
 	private FileTime lastAccessed;
@@ -65,8 +69,8 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 			NSFPathUtil.runWithDocument(path, doc -> {
 				try {
 					if(!doc.isNewNote()) {
-						owner = NSFPathUtil.shortCn(doc.getItemValueString(ITEM_OWNER));
-						group = NSFPathUtil.shortCn(doc.getItemValueString(ITEM_GROUP));
+						owner = new NotesPrincipal(doc.getItemValueString(ITEM_OWNER));
+						group = new NotesPrincipal(doc.getItemValueString(ITEM_GROUP));
 						
 						String form = doc.getItemValueString(NotesConstants.FIELD_FORM);
 						if(StringUtil.isNotEmpty(form)) {
@@ -127,8 +131,8 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 						
 						permissions = PosixFilePermissions.fromString(doc.getItemValueString(ITEM_PERMISSIONS));
 					} else {
-						owner = "root"; //$NON-NLS-1$
-						group = "wheel"; //$NON-NLS-1$
+						owner = new NotesPrincipal("CN=root"); //$NON-NLS-1$
+						group = new NotesPrincipal("CN=wheel"); //$NON-NLS-1$
 						lastModified = FileTime.from(Instant.EPOCH);
 						lastAccessed = FileTime.from(Instant.EPOCH);
 						created = FileTime.from(Instant.EPOCH);
@@ -147,12 +151,12 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 
 	@Override
 	public UserPrincipal owner() {
-		return new DefaultUserPrincipal(owner);
+		return owner;
 	}
 
 	@Override
 	public GroupPrincipal group() {
-		return new DefaultGroupPrincipal(group);
+		return group;
 	}
 
 	@Override
