@@ -17,6 +17,7 @@ package org.openntf.nsffile.fs.acl;
 
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.UserPrincipal;
+import java.util.Collections;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
@@ -50,6 +51,11 @@ public class NotesPrincipal implements UserPrincipal, GroupPrincipal {
 
 	@Override
 	public String getName() {
+		for(String part : Collections.list(ldapName.getAll())) {
+			if(part.startsWith("cn=")) { //$NON-NLS-1$
+				return part.substring(3).replace(' ', '+');
+			}
+		}
 		return ldapName.toString();
 	}
 	
