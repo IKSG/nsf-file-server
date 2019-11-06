@@ -56,7 +56,7 @@ public class NotesPasswordAuthenticator extends AbstractNotesAuthenticator imple
 	 * Looks up the HTTPPassword value for the provided Domino-format user name.
 	 */
 	private String getHashPasswordForUser(Session session, String dominoName) throws NotesException {
-		return getItemValueStringForUser(session, dominoName, "HTTPPassword");
+		return getItemValueStringForUser(session, dominoName, "HTTPPassword"); //$NON-NLS-1$
 	}
 
 }

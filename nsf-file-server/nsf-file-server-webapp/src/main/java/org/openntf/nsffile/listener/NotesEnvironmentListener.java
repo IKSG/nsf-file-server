@@ -39,8 +39,8 @@ public class NotesEnvironmentListener implements ServletContextListener {
 	@SneakyThrows
 	public void contextInitialized(ServletContextEvent sce) {
 		NotesThread.sinitThread();
-		String path = NotesThreadFactory.call(session -> session.getEnvironmentString("NotesProgram", true));
-		System.setProperty("java.library.path", path);
+		String path = NotesThreadFactory.call(session -> session.getEnvironmentString("NotesProgram", true)); //$NON-NLS-1$
+		System.setProperty("java.library.path", path); //$NON-NLS-1$
 		C.initLibrary(null);
 	}
 	

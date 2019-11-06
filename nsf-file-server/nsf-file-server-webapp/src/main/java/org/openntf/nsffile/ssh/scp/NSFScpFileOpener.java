@@ -69,8 +69,8 @@ public class NSFScpFileOpener extends DefaultScpFileOpener {
 	@Override
 	public Path resolveLocalPath(org.apache.sshd.common.session.Session session, FileSystem fileSystem,
 			String commandPath) throws IOException, InvalidPathException {
-		if(".".equals(commandPath) || StringUtil.isEmpty(commandPath)) {
-			return fileSystem.getPath("/");
+		if(".".equals(commandPath) || StringUtil.isEmpty(commandPath)) { //$NON-NLS-1$
+			return fileSystem.getPath("/"); //$NON-NLS-1$
 		} else {
 			return fileSystem.getPath(commandPath);
 		}

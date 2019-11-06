@@ -37,8 +37,8 @@ import org.openntf.nsffile.fs.util.NSFPathUtil;
 public class NSFConfiguration implements Serializable {
 	private static final long serialVersionUID = 1L;
 
-	public static final String ENV_DBPATH = "SFTPNSFPath";
-	public static final String DEFAULT_DBPATH = "filestore.nsf";
+	public static final String ENV_DBPATH = "SFTPNSFPath"; //$NON-NLS-1$
+	public static final String DEFAULT_DBPATH = "filestore.nsf"; //$NON-NLS-1$
 	
 	@Inject @ConfigProperty(name=ENV_DBPATH, defaultValue=DEFAULT_DBPATH)
 	String nsfPath;

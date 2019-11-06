@@ -37,7 +37,7 @@ import lombok.SneakyThrows;
  */
 public class NotesPublicKeyAuthenticator extends AbstractNotesAuthenticator implements PublickeyAuthenticator {
 	
-	public static final String ITEM_PUBKEY = "sshPublicKey";
+	public static final String ITEM_PUBKEY = "sshPublicKey"; //$NON-NLS-1$
 
 	@Override
 	@SneakyThrows

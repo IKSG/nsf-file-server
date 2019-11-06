@@ -50,7 +50,7 @@ public class SshListener implements ServletContextListener {
 		log.setLevel(Level.ALL);
 	}
 	
-	public static final String ENV_PORT = "SFTPNSFPort";
+	public static final String ENV_PORT = "SFTPNSFPort"; //$NON-NLS-1$
 	public static final int DEFAULT_PORT = 9022;
 	
 	private SshServer server;
