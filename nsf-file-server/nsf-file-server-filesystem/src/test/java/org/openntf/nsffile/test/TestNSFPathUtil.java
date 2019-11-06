@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 
+@SuppressWarnings("nls")
 public class TestNSFPathUtil {
 	@Test
 	public void testExtractAPIPath_local() {
