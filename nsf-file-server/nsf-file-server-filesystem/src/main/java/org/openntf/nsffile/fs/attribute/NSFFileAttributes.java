@@ -33,10 +33,13 @@ import org.openntf.nsffile.fs.NSFPath;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 
 import com.ibm.commons.util.StringUtil;
+import com.ibm.designer.domino.napi.NotesConstants;
 
 import lotus.domino.DateTime;
 import lotus.domino.EmbeddedObject;
 import lotus.domino.RichTextItem;
+
+import static org.openntf.nsffile.fs.NSFFileSystemConstants.*;
 
 /**
  * 
@@ -62,14 +65,14 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 				try {
 					if(!doc.isNewNote()) {
 						@SuppressWarnings("unchecked")
-						List<String> updatedBy = doc.getItemValue("$UpdatedBy");
-						if(doc.hasItem("$UpdatedBy")) {
+						List<String> updatedBy = doc.getItemValue(NotesConstants.FIELD_UPDATED_BY);
+						if(updatedBy != null && !updatedBy.isEmpty()) {
 							owner = NSFPathUtil.shortCn(updatedBy.get(0));
 						} else {
 							owner = NSFPathUtil.shortCn(doc.getParentDatabase().getParent().getEffectiveUserName());
 						}
-						group = "wheel"; // TODO implement
-						String form = doc.getItemValueString("Form");
+						group = "wheel"; // TODO implement //$NON-NLS-1$
+						String form = doc.getItemValueString(NotesConstants.FIELD_FORM);
 						if(StringUtil.isNotEmpty(form)) {
 							type = Type.valueOf(form);
 						} else {
@@ -90,8 +93,8 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 						created = FileTime.fromMillis(doc.getCreated().toJavaDate().getTime());
 						
 						// TODO check attachment size
-						if(doc.hasItem("File")) {
-							RichTextItem item = (RichTextItem)doc.getFirstItem("File");
+						if(doc.hasItem(ITEM_FILE)) {
+							RichTextItem item = (RichTextItem)doc.getFirstItem(ITEM_FILE);
 							@SuppressWarnings("unchecked")
 							List<EmbeddedObject> eos = item.getEmbeddedObjects();
 							if(!eos.isEmpty()) {
@@ -99,8 +102,8 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 							}
 						}
 					} else {
-						owner = "root";
-						group = "wheel";
+						owner = "root"; //$NON-NLS-1$
+						group = "wheel"; //$NON-NLS-1$
 						lastModified = FileTime.from(Instant.EPOCH);
 						lastAccessed = FileTime.from(Instant.EPOCH);
 						created = FileTime.from(Instant.EPOCH);

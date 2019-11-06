@@ -46,7 +46,7 @@ public class NSFPosixFileAttributeView implements PosixFileAttributeView, BasicF
 
 	@Override
 	public String name() {
-		return "posix";
+		return "posix"; //$NON-NLS-1$
 	}
 
 	@Override

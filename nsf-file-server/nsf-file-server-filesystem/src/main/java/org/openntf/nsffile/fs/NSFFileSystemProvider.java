@@ -29,7 +29,6 @@ import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
@@ -54,10 +53,13 @@ import org.openntf.nsffile.fs.attribute.NonePosixFileAttributeView;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 
 import com.ibm.commons.util.StringUtil;
+import com.ibm.designer.domino.napi.NotesConstants;
 
 import lotus.domino.Document;
 import lotus.domino.View;
 import lotus.domino.ViewEntry;
+
+import static org.openntf.nsffile.fs.NSFFileSystemConstants.*;
 
 /**
  * Java NIO Filesystem implementation for NSF file storage.
@@ -66,7 +68,7 @@ import lotus.domino.ViewEntry;
  * @since 1.0.0
  */
 public class NSFFileSystemProvider extends FileSystemProvider {
-	public static final String SCHEME = "nsffilestore";
+	public static final String SCHEME = "nsffilestore"; //$NON-NLS-1$
 	public static final Logger log = Logger.getLogger(NSFFileSystemProvider.class.getPackage().getName());
 	
 	public static final NSFFileSystemProvider instance = new NSFFileSystemProvider();
@@ -83,7 +85,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	}
 	
 	public FileSystem getOrCreateFileSystem(URI uri, Map<String, ?> env) throws IOException {
-		Objects.requireNonNull(uri, "uri cannot be null");
+		Objects.requireNonNull(uri, "uri cannot be null"); //$NON-NLS-1$
 		
 		String nsfPath = NSFPathUtil.extractApiPath(uri);
 		if(StringUtil.isEmpty(nsfPath)) {
@@ -100,7 +102,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public FileSystem newFileSystem(URI uri, Map<String, ?> env) throws IOException {
-		Objects.requireNonNull(uri, "uri cannot be null");
+		Objects.requireNonNull(uri, "uri cannot be null"); //$NON-NLS-1$
 		
 		String nsfPath = NSFPathUtil.extractApiPath(uri);
 		if(StringUtil.isEmpty(nsfPath)) {
@@ -113,7 +115,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public FileSystem getFileSystem(URI uri) {
-		Objects.requireNonNull(uri, "uri cannot be null");
+		Objects.requireNonNull(uri, "uri cannot be null"); //$NON-NLS-1$
 		
 		String nsfPath = NSFPathUtil.extractApiPath(uri);
 		if(StringUtil.isEmpty(nsfPath)) {
@@ -155,7 +157,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		try {
 			NSFPathUtil.runWithDocument((NSFPath)dir, doc -> {
 				if(doc.isNewNote()) {
-					doc.replaceItemValue("Form", "Folder");
+					doc.replaceItemValue(NotesConstants.FIELD_FORM, FORM_FOLDER);
 					doc.save();
 				}
 			});
@@ -195,8 +197,8 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 				
 				Document doc = NSFPathUtil.getDocument((NSFPath)source, database);
 				doc = doc.copyToDatabase(database);
-				doc.replaceItemValue("Parent", target.getParent().toAbsolutePath().toString());
-				doc.replaceItemValue("$$Title", target.getFileName().toString());
+				doc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
+				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
 				doc.save();
 			});
 		} catch (RuntimeException e) {
@@ -218,8 +220,8 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 				}
 				
 				Document doc = NSFPathUtil.getDocument((NSFPath)source, database);
-				doc.replaceItemValue("Parent", target.getParent().toAbsolutePath().toString());
-				doc.replaceItemValue("$$Title", target.getFileName().toString());
+				doc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
+				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
 				doc.save();
 			});
 		} catch (RuntimeException e) {
@@ -263,7 +265,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	@Override
 	public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options)
 			throws IOException {
-		if("/".equals(path.toAbsolutePath().toString())) {
+		if("/".equals(path.toAbsolutePath().toString())) { //$NON-NLS-1$
 			return type.cast(new RootFileAttributes());
 		}
 		if (type.isAssignableFrom(PosixFileAttributes.class)) {
@@ -282,7 +284,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		String attrs;
 		int i = attributes.indexOf(':');
 		if (i == -1) {
-			view = "basic";
+			view = "basic"; //$NON-NLS-1$
 			attrs = attributes;
 		} else {
 			view = attributes.substring(0, i++);
@@ -299,10 +301,10 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		Collection<String> views = fs.supportedFileAttributeViews();
 		if (GenericUtils.isEmpty(views) || (!views.contains(view))) {
 			throw new UnsupportedOperationException(
-					"readAttributes(" + path + ")[" + view + ":" + attrs + "] view not supported: " + views);
+					"readAttributes(" + path + ")[" + view + ":" + attrs + "] view not supported: " + views); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 		}
 
-		if ("basic".equalsIgnoreCase(view) || "posix".equalsIgnoreCase(view) || "owner".equalsIgnoreCase(view)) {
+		if ("basic".equalsIgnoreCase(view) || "posix".equalsIgnoreCase(view) || "owner".equalsIgnoreCase(view)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			return readPosixViewAttributes(p, view, attrs, options);
 		} else {
 			return Collections.emptyMap();
@@ -315,8 +317,8 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		if(v == null) {
 			throw new IOException("File does not exist: " + path);
 		}
-		if ("*".equals(attrs)) {
-			attrs = "lastModifiedTime,lastAccessTime,creationTime,size,isRegularFile,isDirectory,isSymbolicLink,isOther,fileKey,owner,permissions,group";
+		if ("*".equals(attrs)) { //$NON-NLS-1$
+			attrs = "lastModifiedTime,lastAccessTime,creationTime,size,isRegularFile,isDirectory,isSymbolicLink,isOther,fileKey,owner,permissions,group"; //$NON-NLS-1$
 		}
 
 		NavigableMap<String, Object> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -324,45 +326,45 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		String[] attrValues = GenericUtils.split(attrs, ',');
 		for (String attr : attrValues) {
 			switch (attr) {
-			case "lastModifiedTime":
+			case "lastModifiedTime": //$NON-NLS-1$
 				map.put(attr, v.lastModifiedTime());
 				break;
-			case "lastAccessTime":
+			case "lastAccessTime": //$NON-NLS-1$
 				map.put(attr, v.lastAccessTime());
 				break;
-			case "creationTime":
+			case "creationTime": //$NON-NLS-1$
 				map.put(attr, v.creationTime());
 				break;
-			case "size":
+			case "size": //$NON-NLS-1$
 				map.put(attr, v.size());
 				break;
-			case "isRegularFile":
+			case "isRegularFile": //$NON-NLS-1$
 				map.put(attr, v.isRegularFile());
 				break;
-			case "isDirectory":
+			case "isDirectory": //$NON-NLS-1$
 				map.put(attr, v.isDirectory());
 				break;
-			case "isSymbolicLink":
+			case "isSymbolicLink": //$NON-NLS-1$
 				map.put(attr, v.isSymbolicLink());
 				break;
-			case "isOther":
+			case "isOther": //$NON-NLS-1$
 				map.put(attr, v.isOther());
 				break;
-			case "fileKey":
+			case "fileKey": //$NON-NLS-1$
 				map.put(attr, v.fileKey());
 				break;
-			case "owner":
+			case "owner": //$NON-NLS-1$
 				map.put(attr, v.owner());
 				break;
-			case "permissions":
+			case "permissions": //$NON-NLS-1$
 				map.put(attr, v.permissions());
 				break;
-			case "group":
+			case "group": //$NON-NLS-1$
 				map.put(attr, v.group());
 				break;
 			default:
 				if (traceEnabled) {
-					log.fine(StringUtil.format("readPosixViewAttributes({0})[{1}:{2}] ignored for {3}", path, view, attr, attrs));
+					log.fine(StringUtil.format("readPosixViewAttributes({0})[{1}:{2}] ignored for {3}", path, view, attr, attrs)); //$NON-NLS-1$
 				}
 			}
 		}
@@ -401,13 +403,14 @@ public class NSFFileSystemProvider extends FileSystemProvider {
         if ((type == null) || GenericUtils.isEmpty(views)) {
             return false;
         } else if (PosixFileAttributeView.class.isAssignableFrom(type)) {
-            return views.contains("posix");
-        } else if (AclFileAttributeView.class.isAssignableFrom(type)) {
-            return views.contains("acl");   // must come before owner view
+            return views.contains("posix"); //$NON-NLS-1$
+            // TODO support ACLs
+//        } else if (AclFileAttributeView.class.isAssignableFrom(type)) {
+//            return views.contains("acl");   // must come before owner view //$NON-NLS-1$
         } else if (FileOwnerAttributeView.class.isAssignableFrom(type)) {
-            return views.contains("owner");
+            return views.contains("owner"); //$NON-NLS-1$
         } else if (BasicFileAttributeView.class.isAssignableFrom(type)) {
-            return views.contains("basic"); // must be last
+            return views.contains("basic"); // must be last //$NON-NLS-1$
         } else {
             return false;
         }
@@ -418,11 +421,11 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	// *******************************************************************************
 	
 	public boolean exists(NSFPath path) {
-		if("/".equals(path.toString())) {
+		if("/".equals(path.toString())) { //$NON-NLS-1$
 			return true;
 		}
 		return NSFPathUtil.callWithDatabase(path, database -> {
-			View view = database.getView("Files by Path");
+			View view = database.getView(VIEW_FILESBYPATH);
 			view.setAutoUpdate(false);
 			view.refresh();
 			ViewEntry entry = view.getEntryByKey(path.toAbsolutePath().toString(), true);

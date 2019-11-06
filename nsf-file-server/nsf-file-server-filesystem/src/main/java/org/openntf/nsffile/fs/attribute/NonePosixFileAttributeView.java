@@ -59,7 +59,7 @@ public class NonePosixFileAttributeView implements PosixFileAttributeView, Basic
 
 	@Override
 	public String name() {
-		return "posix";
+		return "posix"; //$NON-NLS-1$
 	}
 
 	@Override

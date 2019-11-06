@@ -42,7 +42,7 @@ public class NSFFileSystem extends BaseFileSystem<NSFPath> {
 
 	@Override
 	protected NSFPath create(String root, List<String> names) {
-		List<String> bits = names == null || names.isEmpty() ? Arrays.asList("") : names;
+		List<String> bits = names == null || names.isEmpty() ? Arrays.asList("") : names; //$NON-NLS-1$
 		return new NSFPath(this, root, bits);
 	}
 
@@ -57,7 +57,7 @@ public class NSFFileSystem extends BaseFileSystem<NSFPath> {
 
 	@Override
 	public Set<String> supportedFileAttributeViews() {
-		return new HashSet<>(Arrays.asList("basic", "posix", "owner"));
+		return new HashSet<>(Arrays.asList("basic", "posix", "owner")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
 	@Override

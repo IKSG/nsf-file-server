@@ -29,6 +29,8 @@ import lotus.domino.View;
 import lotus.domino.ViewEntry;
 import lotus.domino.ViewNavigator;
 
+import static org.openntf.nsffile.fs.NSFFileSystemConstants.*;
+
 public class NSFDirectoryStream implements DirectoryStream<Path> {
 	
 	private final List<Path> paths;
@@ -38,7 +40,7 @@ public class NSFDirectoryStream implements DirectoryStream<Path> {
 		try {
 			this.paths = NSFPathUtil.callWithDatabase(dir, database -> {
 				try {
-					View filesByParent = database.getView("Files By Parent");
+					View filesByParent = database.getView(VIEW_FILESBYPARENT);
 					filesByParent.setAutoUpdate(false);
 					filesByParent.refresh();
 					
@@ -49,7 +51,7 @@ public class NSFDirectoryStream implements DirectoryStream<Path> {
 					ViewEntry entry = nav.getFirst();
 					while(entry != null) {
 						entry.setPreferJavaDates(true);
-						String name = String.valueOf(entry.getColumnValues().get(2));
+						String name = String.valueOf(entry.getColumnValues().get(VIEW_FILESBYPARENT_INDEX_NAME));
 						result.add(dir.resolve(name));
 						
 						ViewEntry tempEntry = entry;

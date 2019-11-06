@@ -33,8 +33,12 @@ import java.util.Set;
 
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 
+import com.ibm.designer.domino.napi.NotesConstants;
+
 import lotus.domino.EmbeddedObject;
 import lotus.domino.RichTextItem;
+
+import static org.openntf.nsffile.fs.NSFFileSystemConstants.*;
 
 /**
  * 
@@ -58,9 +62,9 @@ public class NSFFileChannel extends FileChannel {
 			this.tempFile = NSFPathUtil.callWithDocument(path, doc -> {
 				Path resultParent = Files.createTempDirectory(path.getFileName().toString());
 				Path result = resultParent.resolve(path.getFileName().toString());
-				if(doc.hasItem("File")) {
+				if(doc.hasItem(ITEM_FILE)) {
 					// TODO add sanity checks
-					RichTextItem rtitem = (RichTextItem)doc.getFirstItem("File");
+					RichTextItem rtitem = (RichTextItem)doc.getFirstItem(ITEM_FILE);
 					EmbeddedObject eo = (EmbeddedObject) rtitem.getEmbeddedObjects().get(0);
 					try(InputStream is = eo.getInputStream()) {
 						Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
@@ -179,13 +183,13 @@ public class NSFFileChannel extends FileChannel {
 			try {
 				NSFPathUtil.runWithDocument(this.path, doc -> {
 					if(doc.isNewNote()) {
-						doc.replaceItemValue("Form", "File");
+						doc.replaceItemValue(NotesConstants.FIELD_FORM, ITEM_FILE);
 					}
-					if(doc.hasItem("File")) {
-						doc.removeItem("File");
+					if(doc.hasItem(ITEM_FILE)) {
+						doc.removeItem(ITEM_FILE);
 					}
-					RichTextItem item = doc.createRichTextItem("File");
-					item.embedObject(EmbeddedObject.EMBED_ATTACHMENT, "", this.tempFile.toAbsolutePath().toString(), null);
+					RichTextItem item = doc.createRichTextItem(ITEM_FILE);
+					item.embedObject(EmbeddedObject.EMBED_ATTACHMENT, "", this.tempFile.toAbsolutePath().toString(), null); //$NON-NLS-1$
 					
 					doc.save();
 				});
