@@ -329,4 +329,8 @@ public enum NSFPathUtil {
 			return session.getDatabase(nsfPath.substring(0, bangIndex), nsfPath.substring(bangIndex+2));
 		}
 	}
+
+	public static String shortCn(String name) {
+		return NotesThreadFactory.call(session -> session.createName(name).getCommon().replaceAll("\\s+", ""));
+	}
 }

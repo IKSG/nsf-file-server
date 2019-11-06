@@ -52,7 +52,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.openntf.nsffile.fs.attribute.NSFPosixFileAttributeView;
 import org.openntf.nsffile.fs.attribute.NonePosixFileAttributeView;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
-import org.openntf.nsffile.util.NotesThreadFactory;
 
 import com.ibm.commons.util.StringUtil;
 
@@ -429,9 +428,5 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 			ViewEntry entry = view.getEntryByKey(path.toAbsolutePath().toString(), true);
 			return entry != null;
 		});
-	}
-
-	public static String shortCn(String name) {
-		return NotesThreadFactory.call(session -> session.createName(name).getCommon().replaceAll("\\s+", ""));
 	}
 }

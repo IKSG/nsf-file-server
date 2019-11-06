@@ -64,9 +64,9 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 						@SuppressWarnings("unchecked")
 						List<String> updatedBy = doc.getItemValue("$UpdatedBy");
 						if(doc.hasItem("$UpdatedBy")) {
-							owner = NSFFileSystemProvider.shortCn(updatedBy.get(0));
+							owner = NSFPathUtil.shortCn(updatedBy.get(0));
 						} else {
-							owner = NSFFileSystemProvider.shortCn(doc.getParentDatabase().getParent().getEffectiveUserName());
+							owner = NSFPathUtil.shortCn(doc.getParentDatabase().getParent().getEffectiveUserName());
 						}
 						group = "wheel"; // TODO implement
 						String form = doc.getItemValueString("Form");
