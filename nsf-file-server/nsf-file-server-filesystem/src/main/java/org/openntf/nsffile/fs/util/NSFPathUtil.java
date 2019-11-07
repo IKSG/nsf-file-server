@@ -17,6 +17,7 @@ package org.openntf.nsffile.fs.util;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -36,6 +37,7 @@ import lotus.domino.Name;
 import lotus.domino.NotesException;
 import lotus.domino.Session;
 import lotus.domino.View;
+import lotus.domino.DateTime;
 
 import static org.openntf.nsffile.fs.NSFFileSystemConstants.*;
 
@@ -253,12 +255,14 @@ public enum NSFPathUtil {
 	 * 
 	 * @param <T> the type returned by {@code func}
 	 * @param path the context {@link NSFPath}
+	 * @param cacheId an identifier used to cache the result based on the database modification
+	 * 			time. Pass {@code null} to skip cache
 	 * @param func the function to call
 	 * @return the return value of {@code func}
 	 * @throws RuntimeException wrapping any exception thrown by the main body
 	 */
-	public static <T> T callWithDocument(NSFPath path, NotesDocumentFunction<T> func) {
-		return callWithDatabase(path, database-> {
+	public static <T> T callWithDocument(NSFPath path, String cacheId, NotesDocumentFunction<T> func) {
+		return callWithDatabase(path, cacheId, database-> {
 			Document doc = getDocument(path, database);
 			try {
 				return func.apply(doc);
@@ -285,20 +289,44 @@ public enum NSFPathUtil {
 			}
 		});
 	}
+	
+	private static final Map<String, TimedCacheHolder> PER_DATABASE_CACHE = Collections.synchronizedMap(new HashMap<>());
 
 	/**
 	 * Executes the provided function with the database for the provided path.
 	 * 
 	 * @param <T> the type returned by {@code func}
 	 * @param path the context {@link NSFPath}
+	 * @param cacheId an identifier used to cache the result based on the database modification
+	 * 			time. Pass {@code null} to skip cache
 	 * @param func the function to call
 	 * @return the return value of {@code func}
 	 * @throws RuntimeException wrapping any exception thrown by the main body
 	 */
-	public static <T> T callWithDatabase(NSFPath path, NotesDatabaseFunction<T> func) {
+	@SuppressWarnings("unchecked")
+	public static <T> T callWithDatabase(NSFPath path, String cacheId, NotesDatabaseFunction<T> func) {
 		return NotesThreadFactory.callAs(dn(path.getFileSystem().getUserName()), session -> {
 			Database database = getDatabase(session, path.getFileSystem());
-			return func.apply(database);
+			if(StringUtil.isEmpty(cacheId)) {
+				return func.apply(database);
+			} else {
+				long modTime;
+				DateTime mod = database.getLastModified();
+				try {
+					modTime = mod.toJavaDate().getTime();
+				} finally {
+					mod.recycle();
+				}
+				String dbKey = session.getEffectiveUserName() + database.getFilePath();
+				TimedCacheHolder cacheHolder = PER_DATABASE_CACHE.computeIfAbsent(dbKey, key -> new TimedCacheHolder());
+				return (T)cacheHolder.get(modTime).computeIfAbsent(cacheId, key -> {
+					try {
+						return func.apply(database);
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+				});
+			}
 		});
 	}
 	

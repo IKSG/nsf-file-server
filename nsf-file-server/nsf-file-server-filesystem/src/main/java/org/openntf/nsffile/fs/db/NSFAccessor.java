@@ -64,7 +64,8 @@ public enum NSFAccessor {
 	 * @return a {@link List} of individual file names, in alphabetical order
 	 */
 	public static List<String> getDirectoryEntries(NSFPath dir) {
-		return NSFPathUtil.callWithDatabase(dir, database -> {
+		String cacheId = "entries-" + dir; //$NON-NLS-1$
+		return NSFPathUtil.callWithDatabase(dir, cacheId, database -> {
 			View filesByParent = database.getView(VIEW_FILESBYPARENT);
 			try {
 				filesByParent.setAutoUpdate(false);
@@ -109,7 +110,7 @@ public enum NSFAccessor {
 	 * @return a {@link Path} to a temporary file holding the attachment contents
 	 */
 	public static Path extractAttachment(NSFPath path) {
-		return NSFPathUtil.callWithDocument(path, doc -> {
+		return NSFPathUtil.callWithDocument(path, null, doc -> {
 			Path resultParent = Files.createTempDirectory(path.getFileName().toString());
 			Path result = resultParent.resolve(path.getFileName().toString());
 			if(doc.hasItem(ITEM_FILE)) {
@@ -293,7 +294,8 @@ public enum NSFAccessor {
 		if("/".equals(path.toString())) { //$NON-NLS-1$
 			return true;
 		}
-		return NSFPathUtil.callWithDatabase(path, database -> {
+		String cacheId = "exists-" + path; //$NON-NLS-1$
+		return NSFPathUtil.callWithDatabase(path, cacheId, database -> {
 			View view = database.getView(VIEW_FILESBYPATH);
 			try {
 				view.setAutoUpdate(false);
@@ -411,8 +413,8 @@ public enum NSFAccessor {
 	}
 	
 	public static NSFFileAttributes readAttributes(NSFPath path) {
-		// TODO cache
-		return NSFPathUtil.callWithDocument(path, doc -> {
+		String cacheId = "attrs-" + path; //$NON-NLS-1$
+		return NSFPathUtil.callWithDocument(path, cacheId, doc -> {
 			NotesPrincipal owner;
 			NotesPrincipal group;
 			Type type;
@@ -602,7 +604,8 @@ public enum NSFAccessor {
 	@SuppressWarnings("unchecked")
 	public static List<String> listUserDefinedAttributes(NSFPath path) throws IOException {
 		try {
-			return NSFPathUtil.callWithDocument(path, doc ->
+			String cacheId = "userAttrs-" + path; //$NON-NLS-1$
+			return NSFPathUtil.callWithDocument(path, cacheId, doc ->
 				((List<Item>)doc.getItems()).stream()
 					.map(item -> {
 						try {
@@ -631,7 +634,7 @@ public enum NSFAccessor {
 	 */
 	public static int writeUserDefinedAttribute(NSFPath path, String name, ByteBuffer src) throws IOException {
 		try {
-			return NSFPathUtil.callWithDocument(path, doc -> {
+			return NSFPathUtil.callWithDocument(path, null, doc -> {
 				String itemName = PREFIX_USERITEM + name;
 				byte[] data = src.array();
 				doc.replaceItemValueCustomDataBytes(itemName, DATATYPE_NAME, data);
@@ -674,7 +677,8 @@ public enum NSFAccessor {
 	 */
 	public static byte[] getUserDefinedAttribute(NSFPath path, String name) throws IOException {
 		try {
-			return NSFPathUtil.callWithDocument(path, doc -> {
+			String cacheId = "userAttrVal-" + path + name; //$NON-NLS-1$
+			return NSFPathUtil.callWithDocument(path, cacheId, doc -> {
 				String itemName = PREFIX_USERITEM + name;
 				Item item = doc.getFirstItem(itemName);
 				return item == null ? new byte[0] : item.getValueCustomDataBytes(DATATYPE_NAME);
