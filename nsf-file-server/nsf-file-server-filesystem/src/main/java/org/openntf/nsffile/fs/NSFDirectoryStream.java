@@ -18,17 +18,11 @@ package org.openntf.nsffile.fs;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import org.openntf.nsffile.fs.util.NSFPathUtil;
-
-import lotus.domino.View;
-import lotus.domino.ViewEntry;
-import lotus.domino.ViewNavigator;
-
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.*;
+import org.openntf.nsffile.fs.db.NSFAccessor;
 
 public class NSFDirectoryStream implements DirectoryStream<Path> {
 	
@@ -36,38 +30,9 @@ public class NSFDirectoryStream implements DirectoryStream<Path> {
 
 	public NSFDirectoryStream(NSFFileSystemProvider provider, NSFPath dir) {
 		try {
-			this.paths = NSFPathUtil.callWithDatabase(dir, database -> {
-				View filesByParent = database.getView(VIEW_FILESBYPARENT);
-				try {
-					filesByParent.setAutoUpdate(false);
-					filesByParent.refresh();
-					
-					String category = dir.toAbsolutePath().toString();
-					ViewNavigator nav = filesByParent.createViewNavFromCategory(category);
-					try {
-						nav.setBufferMaxEntries(400);
-						List<Path> result = new ArrayList<>(nav.getCount());
-						ViewEntry entry = nav.getFirst();
-						while(entry != null) {
-							entry.setPreferJavaDates(true);
-							String name = String.valueOf(entry.getColumnValues().get(VIEW_FILESBYPARENT_INDEX_NAME));
-							result.add(dir.resolve(name));
-							
-							ViewEntry tempEntry = entry;
-							entry = nav.getNext();
-							tempEntry.recycle();
-						}
-						
-						return result;
-					} finally {
-						nav.recycle();
-					}
-				} finally {
-					if(filesByParent != null) {
-						filesByParent.recycle();
-					}
-				}
-			});
+			this.paths = NSFAccessor.getDirectoryEntries(dir).parallelStream()
+				.map(name -> dir.resolve(name))
+				.collect(Collectors.toList());
 		} catch(Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

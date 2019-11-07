@@ -15,35 +15,13 @@
  */
 package org.openntf.nsffile.fs.attribute;
 
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_CREATED;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_FILE;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_GROUP;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_MODIFIED;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_OWNER;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_PERMISSIONS;
-
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
-import java.time.Instant;
-import java.util.EnumSet;
 import java.util.Set;
-import java.util.Vector;
-
-import org.openntf.nsffile.fs.NSFPath;
-import org.openntf.nsffile.fs.acl.NotesPrincipal;
-import org.openntf.nsffile.fs.util.NSFPathUtil;
-
-import com.ibm.commons.util.StringUtil;
-import com.ibm.designer.domino.napi.NotesConstants;
-
-import lotus.domino.DateTime;
-import lotus.domino.EmbeddedObject;
-import lotus.domino.RichTextItem;
 
 /**
  * 
@@ -51,11 +29,12 @@ import lotus.domino.RichTextItem;
  * @since 1.0.0
  */
 public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttributes {
-	private enum Type {
+	public enum Type {
 		File, Folder
 	}
 	
 	private UserPrincipal owner;
+
 	private GroupPrincipal group;
 	private Type type;
 	private FileTime lastModified;
@@ -63,90 +42,18 @@ public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttribut
 	private FileTime created;
 	private long size;
 	private Set<PosixFilePermission> permissions;
-	
-	public NSFFileAttributes(NSFPath path) {
-		try {
-			NSFPathUtil.runWithDocument(path, doc -> {
-				try {
-					if(!doc.isNewNote()) {
-						owner = new NotesPrincipal(doc.getItemValueString(ITEM_OWNER));
-						group = new NotesPrincipal(doc.getItemValueString(ITEM_GROUP));
-						
-						String form = doc.getItemValueString(NotesConstants.FIELD_FORM);
-						if(StringUtil.isNotEmpty(form)) {
-							type = Type.valueOf(form);
-						} else {
-							type = null;
-						}
-						if(doc.hasItem(ITEM_MODIFIED)) {
-							@SuppressWarnings("unchecked")
-							Vector<DateTime> mod = (Vector<DateTime>)doc.getItemValueDateTimeArray(ITEM_MODIFIED);
-							try {
-								lastModified = FileTime.fromMillis(mod.get(0).toJavaDate().getTime());
-							} finally {
-								doc.recycle(mod);;
-							}
-						} else {
-							lastModified = FileTime.from(Instant.now());
-						}
-						DateTime acc = doc.getLastAccessed();
-						if(acc != null) {
-							try {
-								lastAccessed = FileTime.fromMillis(acc.toJavaDate().getTime());
-							} finally {
-								acc.recycle();
-							}
-						} else {
-							lastAccessed = FileTime.from(Instant.now());
-						}
-						if(doc.hasItem(ITEM_CREATED)) {
-							@SuppressWarnings("unchecked")
-							Vector<DateTime> c = (Vector<DateTime>)doc.getItemValueDateTimeArray(ITEM_CREATED);
-							try {
-								created = FileTime.fromMillis(c.get(0).toJavaDate().getTime());
-							} finally {
-								doc.recycle(c);
-							}
-						} else {
-							created = FileTime.from(Instant.now());
-						}
-						
-						// TODO check attachment size
-						if(doc.hasItem(ITEM_FILE)) {
-							RichTextItem item = (RichTextItem)doc.getFirstItem(ITEM_FILE);
-							try {
-								@SuppressWarnings("unchecked")
-								Vector<EmbeddedObject> eos = item.getEmbeddedObjects();
-								try {
-									if(!eos.isEmpty()) {
-										size = eos.get(0).getFileSize();
-									}
-								} finally {
-									item.recycle(eos);
-								}
-							} finally {
-								item.recycle();
-							}
-						}
-						
-						permissions = PosixFilePermissions.fromString(doc.getItemValueString(ITEM_PERMISSIONS));
-					} else {
-						owner = new NotesPrincipal("CN=root"); //$NON-NLS-1$
-						group = new NotesPrincipal("CN=wheel"); //$NON-NLS-1$
-						lastModified = FileTime.from(Instant.EPOCH);
-						lastAccessed = FileTime.from(Instant.EPOCH);
-						created = FileTime.from(Instant.EPOCH);
-						permissions = EnumSet.allOf(PosixFilePermission.class);
-					}
-				} catch(Throwable t) {
-					t.printStackTrace();
-					throw t;
-				}
-			});
-		} catch(Exception e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
-		}
+
+	public NSFFileAttributes(UserPrincipal owner, GroupPrincipal group, Type type, FileTime lastModified,
+			FileTime lastAccessed, FileTime created, long size, Set<PosixFilePermission> permissions) {
+		super();
+		this.owner = owner;
+		this.group = group;
+		this.type = type;
+		this.lastModified = lastModified;
+		this.lastAccessed = lastAccessed;
+		this.created = created;
+		this.size = size;
+		this.permissions = permissions;
 	}
 
 	@Override

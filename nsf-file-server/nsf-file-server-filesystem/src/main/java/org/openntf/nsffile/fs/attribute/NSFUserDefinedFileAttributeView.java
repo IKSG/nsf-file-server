@@ -20,13 +20,9 @@ import java.nio.ByteBuffer;
 import java.nio.file.LinkOption;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.openntf.nsffile.fs.NSFPath;
-import org.openntf.nsffile.fs.util.NSFPathUtil;
-
-import lotus.domino.Item;
-import lotus.domino.NotesException;
+import org.openntf.nsffile.fs.db.NSFAccessor;
 
 /**
  * Implementation of {@link UserDefinedFileAttributeView} that stores user-defined attributes
@@ -36,12 +32,6 @@ import lotus.domino.NotesException;
  * @since 1.0.0
  */
 public class NSFUserDefinedFileAttributeView implements UserDefinedFileAttributeView {
-	
-	/** The prefix used for user-defined items created this way */
-	public static final String PREFIX_USERITEM = "user."; //$NON-NLS-1$
-	/** The name of the custom data type used to store custom attributes */
-	public static final String DATATYPE_NAME = NSFUserDefinedFileAttributeView.class.getSimpleName();
-	
 	private final NSFPath path;
 	
 	public NSFUserDefinedFileAttributeView(NSFPath path, LinkOption... options) {
@@ -53,63 +43,30 @@ public class NSFUserDefinedFileAttributeView implements UserDefinedFileAttribute
 		return "user"; //$NON-NLS-1$
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public List<String> list() throws IOException {
-		return NSFPathUtil.callWithDocument(this.path, doc ->
-			((List<Item>)doc.getItems()).stream()
-				.map(item -> {
-					try {
-						return item.getName();
-					} catch (NotesException e) {
-						throw new RuntimeException(e);
-					}
-				})
-				.filter(name -> name.startsWith(PREFIX_USERITEM) && name.length() > PREFIX_USERITEM.length())
-				.map(name -> name.substring(PREFIX_USERITEM.length()))
-				.collect(Collectors.toList())
-		);
+		return NSFAccessor.listUserDefinedAttributes(this.path);
 	}
 
 	@Override
 	public int size(String name) throws IOException {
-		return get(name).length;
+		return NSFAccessor.getUserDefinedAttribute(this.path, name).length;
 	}
 
 	@Override
 	public int read(String name, ByteBuffer dst) throws IOException {
-		byte[] value = get(name);
+		byte[] value = NSFAccessor.getUserDefinedAttribute(this.path, name);
 		dst.put(value);
 		return value.length;
 	}
 
 	@Override
 	public int write(String name, ByteBuffer src) throws IOException {
-		return NSFPathUtil.callWithDocument(this.path, doc -> {
-			String itemName = PREFIX_USERITEM + name;
-			byte[] data = src.array();
-			doc.replaceItemValueCustomDataBytes(itemName, DATATYPE_NAME, data);
-			doc.computeWithForm(false, false);
-			return data.length;
-		});
+		return NSFAccessor.writeUserDefinedAttribute(this.path, name, src);
 	}
 
 	@Override
 	public void delete(String name) throws IOException {
-		NSFPathUtil.runWithDocument(this.path, doc -> {
-			String itemName = PREFIX_USERITEM + name;
-			if(doc.hasItem(itemName)) {
-				doc.removeItem(itemName);
-				doc.computeWithForm(false, false);
-			}
-		});
-	}
-
-	private byte[] get(String name) {
-		return NSFPathUtil.callWithDocument(this.path, doc -> {
-			String itemName = PREFIX_USERITEM + name;
-			Item item = doc.getFirstItem(itemName);
-			return item == null ? new byte[0] : item.getValueCustomDataBytes(DATATYPE_NAME);
-		});
+		NSFAccessor.deleteUserDefinedAttribute(this.path, name);
 	}
 }

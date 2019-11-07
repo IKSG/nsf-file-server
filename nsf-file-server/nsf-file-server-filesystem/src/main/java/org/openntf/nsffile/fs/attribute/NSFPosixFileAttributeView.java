@@ -24,18 +24,11 @@ import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
-import java.util.Date;
 import java.util.Set;
 
 import org.openntf.nsffile.fs.NSFPath;
-import org.openntf.nsffile.fs.util.NSFPathUtil;
-
-import lotus.domino.DateTime;
-import lotus.domino.Session;
-
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.*;
+import org.openntf.nsffile.fs.db.NSFAccessor;
 
 /**
  * @author Jesse Gallagher
@@ -56,27 +49,8 @@ public class NSFPosixFileAttributeView implements PosixFileAttributeView, BasicF
 
 	@Override
 	public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
-		NSFPathUtil.runWithDocument(this.path, doc -> {
-			Session session = doc.getParentDatabase().getParent();
-			if(lastModifiedTime != null) {
-				DateTime mod = session.createDateTime(new Date(lastModifiedTime.toMillis()));
-				try {
-					doc.replaceItemValue(ITEM_MODIFIED, mod);
-				} finally {
-					mod.recycle();
-				}
-			}
-			if(createTime != null) {
-				DateTime created = session.createDateTime(new Date(createTime.toMillis()));
-				try {
-					doc.replaceItemValue(ITEM_CREATED, created);
-				} finally {
-					created.recycle();
-				}
-			}
-			
-			doc.save();
-		});
+		// lastAccessTime is intentionally ignored, as it cannot be set in the NSF
+		NSFAccessor.setTimes(this.path, lastModifiedTime, createTime);
 	}
 
 	@Override
@@ -86,32 +60,22 @@ public class NSFPosixFileAttributeView implements PosixFileAttributeView, BasicF
 
 	@Override
 	public void setOwner(UserPrincipal owner) throws IOException {
-		NSFPathUtil.runWithDocument(this.path, doc -> {
-			doc.replaceItemValue(ITEM_OWNER, owner.getName());
-			doc.save();
-		});
+		NSFAccessor.setOwner(this.path, owner);
 	}
 
 	@Override
 	public synchronized PosixFileAttributes readAttributes() throws IOException {
-		// TODO cache?
-		return new NSFFileAttributes(path);
+		return NSFAccessor.readAttributes(this.path);
 	}
 
 	@Override
 	public void setPermissions(Set<PosixFilePermission> perms) throws IOException {
-		NSFPathUtil.runWithDocument(this.path, doc -> {
-			doc.replaceItemValue(ITEM_PERMISSIONS, PosixFilePermissions.toString(perms));
-			doc.save();
-		});
+		NSFAccessor.setPermissions(this.path, perms);
 	}
 
 	@Override
 	public void setGroup(GroupPrincipal group) throws IOException {
-		NSFPathUtil.runWithDocument(this.path, doc -> {
-			doc.replaceItemValue(ITEM_GROUP, group.getName());
-			doc.save();
-		});
+		NSFAccessor.setGroup(this.path, group);
 	}
 	
 }

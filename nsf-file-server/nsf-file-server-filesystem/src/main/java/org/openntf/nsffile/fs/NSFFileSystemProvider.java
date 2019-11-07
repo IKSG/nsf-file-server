@@ -53,16 +53,10 @@ import org.openntf.nsffile.fs.attribute.NSFPosixFileAttributeView;
 import org.openntf.nsffile.fs.attribute.NSFUserDefinedFileAttributeView;
 import org.openntf.nsffile.fs.attribute.NoneFileAttributeView;
 import org.openntf.nsffile.fs.attribute.RootFileAttributes;
+import org.openntf.nsffile.fs.db.NSFAccessor;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 
 import com.ibm.commons.util.StringUtil;
-import com.ibm.designer.domino.napi.NotesConstants;
-
-import lotus.domino.Document;
-import lotus.domino.View;
-import lotus.domino.ViewEntry;
-
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.*;
 
 /**
  * Java NIO Filesystem implementation for NSF file storage.
@@ -157,97 +151,22 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
-		try {
-			NSFPathUtil.runWithDocument((NSFPath)dir, doc -> {
-				if(doc.isNewNote()) {
-					doc.replaceItemValue(NotesConstants.FIELD_FORM, FORM_FOLDER);
-					doc.computeWithForm(false, false);
-					doc.save();
-				}
-			});
-		} catch (RuntimeException e) {
-			throw new IOException(e);
-		}
+		NSFAccessor.createDirectory((NSFPath)dir, attrs);
 	}
 
 	@Override
 	public void delete(Path path) throws IOException {
-		try {
-			NSFPathUtil.runWithDocument((NSFPath)path, doc -> {
-				if(!doc.isNewNote()) {
-					if(doc.getParentDatabase().isDocumentLockingEnabled()) {
-						doc.lock();
-					}
-					doc.remove(false);
-				}
-			});
-		} catch (RuntimeException e) {
-			e.printStackTrace();
-			throw new IOException(e);
-		}
+		NSFAccessor.delete((NSFPath)path);
 	}
 
 	@Override
 	public void copy(Path source, Path target, CopyOption... options) throws IOException {
-		try {
-			NSFPathUtil.runWithDatabase((NSFPath)source, database -> {
-				Document targetDoc = NSFPathUtil.getDocument((NSFPath)target, database);
-				if(!targetDoc.isNewNote()) {
-					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
-						targetDoc.lock();
-					}
-					targetDoc.remove(false);
-					targetDoc.recycle();
-				}
-				
-				Document doc = NSFPathUtil.getDocument((NSFPath)source, database);
-				try {
-					targetDoc = doc.copyToDatabase(database);
-					try {
-						targetDoc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
-						targetDoc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
-						targetDoc.computeWithForm(false, false);
-						targetDoc.save();
-					} finally {
-						targetDoc.recycle();
-					}
-				} finally {
-					doc.recycle();
-				}
-			});
-		} catch (RuntimeException e) {
-			e.printStackTrace();
-			throw new IOException(e);
-		}
+		NSFAccessor.copy((NSFPath)source, (NSFPath)target, options);
 	}
 
 	@Override
 	public void move(Path source, Path target, CopyOption... options) throws IOException {
-		try {
-			NSFPathUtil.runWithDatabase((NSFPath)source, database -> {
-				Document targetDoc = NSFPathUtil.getDocument((NSFPath)target, database);
-				if(!targetDoc.isNewNote()) {
-					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
-						targetDoc.lock();
-					}
-					targetDoc.remove(false);
-					targetDoc.recycle();
-				}
-				
-				Document doc = NSFPathUtil.getDocument((NSFPath)source, database);
-				try {
-					doc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
-					doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
-					doc.computeWithForm(false, false);
-					doc.save();
-				} finally {
-					doc.recycle();
-				}
-			});
-		} catch (RuntimeException e) {
-			e.printStackTrace();
-			throw new IOException(e);
-		}
+		NSFAccessor.move((NSFPath)source, (NSFPath)target, options);
 	}
 
 	@Override
@@ -268,7 +187,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void checkAccess(Path path, AccessMode... modes) throws IOException {
-		if(!exists((NSFPath)path)) {
+		if(!NSFAccessor.exists((NSFPath)path)) {
 			throw new NoSuchFileException(path.toString());
 		}
 	}
@@ -276,7 +195,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	@Override
 	public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
 		// TODO cache these?
-		if(!exists((NSFPath)path)) {
+		if(!NSFAccessor.exists((NSFPath)path)) {
 			return type.cast(new NoneFileAttributeView(path));
 		}
 		if(type.isAssignableFrom(UserDefinedFileAttributeView.class)) {
@@ -439,33 +358,4 @@ public class NSFFileSystemProvider extends FileSystemProvider {
             return false;
         }
     }
-	
-	// *******************************************************************************
-	// * Internal utility methods
-	// *******************************************************************************
-	
-	public boolean exists(NSFPath path) {
-		if("/".equals(path.toString())) { //$NON-NLS-1$
-			return true;
-		}
-		return NSFPathUtil.callWithDatabase(path, database -> {
-			View view = database.getView(VIEW_FILESBYPATH);
-			try {
-				view.setAutoUpdate(false);
-				view.refresh();
-				ViewEntry entry = view.getEntryByKey(path.toAbsolutePath().toString(), true);
-				try {
-					return entry != null;
-				} finally {
-					if(entry != null) {
-						entry.recycle();
-					}
-				}
-			} finally {
-				if(view != null) {
-					view.recycle();
-				}
-			}
-		});
-	}
 }

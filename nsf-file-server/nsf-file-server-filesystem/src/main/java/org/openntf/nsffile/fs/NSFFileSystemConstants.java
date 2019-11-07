@@ -15,6 +15,8 @@
  */
 package org.openntf.nsffile.fs;
 
+import org.openntf.nsffile.fs.attribute.NSFUserDefinedFileAttributeView;
+
 /**
  * Common constants used in the filesystem implementation
  * 
@@ -50,4 +52,10 @@ public enum NSFFileSystemConstants {
 	public static final String ITEM_GROUP = "Group"; //$NON-NLS-1$
 	/** The item used to store POSIX-format permissions */
 	public static final String ITEM_PERMISSIONS = "Permissions"; //$NON-NLS-1$
+
+	
+	/** The prefix used for user-defined items created this way */
+	public static final String PREFIX_USERITEM = "user."; //$NON-NLS-1$
+	/** The name of the custom data type used to store custom attributes */
+	public static final String DATATYPE_NAME = NSFUserDefinedFileAttributeView.class.getSimpleName();
 }

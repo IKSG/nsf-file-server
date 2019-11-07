@@ -16,7 +16,6 @@
 package org.openntf.nsffile.fs;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -26,19 +25,11 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileAttribute;
 import java.time.Instant;
 import java.util.Set;
 
-import org.openntf.nsffile.fs.util.NSFPathUtil;
-
-import com.ibm.designer.domino.napi.NotesConstants;
-
-import lotus.domino.EmbeddedObject;
-import lotus.domino.RichTextItem;
-
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.*;
+import org.openntf.nsffile.fs.db.NSFAccessor;
 
 /**
  * 
@@ -59,28 +50,7 @@ public class NSFFileChannel extends FileChannel {
 		this.options = options;
 		
 		try {
-			this.tempFile = NSFPathUtil.callWithDocument(path, doc -> {
-				Path resultParent = Files.createTempDirectory(path.getFileName().toString());
-				Path result = resultParent.resolve(path.getFileName().toString());
-				if(doc.hasItem(ITEM_FILE)) {
-					// TODO add sanity checks
-					RichTextItem rtitem = (RichTextItem)doc.getFirstItem(ITEM_FILE);
-					try {
-						EmbeddedObject eo = (EmbeddedObject) rtitem.getEmbeddedObjects().get(0);
-						try(InputStream is = eo.getInputStream()) {
-							Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
-						} finally {
-							eo.recycle();
-						}
-					} finally {
-						rtitem.recycle();
-					}
-				} else {
-					Files.createFile(result);
-				}
-				
-				return result;
-			});
+			this.tempFile = NSFAccessor.extractAttachment(path);
 			this.tempFileCreated = Files.getLastModifiedTime(this.tempFile).toInstant();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -185,27 +155,7 @@ public class NSFFileChannel extends FileChannel {
 		this.tempFileChannel = null;
 		
 		if(this.modified || Files.getLastModifiedTime(this.tempFile).toInstant().isAfter(this.tempFileCreated)) {
-			// Write back to the DB
-			try {
-				NSFPathUtil.runWithDocument(this.path, doc -> {
-					if(doc.isNewNote()) {
-						doc.replaceItemValue(NotesConstants.FIELD_FORM, ITEM_FILE);
-					}
-					if(doc.hasItem(ITEM_FILE)) {
-						doc.removeItem(ITEM_FILE);
-					}
-					RichTextItem item = doc.createRichTextItem(ITEM_FILE);
-					try {
-						item.embedObject(EmbeddedObject.EMBED_ATTACHMENT, "", this.tempFile.toAbsolutePath().toString(), null); //$NON-NLS-1$
-					} finally {
-						item.recycle();
-					}
-					doc.computeWithForm(false, false);
-					doc.save();
-				});
-			} catch (RuntimeException e) {
-				throw new IOException(e);
-			}
+			NSFAccessor.storeAttachment(path, this.tempFile);
 		}
 		
 		Files.deleteIfExists(this.tempFile);
