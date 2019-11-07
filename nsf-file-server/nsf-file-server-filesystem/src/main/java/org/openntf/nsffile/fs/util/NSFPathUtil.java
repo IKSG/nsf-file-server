@@ -19,6 +19,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
@@ -317,7 +318,7 @@ public enum NSFPathUtil {
 				} finally {
 					mod.recycle();
 				}
-				String dbKey = session.getEffectiveUserName() + database.getFilePath();
+				String dbKey = database.getFilePath() + "//" + session.getEffectiveUserName(); //$NON-NLS-1$
 				TimedCacheHolder cacheHolder = PER_DATABASE_CACHE.computeIfAbsent(dbKey, key -> new TimedCacheHolder());
 				return (T)cacheHolder.get(modTime).computeIfAbsent(cacheId, key -> {
 					try {
@@ -328,6 +329,22 @@ public enum NSFPathUtil {
 				});
 			}
 		});
+	}
+	
+	/**
+	 * Invalidates any in-memory cache for the provided database.
+	 * 
+	 * @param database 
+	 */
+	public static synchronized void invalidateDatabaseCache(Database database) throws NotesException {
+		String dbKeyPrefix = database.getFilePath();
+		Iterator<String> iter = PER_DATABASE_CACHE.keySet().iterator();
+		while(iter.hasNext()) {
+			String key = iter.next();
+			if(key.startsWith(dbKeyPrefix+"//")) { //$NON-NLS-1$
+				iter.remove();
+			}
+		}
 	}
 	
 	private static final ThreadLocal<Map<String, Database>> THREAD_DATABASES = ThreadLocal.withInitial(HashMap::new);

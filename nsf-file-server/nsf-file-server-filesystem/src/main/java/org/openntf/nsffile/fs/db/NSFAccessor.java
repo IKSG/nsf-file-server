@@ -36,6 +36,7 @@ import org.openntf.nsffile.util.NotesThreadFactory;
 import com.ibm.commons.util.StringUtil;
 import com.ibm.designer.domino.napi.NotesConstants;
 
+import lotus.domino.Database;
 import lotus.domino.DateTime;
 import lotus.domino.Document;
 import lotus.domino.EmbeddedObject;
@@ -158,8 +159,10 @@ public enum NSFAccessor {
 				}
 				doc.computeWithForm(false, false);
 				doc.save();
+				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch (RuntimeException e) {
+			e.printStackTrace();
 			throw new IOException(e);
 		}
 	}
@@ -179,9 +182,11 @@ public enum NSFAccessor {
 					doc.replaceItemValue(NotesConstants.FIELD_FORM, FORM_FOLDER);
 					doc.computeWithForm(false, false);
 					doc.save();
+					NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 				}
 			});
 		} catch (RuntimeException e) {
+			e.printStackTrace();
 			throw new IOException(e);
 		}
 	}
@@ -200,10 +205,13 @@ public enum NSFAccessor {
 					if(doc.getParentDatabase().isDocumentLockingEnabled()) {
 						doc.lock();
 					}
+					Database db = doc.getParentDatabase();
 					doc.remove(false);
+					NSFPathUtil.invalidateDatabaseCache(db);
 				}
 			});
 		} catch (RuntimeException e) {
+			e.printStackTrace();
 			throw new IOException(e);
 		}
 	}
@@ -243,8 +251,10 @@ public enum NSFAccessor {
 				} finally {
 					doc.recycle();
 				}
+				NSFPathUtil.invalidateDatabaseCache(database);
 			});
 		} catch (RuntimeException e) {
+			e.printStackTrace();
 			throw new IOException(e);
 		}
 	}
@@ -278,8 +288,10 @@ public enum NSFAccessor {
 				} finally {
 					doc.recycle();
 				}
+				NSFPathUtil.invalidateDatabaseCache(database);
 			});
 		} catch (RuntimeException e) {
+			e.printStackTrace();
 			throw new IOException(e);
 		}
 	}
@@ -362,6 +374,7 @@ public enum NSFAccessor {
 				}
 			});
 		} catch(Exception e) {
+			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
 	}
@@ -516,8 +529,10 @@ public enum NSFAccessor {
 			NSFPathUtil.runWithDocument(path, doc -> {
 				doc.replaceItemValue(ITEM_OWNER, owner.getName());
 				doc.save();
+				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch(RuntimeException e) {
+			e.printStackTrace();
 			throw new IOException(e);
 		}
 	}
@@ -534,8 +549,10 @@ public enum NSFAccessor {
 			NSFPathUtil.runWithDocument(path, doc -> {
 				doc.replaceItemValue(ITEM_GROUP, group.getName());
 				doc.save();
+				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch(RuntimeException e) {
+			e.printStackTrace();
 			throw new IOException(e);
 		}
 	}
@@ -552,8 +569,10 @@ public enum NSFAccessor {
 			NSFPathUtil.runWithDocument(path, doc -> {
 				doc.replaceItemValue(ITEM_PERMISSIONS, PosixFilePermissions.toString(perms));
 				doc.save();
+				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch(RuntimeException e) {
+			e.printStackTrace();
 			throw new IOException(e);
 		}
 	}
@@ -588,8 +607,10 @@ public enum NSFAccessor {
 				}
 				
 				doc.save();
+				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch(RuntimeException e) {
+			e.printStackTrace();
 			throw new IOException(e);
 		}
 	}
@@ -619,6 +640,7 @@ public enum NSFAccessor {
 					.collect(Collectors.toList())
 			);
 		} catch(RuntimeException e) {
+			e.printStackTrace();
 			throw new IOException(e);
 		}
 	}
@@ -639,9 +661,11 @@ public enum NSFAccessor {
 				byte[] data = src.array();
 				doc.replaceItemValueCustomDataBytes(itemName, DATATYPE_NAME, data);
 				doc.computeWithForm(false, false);
+				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 				return data.length;
 			});
 		} catch(RuntimeException e) {
+			e.printStackTrace();
 			throw new IOException(e);
 		}
 	}
@@ -660,9 +684,12 @@ public enum NSFAccessor {
 				if(doc.hasItem(itemName)) {
 					doc.removeItem(itemName);
 					doc.computeWithForm(false, false);
+					doc.save();
+					NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 				}
 			});
 		} catch(RuntimeException e) {
+			e.printStackTrace();
 			throw new IOException(e);
 		}
 	}
@@ -684,6 +711,7 @@ public enum NSFAccessor {
 				return item == null ? new byte[0] : item.getValueCustomDataBytes(DATATYPE_NAME);
 			});
 		} catch(RuntimeException e) {
+			e.printStackTrace();
 			throw new IOException(e);
 		}
 	}
