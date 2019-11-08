@@ -25,8 +25,10 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
-import java.time.Instant;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Set;
 
 import org.openntf.nsffile.fs.db.NSFAccessor;
@@ -38,24 +40,27 @@ import org.openntf.nsffile.fs.db.NSFAccessor;
  */
 public class NSFFileChannel extends FileChannel {
 	
+	private static final Set<? extends OpenOption> WRITE_OPTIONS = EnumSet.of(
+		StandardOpenOption.APPEND,
+		StandardOpenOption.CREATE,
+		StandardOpenOption.CREATE_NEW,
+		StandardOpenOption.TRUNCATE_EXISTING,
+		StandardOpenOption.WRITE
+	);
+	
 	private final NSFPath path;
 	private final Path tempFile;
-	private final Instant tempFileCreated;
-	// maintain a modification flag as file modification dates are 1s precision on JDK < 9
-	private boolean modified;
 	private Set<? extends OpenOption> options;
+	private final boolean openForWrite;
 	
 	public NSFFileChannel(NSFPath path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) {
 		this.path = path;
 		this.options = options;
 		
-		try {
-			this.tempFile = NSFAccessor.extractAttachment(path);
-			this.tempFileCreated = Files.getLastModifiedTime(this.tempFile).toInstant();
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
-		}
+		// TODO implement TRUNCATE_EXISTING
+		this.tempFile = NSFAccessor.extractAttachment(path);
+		
+		this.openForWrite = !Collections.disjoint(WRITE_OPTIONS, options);
 	}
 
 	@Override
@@ -70,13 +75,11 @@ public class NSFFileChannel extends FileChannel {
 
 	@Override
 	public int write(ByteBuffer src) throws IOException {
-		this.modified = true;
 		return getTempFileChannel().write(src);
 	}
 
 	@Override
 	public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
-		this.modified = true;
 		return getTempFileChannel().write(srcs, offset, length);
 	}
 
@@ -98,7 +101,6 @@ public class NSFFileChannel extends FileChannel {
 
 	@Override
 	public FileChannel truncate(long size) throws IOException {
-		this.modified = true;
 		getTempFileChannel().truncate(size);
 		return this;
 	}
@@ -116,7 +118,6 @@ public class NSFFileChannel extends FileChannel {
 
 	@Override
 	public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
-		this.modified = true;
 		return getTempFileChannel().transferFrom(src, position, count);
 	}
 
@@ -127,7 +128,6 @@ public class NSFFileChannel extends FileChannel {
 
 	@Override
 	public int write(ByteBuffer src, long position) throws IOException {
-		this.modified = true;
 		return getTempFileChannel().write(src, position);
 	}
 
@@ -151,10 +151,11 @@ public class NSFFileChannel extends FileChannel {
 
 	@Override
 	protected void implCloseChannel() throws IOException {
+		// TODO implement DELETE_ON_CLOSE
 		getTempFileChannel().close();
 		this.tempFileChannel = null;
 		
-		if(this.modified || Files.getLastModifiedTime(this.tempFile).toInstant().isAfter(this.tempFileCreated)) {
+		if(openForWrite) {
 			NSFAccessor.storeAttachment(path, this.tempFile);
 		}
 		
