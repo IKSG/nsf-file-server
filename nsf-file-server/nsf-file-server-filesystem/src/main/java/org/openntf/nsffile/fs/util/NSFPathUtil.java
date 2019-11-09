@@ -17,11 +17,13 @@ package org.openntf.nsffile.fs.util;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
 import org.openntf.nsffile.fs.NSFFileSystem;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
@@ -51,8 +53,11 @@ public enum NSFPathUtil {
 	;
 	
 	public static final String LOCAL_SERVER = "LOCALSERVER"; //$NON-NLS-1$
-	public static final String NAME_DELIM = "NAMEDELIM"; //$NON-NLS-1$
-	public static final String PREFIX_REPID = "REPLICAID"; //$NON-NLS-1$
+	
+	public static final Function<String, String> encoder = path -> StringUtil.isEmpty(path) ? "" : //$NON-NLS-1$
+		Base64.getUrlEncoder().encodeToString(path.getBytes()).replace('=', '-') + "END"; //$NON-NLS-1$
+	public static final Function<String, String> decoder = enc -> StringUtil.isEmpty(enc) ? "" : //$NON-NLS-1$
+		new String(Base64.getUrlDecoder().decode(enc.replace('-', '=').substring(0, enc.length()-"END".length()).getBytes()));; //$NON-NLS-1$
 	
 	/**
 	 * Extracts the NSF API path from the provided URI. For example:
@@ -70,29 +75,21 @@ public enum NSFPathUtil {
 	public static String extractApiPath(URI uri) {
 		Objects.requireNonNull(uri, "uri cannot be null");
 		
-		String host = uri.getHost();
+		String host = decoder.apply(uri.getHost());
 		if(LOCAL_SERVER.equals(host)) {
 			host = null;
-		} else if(StringUtil.isNotEmpty(host)) {
-			host = host.replace(NAME_DELIM, "/"); //$NON-NLS-1$
 		}
-		String pathInfo = uri.getPath();
+		String pathInfo = uri.getPath().substring(1);
 		if(pathInfo == null || pathInfo.isEmpty()) {
 			throw new IllegalArgumentException("URI path info cannot be empty");
 		}
 		
 		String nsfPath;
-		int nsfIndex = pathInfo.toLowerCase().indexOf(".nsf"); //$NON-NLS-1$
-		if(nsfIndex < 2) {
-			// Check if it's a replica ID
-			String repId = pathInfo.substring(1);
-			if(repId.startsWith(PREFIX_REPID)) {
-				nsfPath = repId.substring(PREFIX_REPID.length());
-			} else {
-				throw new IllegalArgumentException("Unable to extract NSF path from " + uri);
-			}
+		int nsfIndex = pathInfo.indexOf('/');
+		if(nsfIndex < 0) {
+			nsfPath = decoder.apply(pathInfo);
 		} else {
-			nsfPath = pathInfo.substring(1, nsfIndex+4);
+			nsfPath = decoder.apply(pathInfo.substring(0, nsfIndex));
 		}
 		if(host == null || host.isEmpty()) {
 			return nsfPath;
@@ -118,15 +115,17 @@ public enum NSFPathUtil {
 		Objects.requireNonNull(uri, "uri cannot be null");
 		
 		String pathInfo = uri.getPath();
-		if(pathInfo == null || pathInfo.isEmpty()) {
+		if(pathInfo == null || pathInfo.isEmpty() || "/".equals(pathInfo)) { //$NON-NLS-1$
 			throw new IllegalArgumentException("URI path info cannot be empty");
 		}
+		pathInfo = pathInfo.substring(1); // Chop off the initial /
 		
-		int nsfIndex = pathInfo.toLowerCase().indexOf(".nsf"); //$NON-NLS-1$
-		if(nsfIndex < 2) {
-			throw new IllegalArgumentException("Unable to extract NSF path from " + uri);
+		int nsfIndex = pathInfo.indexOf('/');
+		if(nsfIndex < 0) {
+			return ""; //$NON-NLS-1$
+		} else {
+			return pathInfo.substring(nsfIndex);
 		}
-		return pathInfo.substring(nsfIndex+4);
 	}
 	
 	/**
@@ -149,21 +148,13 @@ public enum NSFPathUtil {
 		String nsfPath;
 		if(bangIndex < 0) {
 			host = LOCAL_SERVER;
-			nsfPath = "/" + apiPath //$NON-NLS-1$
-				.replace('\\', '/')
-				.replace(":", ""); //$NON-NLS-1$ //$NON-NLS-2$
+			nsfPath = apiPath;
 		} else {
-			host = apiPath
-				.substring(0, bangIndex)
-				.replace("/", NAME_DELIM); //$NON-NLS-1$
-			nsfPath = "/" + apiPath //$NON-NLS-1$
-				.substring(bangIndex+2)
-				.replace('\\', '/')
-				.replace(":", ""); //$NON-NLS-1$ //$NON-NLS-2$
+			host = apiPath.substring(0, bangIndex);
+			nsfPath = apiPath.substring(bangIndex+2);
 		}
-		if(isReplicaID(nsfPath.substring(1))) {
-			nsfPath = "/" + PREFIX_REPID + nsfPath.substring(1); //$NON-NLS-1$
-		}
+		host = encoder.apply(host);
+		nsfPath = "/" + encoder.apply(nsfPath); //$NON-NLS-1$
 		return new URI(NSFFileSystemProvider.SCHEME, userName, host, -1, nsfPath, null, null);
 	}
 	
@@ -182,28 +173,9 @@ public enum NSFPathUtil {
 			throw new IllegalArgumentException("apiPath cannot be empty");
 		}
 		
-		int bangIndex = apiPath.indexOf("!!"); //$NON-NLS-1$
-		String host;
-		String nsfPath;
-		if(bangIndex < 0) {
-			host = LOCAL_SERVER;
-			nsfPath = "/" + apiPath //$NON-NLS-1$
-				.replace('\\', '/')
-				.replace(":", ""); //$NON-NLS-1$ //$NON-NLS-2$
-		} else {
-			host = apiPath
-				.substring(0, bangIndex)
-				.replace("/", NAME_DELIM); //$NON-NLS-1$
-			nsfPath = "/" + apiPath //$NON-NLS-1$
-				.substring(bangIndex+2)
-				.replace('\\', '/')
-				.replace(":", ""); //$NON-NLS-1$ //$NON-NLS-2$
-		}
-		if(isReplicaID(nsfPath.substring(1))) {
-			nsfPath = "/" + PREFIX_REPID + nsfPath.substring(1); //$NON-NLS-1$
-		}
+		URI base = toFileSystemURI(userName, apiPath);
 		
-		String pathInfo = concat("/", nsfPath); //$NON-NLS-1$
+		String pathInfo = concat("/", base.getPath()); //$NON-NLS-1$
 		if(StringUtil.isNotEmpty(pathBit)) {
 			pathInfo = concat(pathInfo, pathBit);
 		}
@@ -213,7 +185,7 @@ public enum NSFPathUtil {
 			}
 		}
 		
-		return new URI(NSFFileSystemProvider.SCHEME, userName, host, -1, pathInfo, null, null);
+		return new URI(NSFFileSystemProvider.SCHEME, userName, base.getHost(), -1, pathInfo, null, null);
 	}
 	
 	public static String concat(final char delim, final String... parts) {
@@ -429,7 +401,7 @@ public enum NSFPathUtil {
 				}
 				if(isReplicaID(dbPath)) {
 					Database database = session.getDatabase(null, null);
-					database.openByReplicaID(server, dbPath);
+					database.openByReplicaID(server, normalizeReplicaID(dbPath));
 					return database;
 				} else {
 					return session.getDatabase(server, dbPath);
