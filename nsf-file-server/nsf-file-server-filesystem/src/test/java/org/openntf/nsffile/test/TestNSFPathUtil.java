@@ -186,6 +186,17 @@ public class TestNSFPathUtil {
 	}
 	
 	@Test
+	public void testRemoteURIConversionPath4() throws URISyntaxException {
+		String host = encoder.apply("CN=some.server.com/O=SomeOrg");
+		String nsf = encoder.apply("foo/bar.nsf");
+		String apiPath = "CN=some.server.com/O=SomeOrg!!foo/bar.nsf";
+		String filePath = "foo/bar";
+		String more = "baz";
+		URI expected = URI.create(NSFFileSystemProvider.SCHEME + "://John%20Doe@" + host + "/" + nsf + "/foo/bar/baz");
+		assertEquals(expected, NSFPathUtil.toFileSystemURI("John Doe", apiPath, filePath, more));
+	}
+	
+	@Test
 	public void testReplicaIDConversionPath() throws URISyntaxException {
 		String host = encoder.apply("some.server.com/SomeOrg");
 		String nsf = encoder.apply("852584A8:00507284");
