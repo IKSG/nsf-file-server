@@ -54,9 +54,9 @@ public enum NSFPathUtil {
 	
 	public static final String LOCAL_SERVER = "LOCALSERVER"; //$NON-NLS-1$
 	
-	public static final Function<String, String> encoder = path -> StringUtil.isEmpty(path) ? "" : //$NON-NLS-1$
+	private static final Function<String, String> encoder = path -> StringUtil.isEmpty(path) ? "" : //$NON-NLS-1$
 		Base64.getUrlEncoder().encodeToString(path.getBytes()).replace('=', '-') + "END"; //$NON-NLS-1$
-	public static final Function<String, String> decoder = enc -> StringUtil.isEmpty(enc) ? "" : //$NON-NLS-1$
+	private static final Function<String, String> decoder = enc -> StringUtil.isEmpty(enc) ? "" : //$NON-NLS-1$
 		new String(Base64.getUrlDecoder().decode(enc.replace('-', '=').substring(0, enc.length()-"END".length()).getBytes()));; //$NON-NLS-1$
 	
 	/**

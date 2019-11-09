@@ -16,205 +16,126 @@
 package org.openntf.nsffile.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
-import org.openntf.nsffile.fs.NSFFileSystemProvider;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 
 @SuppressWarnings("nls")
 public class TestNSFPathUtil {
-	private static final Function<String, String> encoder = NSFPathUtil.encoder;
-	
 	@Test
-	public void testExtractAPIPath_local() {
-		String host = encoder.apply(NSFPathUtil.LOCAL_SERVER);
-		String nsf = encoder.apply("foo.nsf");
-		URI uri = URI.create(NSFFileSystemProvider.SCHEME + "://" + host + "/" + nsf + "/bar/baz");
-		assertEquals("foo.nsf", NSFPathUtil.extractApiPath(uri));
-	}
-	
-	@Test
-	public void testExtractAPIPath_local2() {
-		String host = encoder.apply(NSFPathUtil.LOCAL_SERVER);
-		String nsf = encoder.apply("foo/bar.nsf");
-		URI uri = URI.create(NSFFileSystemProvider.SCHEME + "://" + host + "/" + nsf + "/bar/baz");
-		assertEquals("foo/bar.nsf", NSFPathUtil.extractApiPath(uri));
-	}
-	
-	@Test
-	public void testExtractAPIPathRemote() {
-		String host = encoder.apply("someserver");
-		String nsf = encoder.apply("foo.nsf");
-		URI uri = URI.create(NSFFileSystemProvider.SCHEME + "://" + host + "/" + nsf + "/bar/baz");
-		assertEquals("someserver!!foo.nsf", NSFPathUtil.extractApiPath(uri));
-	}
-	
-	@Test
-	public void testExtractAPIPathRemote2() {
-		String host = encoder.apply("someserver");
-		String nsf = encoder.apply("foo/bar.nsf");
-		URI uri = URI.create(NSFFileSystemProvider.SCHEME + "://" + host + "/" + nsf + "/bar/baz");
-		assertEquals("someserver!!foo/bar.nsf", NSFPathUtil.extractApiPath(uri));
-	}
-	
-	@Test
-	public void testExtractAPIPathRemote3() {
-		String host = encoder.apply("someserver/SomeOrg");
-		String nsf = encoder.apply("foo/bar.nsf");
-		URI uri = URI.create(NSFFileSystemProvider.SCHEME + "://" + host + "/" + nsf + "/bar/baz");
-		assertEquals("someserver/SomeOrg!!foo/bar.nsf", NSFPathUtil.extractApiPath(uri));
-	}
-	
-	@Test
-	public void testExtractFilePath_local() {
-		String nsf = encoder.apply("foo.nsf");
-		URI uri = URI.create(NSFFileSystemProvider.SCHEME + ":///" + nsf + "/bar/baz");
-		assertEquals("/bar/baz", NSFPathUtil.extractPathInfo(uri));
-	}
-	
-	@Test
-	public void testExtractFilePath_local2() {
-		String nsf = encoder.apply("foo/bar.nsf");
-		URI uri = URI.create(NSFFileSystemProvider.SCHEME + ":///" + nsf + "/bar/baz");
-		assertEquals("/bar/baz", NSFPathUtil.extractPathInfo(uri));
-	}
-	
-	@Test
-	public void testExtractFilePathRemote() {
-		String host = encoder.apply("someserver");
-		String nsf = encoder.apply("foo.nsf");
-		URI uri = URI.create(NSFFileSystemProvider.SCHEME + "://" + host + "/" + nsf + "/bar/baz");
-		assertEquals("/bar/baz", NSFPathUtil.extractPathInfo(uri));
-	}
-	
-	@Test
-	public void testExtractFilePathRemote2() {
-		String host = encoder.apply("someserver");
-		String nsf = encoder.apply("foo/bar.nsf");
-		URI uri = URI.create(NSFFileSystemProvider.SCHEME + "://" + host + "/" + nsf + "/bar/baz");
-		assertEquals("/bar/baz", NSFPathUtil.extractPathInfo(uri));
-	}
-	
-	@Test
-	public void testBasicURIConversion() throws URISyntaxException {
-		String host = encoder.apply(NSFPathUtil.LOCAL_SERVER);
-		String nsf = encoder.apply("foo.nsf");
+	public void testUriRoundTrip() throws URISyntaxException {
 		String apiPath = "foo.nsf";
-		URI expected = URI.create(NSFFileSystemProvider.SCHEME + "://John%20Doe@" + host + "/" + nsf);
-		assertEquals(expected, NSFPathUtil.toFileSystemURI("John Doe", apiPath));
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
+		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
 	}
 	
 	@Test
-	public void testBasicURIConversion2() throws URISyntaxException {
-		String host = encoder.apply(NSFPathUtil.LOCAL_SERVER);
-		String nsf = encoder.apply("foo/bar.nsf");
+	public void testUriRoundTrip2() throws URISyntaxException {
 		String apiPath = "foo/bar.nsf";
-		URI expected = URI.create(NSFFileSystemProvider.SCHEME + "://John%20Doe@" + host + "/" + nsf);
-		assertEquals(expected, NSFPathUtil.toFileSystemURI("John Doe", apiPath));
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
+		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
 	}
 	
 	@Test
-	public void testRemoteURIConversion() throws URISyntaxException {
-		String host = encoder.apply("someserver");
-		String nsf = encoder.apply("foo.nsf");
+	public void testUriRoundTrip3() throws URISyntaxException {
+		String apiPath = "852584A8:00507284";
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
+		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+	}
+	
+	@Test
+	public void testUriRoundTrip4() throws URISyntaxException {
+		String apiPath = "852584A800507284";
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
+		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+	}
+	
+	@Test
+	public void testUriRoundTripServer() throws URISyntaxException {
 		String apiPath = "someserver!!foo.nsf";
-		URI expected = URI.create(NSFFileSystemProvider.SCHEME + "://John%20Doe@" + host + "/" + nsf);
-		assertEquals(expected, NSFPathUtil.toFileSystemURI("John Doe", apiPath));
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
+		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
 	}
 	
 	@Test
-	public void testRemoteURIConversion2() throws URISyntaxException {
-		String host = encoder.apply("someserver");
-		String nsf = encoder.apply("foo/bar.nsf");
+	public void testUriRoundTripServer2() throws URISyntaxException {
 		String apiPath = "someserver!!foo/bar.nsf";
-		URI expected = URI.create(NSFFileSystemProvider.SCHEME + "://John%20Doe@" + host + "/" + nsf);
-		assertEquals(expected, NSFPathUtil.toFileSystemURI("John Doe", apiPath));
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
+		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
 	}
 	
 	@Test
-	public void testRemoteURIConversion3() throws URISyntaxException {
-		String host = encoder.apply("someserver/SomeOrg");
-		String nsf = encoder.apply("foo/bar.nsf");
-		String apiPath = "someserver/SomeOrg!!foo/bar.nsf";
-		URI expected = URI.create(NSFFileSystemProvider.SCHEME + "://John%20Doe@" + host + "/" + nsf);
-		assertEquals(expected, NSFPathUtil.toFileSystemURI("John Doe", apiPath));
+	public void testUriRoundTripServer3() throws URISyntaxException {
+		String apiPath = "someserver!!852584A8:00507284";
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
+		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
 	}
 	
 	@Test
-	public void testRemoteURIConversion4() throws URISyntaxException {
-		String host = encoder.apply("some.server.com/SomeOrg");
-		String nsf = encoder.apply("foo/bar.nsf");
-		String apiPath = "some.server.com/SomeOrg!!foo/bar.nsf";
-		URI expected = URI.create(NSFFileSystemProvider.SCHEME + "://John%20Doe@" + host + "/" + nsf);
-		assertEquals(expected, NSFPathUtil.toFileSystemURI("John Doe", apiPath));
+	public void testUriRoundTripServer4() throws URISyntaxException {
+		String apiPath = "someserver!!852584A800507284";
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
+		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
 	}
 	
 	@Test
-	public void testRemoteURIConversionPath() throws URISyntaxException {
-		String host = encoder.apply("some.server.com/SomeOrg");
-		String nsf = encoder.apply("foo/bar.nsf");
-		String apiPath = "some.server.com/SomeOrg!!foo/bar.nsf";
-		String filePath = "foo";
-		URI expected = URI.create(NSFFileSystemProvider.SCHEME + "://John%20Doe@" + host + "/" + nsf + "/foo");
-		assertEquals(expected, NSFPathUtil.toFileSystemURI("John Doe", apiPath, filePath));
+	public void testUriRoundTripServerDn() throws URISyntaxException {
+		String apiPath = "CN=some.server/O=SomeOrg!!foo.nsf";
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
+		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
 	}
 	
 	@Test
-	public void testRemoteURIConversionPath2() throws URISyntaxException {
-		String host = encoder.apply("some.server.com/SomeOrg");
-		String nsf = encoder.apply("foo/bar.nsf");
-		String apiPath = "some.server.com/SomeOrg!!foo/bar.nsf";
-		String filePath = "foo/bar";
-		URI expected = URI.create(NSFFileSystemProvider.SCHEME + "://John%20Doe@" + host + "/" + nsf + "/foo/bar");
-		assertEquals(expected, NSFPathUtil.toFileSystemURI("John Doe", apiPath, filePath));
+	public void testUriRoundTripServerDn2() throws URISyntaxException {
+		String apiPath = "CN=some.server/O=SomeOrg!!foo/bar.nsf";
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
+		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
 	}
 	
 	@Test
-	public void testRemoteURIConversionPath3() throws URISyntaxException {
-		String host = encoder.apply("some.server.com/SomeOrg");
-		String nsf = encoder.apply("foo/bar.nsf");
-		String apiPath = "some.server.com/SomeOrg!!foo/bar.nsf";
-		String filePath = "foo/bar";
-		String more = "baz";
-		URI expected = URI.create(NSFFileSystemProvider.SCHEME + "://John%20Doe@" + host + "/" + nsf + "/foo/bar/baz");
-		assertEquals(expected, NSFPathUtil.toFileSystemURI("John Doe", apiPath, filePath, more));
+	public void testUriRoundTripServerDn3() throws URISyntaxException {
+		String apiPath = "CN=some.server/O=SomeOrg!!852584A8:00507284";
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
+		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
 	}
 	
 	@Test
-	public void testRemoteURIConversionPath4() throws URISyntaxException {
-		String host = encoder.apply("CN=some.server.com/O=SomeOrg");
-		String nsf = encoder.apply("foo/bar.nsf");
-		String apiPath = "CN=some.server.com/O=SomeOrg!!foo/bar.nsf";
-		String filePath = "foo/bar";
-		String more = "baz";
-		URI expected = URI.create(NSFFileSystemProvider.SCHEME + "://John%20Doe@" + host + "/" + nsf + "/foo/bar/baz");
-		assertEquals(expected, NSFPathUtil.toFileSystemURI("John Doe", apiPath, filePath, more));
+	public void testUriRoundTripServerDn4() throws URISyntaxException {
+		String apiPath = "CN=some.server/O=SomeOrg!!852584A800507284";
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
+		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
 	}
 	
 	@Test
-	public void testReplicaIDConversionPath() throws URISyntaxException {
-		String host = encoder.apply("some.server.com/SomeOrg");
-		String nsf = encoder.apply("852584A8:00507284");
-		String apiPath = "some.server.com/SomeOrg!!852584A8:00507284";
-		String filePath = "foo/bar";
-		String more = "baz";
-		URI expected = URI.create(NSFFileSystemProvider.SCHEME + "://John%20Doe@" + host + "/" + nsf + "/foo/bar/baz");
-		assertEquals(expected, NSFPathUtil.toFileSystemURI("John Doe", apiPath, filePath, more));
+	public void testUriRoundTripServerDnFilePath() throws URISyntaxException {
+		String apiPath = "CN=some.server/O=SomeOrg!!foo.nsf";
+		String filePath = "/foo/bar";
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath, filePath);
+		assertEquals(filePath, NSFPathUtil.extractPathInfo(uri));
 	}
 	
 	@Test
-	public void testReplicaIDConversionPath2() throws URISyntaxException {
-		String host = encoder.apply("some.server.com/SomeOrg");
-		String nsf = encoder.apply("852584A800507284");
-		String apiPath = "some.server.com/SomeOrg!!852584A800507284";
-		String filePath = "foo/bar";
-		String more = "baz";
-		URI expected = URI.create(NSFFileSystemProvider.SCHEME + "://John%20Doe@" + host + "/" + nsf + "/foo/bar/baz");
-		assertEquals(expected, NSFPathUtil.toFileSystemURI("John Doe", apiPath, filePath, more));
+	public void testUriRoundTripServerDnFilePath2() throws URISyntaxException {
+		String apiPath = "CN=some.server/O=SomeOrg!!foo/bar.nsf";
+		String filePath = "/foo/bar";
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath, filePath);
+		assertEquals(filePath, NSFPathUtil.extractPathInfo(uri));
+	}
+	
+	@Test
+	public void testUriRoundTripServerDnFilePath3() throws URISyntaxException {
+		String apiPath = "CN=some.server/O=SomeOrg!!852584A8:00507284";
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath, "foo", "bar");
+		assertEquals("/foo/bar", NSFPathUtil.extractPathInfo(uri));
+	}
+	
+	@Test
+	public void testUriRoundTripServerDnFilePath4() throws URISyntaxException {
+		String apiPath = "CN=some.server/O=SomeOrg!!852584A800507284";
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath, "foo", "bar");
+		assertEquals("/foo/bar", NSFPathUtil.extractPathInfo(uri));
 	}
 }
