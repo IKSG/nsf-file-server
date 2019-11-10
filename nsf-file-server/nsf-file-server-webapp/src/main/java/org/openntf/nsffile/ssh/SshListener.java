@@ -46,9 +46,6 @@ import lombok.SneakyThrows;
  */
 public class SshListener implements ServletContextListener {
 	public static final Logger log = Logger.getLogger(SshListener.class.getPackage().getName());
-	static {
-		log.setLevel(Level.ALL);
-	}
 	
 	public static final String ENV_PORT = "SFTPNSFPort"; //$NON-NLS-1$
 	public static final int DEFAULT_PORT = 9022;
