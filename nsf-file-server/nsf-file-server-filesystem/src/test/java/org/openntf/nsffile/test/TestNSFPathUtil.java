@@ -110,6 +110,15 @@ public class TestNSFPathUtil {
 	}
 	
 	@Test
+	public void testUriRoundTripServerDn5() throws URISyntaxException {
+		String apiPath = "CN=some.server/O=SomeOrg!!foo\\bar.nsf";
+		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
+		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+	}
+	
+	
+	
+	@Test
 	public void testUriRoundTripServerDnFilePath() throws URISyntaxException {
 		String apiPath = "CN=some.server/O=SomeOrg!!foo.nsf";
 		String filePath = "/foo/bar";
