@@ -243,7 +243,7 @@ public enum NSFAccessor {
 		// TODO respect options
 		try {
 			NSFPathUtil.runWithDatabase(source, database -> {
-				Document targetDoc = NSFPathUtil.getDocument(target, database);
+				Document targetDoc = NSFAccessor.getDocument(target, database);
 				if(!targetDoc.isNewNote()) {
 					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
 						targetDoc.lock();
@@ -252,7 +252,7 @@ public enum NSFAccessor {
 					targetDoc.recycle();
 				}
 				
-				Document doc = NSFPathUtil.getDocument(source, database);
+				Document doc = NSFAccessor.getDocument(source, database);
 				try {
 					targetDoc = doc.copyToDatabase(database);
 					try {
@@ -285,7 +285,7 @@ public enum NSFAccessor {
 	public static void move(NSFPath source, NSFPath target, CopyOption... options) throws IOException {
 		try {
 			NSFPathUtil.runWithDatabase(source, database -> {
-				Document targetDoc = NSFPathUtil.getDocument(target, database);
+				Document targetDoc = NSFAccessor.getDocument(target, database);
 				if(!targetDoc.isNewNote()) {
 					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
 						targetDoc.lock();
@@ -294,7 +294,7 @@ public enum NSFAccessor {
 					targetDoc.recycle();
 				}
 				
-				Document doc = NSFPathUtil.getDocument((NSFPath)source, database);
+				Document doc = NSFAccessor.getDocument((NSFPath)source, database);
 				try {
 					doc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
 					doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
@@ -728,6 +728,34 @@ public enum NSFAccessor {
 		} catch(RuntimeException e) {
 			e.printStackTrace();
 			throw new IOException(e);
+		}
+	}
+
+	/**
+	 * Retrieves the document for the provided path, creating a new in-memory document
+	 * if needed.
+	 * 
+	 * @param path the path to find the document for
+	 * @param database the database housing the document
+	 * @return a document representing the note
+	 * @throws NotesException 
+	 */
+	public static Document getDocument(NSFPath path, Database database) throws NotesException {
+		View view = database.getView(VIEW_FILESBYPATH);
+		try {
+			view.setAutoUpdate(false);
+			view.refresh();
+			Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
+			if(doc == null) {
+				doc = database.createDocument();
+				doc.replaceItemValue(ITEM_PARENT, path.getParent().toAbsolutePath().toString());
+				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, path.getFileName().toString());
+			}
+			return doc;
+		} finally {
+			if(view != null) {
+				view.recycle();
+			}
 		}
 	}
 }

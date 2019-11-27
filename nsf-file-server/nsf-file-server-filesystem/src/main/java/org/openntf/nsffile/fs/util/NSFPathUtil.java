@@ -28,21 +28,18 @@ import java.util.function.Function;
 import org.openntf.nsffile.fs.NSFFileSystem;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
 import org.openntf.nsffile.fs.NSFPath;
+import org.openntf.nsffile.fs.db.NSFAccessor;
 import org.openntf.nsffile.util.NotesThreadFactory;
 
 import com.ibm.commons.util.PathUtil;
 import com.ibm.commons.util.StringUtil;
-import com.ibm.designer.domino.napi.NotesConstants;
 
 import lotus.domino.Database;
 import lotus.domino.Document;
 import lotus.domino.Name;
 import lotus.domino.NotesException;
 import lotus.domino.Session;
-import lotus.domino.View;
 import lotus.domino.DateTime;
-
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.*;
 
 /**
  * 
@@ -236,7 +233,7 @@ public enum NSFPathUtil {
 	 */
 	public static <T> T callWithDocument(NSFPath path, String cacheId, NotesDocumentFunction<T> func) {
 		return callWithDatabase(path, cacheId, database-> {
-			Document doc = getDocument(path, database);
+			Document doc = NSFAccessor.getDocument(path, database);
 			try {
 				return func.apply(doc);
 			} finally {
@@ -254,7 +251,7 @@ public enum NSFPathUtil {
 	 */
 	public static void runWithDocument(NSFPath path, NotesDocumentConsumer consumer) {
 		runWithDatabase(path, database -> {
-			Document doc = getDocument(path, database);
+			Document doc = NSFAccessor.getDocument(path, database);
 			try {
 				consumer.accept(doc);
 			} finally {
@@ -337,34 +334,6 @@ public enum NSFPathUtil {
 		});
 	}
 	
-	/**
-	 * Retrieves the document for the provided path, creating a new in-memory document
-	 * if needed.
-	 * 
-	 * @param path the path to find the document for
-	 * @param database the database housing the document
-	 * @return a document representing the note
-	 * @throws NotesException 
-	 */
-	public static Document getDocument(NSFPath path, Database database) throws NotesException {
-		View view = database.getView(VIEW_FILESBYPATH);
-		try {
-			view.setAutoUpdate(false);
-			view.refresh();
-			Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
-			if(doc == null) {
-				doc = database.createDocument();
-				doc.replaceItemValue(ITEM_PARENT, path.getParent().toAbsolutePath().toString());
-				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, path.getFileName().toString());
-			}
-			return doc;
-		} finally {
-			if(view != null) {
-				view.recycle();
-			}
-		}
-	}
-
 	public static String shortCn(String name) {
 		return NotesThreadFactory.call(session -> {
 			Name n = session.createName(name);
