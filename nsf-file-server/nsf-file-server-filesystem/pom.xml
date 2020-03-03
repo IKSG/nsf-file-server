@@ -15,15 +15,18 @@
 			<groupId>com.ibm.xsp</groupId>
 			<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
 			<classifier>Notes</classifier>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.ibm.xsp</groupId>
 			<artifactId>com.ibm.domino.napi</artifactId>
 			<classifier>lwpd.domino.napi</classifier>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.ibm.sbt</groupId>
 			<artifactId>com.ibm.commons</artifactId>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.sshd</groupId>
