@@ -30,13 +30,20 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
 		<osgi.qualifier>${maven.build.timestamp}</osgi.qualifier>
+		
+		<apache.sshd.version>2.3.0</apache.sshd.version>
 	</properties>
 	
 	<modules>
-		<module>nsf-file-server-db</module>
-		<module>nsf-file-server-filesystem</module>
-		<module>nsf-file-server-webapp</module>
-		<module>nsf-file-server-dist</module>
+		<module>core/nsf-file-server-filesystem</module>
+		<module>core/nsf-file-server-ssh</module>
+		
+		<module>domino/nsf-file-server-db</module>
+		<module>domino/nsf-file-server-domino</module>
+		
+		<module>web/nsf-file-server-webapp</module>
+		
+		<module>dist/nsf-file-server-dist</module>
 	</modules>
 	
 	<pluginRepositories>
@@ -65,21 +72,9 @@
 			</dependency>
 			
 			<dependency>
-				<groupId>com.ibm.xsp</groupId>
-				<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
-				<version>[10.0.1,)</version>
-				<classifier>Notes</classifier>
-			</dependency>
-			<dependency>
 				<groupId>com.ibm.sbt</groupId>
 				<artifactId>com.ibm.commons</artifactId>
 				<version>9.0.0</version>
-			</dependency>
-			<dependency>
-				<groupId>com.ibm.xsp</groupId>
-				<artifactId>com.ibm.domino.napi</artifactId>
-				<version>[10.0.1,)</version>
-				<classifier>lwpd.domino.napi</classifier>
 			</dependency>
 			
 			<dependency>
@@ -91,12 +86,12 @@
 			<dependency>
 				<groupId>org.apache.sshd</groupId>
 				<artifactId>sshd-sftp</artifactId>
-				<version>2.3.0</version>
+				<version>${apache.sshd.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.apache.sshd</groupId>
 				<artifactId>sshd-scp</artifactId>
-				<version>2.3.0</version>
+				<version>${apache.sshd.version}</version>
 			</dependency>
 			
 			<dependency>
@@ -144,7 +139,6 @@
 					<version>4.2.1</version>
 					<extensions>true</extensions>
 					<configuration>
-						<excludeDependencies>true</excludeDependencies>
 						<supportedProjectTypes>
 							<supportedProjectType>jar</supportedProjectType>
 							<supportedProjectType>bundle</supportedProjectType>
@@ -184,4 +178,73 @@
 			</plugins>
 		</pluginManagement>
 	</build>
+	
+	<profiles>
+		<profile>
+			<id>notes-platform-repository</id>
+			<activation>
+				<property>
+					<name>notes-platform</name>
+				</property>
+			</activation>
+
+			<pluginRepositories>
+				<pluginRepository>
+					<id>artifactory.openntf.org</id>
+					<name>artifactory.openntf.org</name>
+					<url>https://artifactory.openntf.org/openntf</url>
+				</pluginRepository>
+			</pluginRepositories>
+	
+			<repositories>
+				<repository>
+					<id>com.hcl.xsp.p2</id>
+					<url>${notes-platform}</url>
+					<layout>p2</layout>
+				</repository>
+			</repositories>
+			
+			<dependencyManagement>
+				<dependencies>
+					<dependency>
+						<groupId>com.hcl.xsp.p2</groupId>
+						<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
+						<version>[9.0.1,)</version>
+						<classifier>Notes</classifier>
+					</dependency>
+					<dependency>
+						<groupId>com.hcl.xsp.p2</groupId>
+						<artifactId>com.ibm.domino.napi</artifactId>
+						<version>[9.0.1,)</version>
+						<classifier>lwpd.domino.napi</classifier>
+						<exclusions>
+							<exclusion>
+								<groupId>com.hcl.xsp.p2</groupId>
+								<artifactId>com.ibm.commons</artifactId>
+							</exclusion>
+							<exclusion>
+								<groupId>com.hcl.xsp.p2</groupId>
+								<artifactId>org.eclipse.core.runtime</artifactId>
+							</exclusion>
+							<exclusion>
+								<groupId>com.hcl.xsp.p2</groupId>
+								<artifactId>com.ibm.notes.java.api</artifactId>
+							</exclusion>
+						</exclusions>
+					</dependency>
+				</dependencies>
+			</dependencyManagement>
+			
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.openntf.maven</groupId>
+						<artifactId>p2-layout-resolver</artifactId>
+						<version>1.1.0</version>
+						<extensions>true</extensions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

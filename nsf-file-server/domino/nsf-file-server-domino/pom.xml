@@ -1,0 +1,79 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.openntf.webapps</groupId>
+		<artifactId>nsf-file-server</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+		<relativePath>../..</relativePath>
+	</parent>
+	<artifactId>nsf-file-server-domino</artifactId>
+	<packaging>bundle</packaging>
+	<name>NSF File Server Domino Host</name>
+	
+	<dependencies>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>nsf-file-server-filesystem</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>nsf-file-server-ssh</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.hcl.xsp.p2</groupId>
+			<artifactId>com.ibm.domino.xsp.adapter</artifactId>
+			<version>[9.0.1,)</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.hcl.xsp.p2</groupId>
+			<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
+			<classifier>Notes</classifier>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.ibm.sbt</groupId>
+			<artifactId>com.ibm.commons</artifactId>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<extensions>true</extensions>
+				<configuration>
+					<instructions>
+						<Bundle-SymbolicName>org.openntf.nsffile.domino;singleton:=true</Bundle-SymbolicName>
+						<Bundle-RequiredExecutionEnvironment>JavaSE-1.8</Bundle-RequiredExecutionEnvironment>
+						<Export-Package/>
+						<Require-Bundle>
+							com.ibm.domino.xsp.adapter,
+							com.ibm.domino.napi,
+							com.ibm.commons,
+							com.ibm.commons.xml
+						</Require-Bundle>
+						<Import-Package>
+							javax.servlet,
+							javax.servlet.http,
+							lotus.domino
+						</Import-Package>
+						<Embed-Dependency>*;scope=compile</Embed-Dependency>
+						<Embed-Transitive>true</Embed-Transitive>
+						<Embed-Directory>lib</Embed-Directory>
+						
+						<_removeheaders>Require-Capability</_removeheaders>
+						
+						<_snapshot>${osgi.qualifier}</_snapshot>
+					</instructions>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
