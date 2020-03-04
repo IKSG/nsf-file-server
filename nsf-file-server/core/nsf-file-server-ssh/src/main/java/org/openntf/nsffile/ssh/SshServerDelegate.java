@@ -55,6 +55,7 @@ public class SshServerDelegate implements AutoCloseable {
 	
 	public void start() throws IOException {
 		if(log.isLoggable(Level.INFO)) {
+			log.info(getClass().getSimpleName() + ": Startup");
 			log.info(getClass().getSimpleName() + ": Using NSF path " + nsfPath);
 			log.info(getClass().getSimpleName() + ": Using port " + port);
 			log.info(getClass().getSimpleName() + ": Using key path " + keyPath);
