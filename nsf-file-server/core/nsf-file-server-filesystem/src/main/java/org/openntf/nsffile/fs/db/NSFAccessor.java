@@ -723,7 +723,18 @@ public enum NSFAccessor {
 			return NSFPathUtil.callWithDocument(path, cacheId, doc -> {
 				String itemName = PREFIX_USERITEM + name;
 				Item item = doc.getFirstItem(itemName);
-				return item == null ? new byte[0] : item.getValueCustomDataBytes(DATATYPE_NAME);
+				if(item == null) {
+					return new byte[0];
+				} else {
+					switch(item.getType()) {
+					case Item.TEXT:
+						return item.getValueString().getBytes();
+					case Item.USERDATA:
+						return item.getValueCustomDataBytes(DATATYPE_NAME);
+					default:
+						return new byte[0];
+					}
+				}
 			});
 		} catch(RuntimeException e) {
 			e.printStackTrace();
