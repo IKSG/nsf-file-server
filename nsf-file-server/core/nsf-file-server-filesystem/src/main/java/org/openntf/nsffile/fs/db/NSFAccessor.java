@@ -209,7 +209,7 @@ public enum NSFAccessor {
 	/**
 	 * Deletes the file or folder at the provided path, if it exists.
 	 * 
-	 * @param dir the path of the file to delete
+	 * @param path the path of the file to delete
 	 * @throws IOException if there is a problem deleting the file
 	 */
 	public static void delete(NSFPath path) throws IOException {

@@ -7,3 +7,5 @@ Thumbs.db
 
 .idea/
 *.iml
+
+.factorypath

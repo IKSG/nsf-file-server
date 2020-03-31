@@ -321,10 +321,8 @@ public enum NSFPathUtil {
 	/**
 	 * Executes the provided function with the database for the provided path.
 	 * 
-	 * @param <T> the type returned by {@code func}
 	 * @param path the context {@link NSFPath}
-	 * @param func the function to call
-	 * @return the return value of {@code func}
+	 * @param consumer the function to call
 	 * @throws RuntimeException wrapping any exception thrown by the main body
 	 */
 	public static void runWithDatabase(NSFPath path, NotesDatabaseConsumer consumer) {

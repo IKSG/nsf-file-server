@@ -21,12 +21,13 @@ import java.nio.file.LinkOption;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.util.List;
 
+import org.openntf.nsffile.fs.NSFFileSystemConstants;
 import org.openntf.nsffile.fs.NSFPath;
 import org.openntf.nsffile.fs.db.NSFAccessor;
 
 /**
  * Implementation of {@link UserDefinedFileAttributeView} that stores user-defined attributes
- * in custom data fields in items prefixed with {@value #PREFIX_USERITEM}.
+ * in custom data fields in items prefixed with {@value NSFFileSystemConstants#PREFIX_USERITEM}.
  * 
  * @author Jesse Gallagher
  * @since 1.0.0
