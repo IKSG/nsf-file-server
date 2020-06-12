@@ -32,6 +32,7 @@ import com.ibm.designer.runtime.domino.adapter.LCDEnvironment;
 import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpServletRequestAdapter;
 import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpServletResponseAdapter;
 import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpSessionAdapter;
+import com.ibm.domino.napi.NException;
 import com.ibm.domino.napi.c.Os;
 
 /**
@@ -39,45 +40,58 @@ import com.ibm.domino.napi.c.Os;
  * @since 1.0.0
  */
 public class SFTPService extends HttpService {
+	public static final String ENV_ENABLE = "SFTPNSFEnable"; //$NON-NLS-1$
 	public static final String ENV_PORT = "SFTPNSFPort"; //$NON-NLS-1$
 	public static final int DEFAULT_PORT = 9022;
 	
 	private SshServerDelegate server;
+	private boolean enabled = true;
 
 	public SFTPService(LCDEnvironment env) {
 		super(env);
 		
-		// Kick off initialization on a separate thread to not block HTTP startup
-		NotesThreadFactory.executor.submit(() -> {
-			try {
-				String dataDir = Os.OSGetEnvironmentString("Directory"); //$NON-NLS-1$
-				Path keyPath = Paths.get(dataDir, getClass().getPackage().getName() + ".keys"); //$NON-NLS-1$
+		try {
+			String envEnable = Os.OSGetEnvironmentString(ENV_ENABLE);
+			enabled = !"0".equals(envEnable); //$NON-NLS-1$
+		} catch (NException e) {
+			e.printStackTrace();
+		}
 		
-				String nsfPath = DominoNSFConfiguration.instance.getNsfPath();
-				int port = DominoNSFConfiguration.instance.getPort();
-				this.server = new SshServerDelegate(nsfPath, port, keyPath, session -> DominoNSFConfiguration.instance.getFileSystem(session.getUsername()));
-				
-				server.start();
-			} catch(Throwable t) {
-				t.printStackTrace();
-				server = null;
-			}
-		});
+		if(enabled) {
+			// Kick off initialization on a separate thread to not block HTTP startup
+			NotesThreadFactory.executor.submit(() -> {
+				try {
+					String dataDir = Os.OSGetEnvironmentString("Directory"); //$NON-NLS-1$
+					Path keyPath = Paths.get(dataDir, getClass().getPackage().getName() + ".keys"); //$NON-NLS-1$
+			
+					String nsfPath = DominoNSFConfiguration.instance.getNsfPath();
+					int port = DominoNSFConfiguration.instance.getPort();
+					this.server = new SshServerDelegate(nsfPath, port, keyPath, session -> DominoNSFConfiguration.instance.getFileSystem(session.getUsername()));
+					
+					server.start();
+				} catch(Throwable t) {
+					t.printStackTrace();
+					server = null;
+				}
+			});
+		}
 	}
 	
 	@Override
 	public void destroyService() {
 		super.destroyService();
 		
-		if(server != null) {
-			try {
-				server.close();
-			} catch (IOException e) {
-				e.printStackTrace();
+		if(enabled) {
+			if(server != null) {
+				try {
+					server.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
+			
+			NotesThreadFactory.term();
 		}
-		
-		NotesThreadFactory.term();
 	}
 	
 	// *******************************************************************************
