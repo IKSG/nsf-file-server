@@ -21,7 +21,6 @@ import java.nio.file.LinkOption;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.util.List;
 
-import org.openntf.nsffile.fs.NSFFileSystemConstants;
 import org.openntf.nsffile.fs.NSFPath;
 import org.openntf.nsffile.fs.db.NSFAccessor;
 
