@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.openntf.webapps</groupId>
 		<artifactId>nsf-file-server</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<version>1.0.0</version>
 		<relativePath>../..</relativePath>
 	</parent>
 	<artifactId>nsf-file-server-domino</artifactId>
