@@ -39,7 +39,7 @@
 		<maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
 		<osgi.qualifier>${maven.build.timestamp}</osgi.qualifier>
 		
-		<apache.sshd.version>2.3.0</apache.sshd.version>
+		<apache.sshd.version>2.10.0</apache.sshd.version>
 	</properties>
 	
 	<modules>
