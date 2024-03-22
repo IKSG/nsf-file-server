@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs.attribute;
+package org.openntf.nsffile.commons.fs.attribute;
 
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
@@ -44,7 +44,6 @@ public class NSFFileAttributes implements PosixFileAttributes {
 
 	public NSFFileAttributes(UserPrincipal owner, GroupPrincipal group, Type type, FileTime lastModified,
 			FileTime lastAccessed, FileTime created, long size, Set<PosixFilePermission> permissions) {
-		super();
 		this.owner = owner;
 		this.group = group;
 		this.type = type;

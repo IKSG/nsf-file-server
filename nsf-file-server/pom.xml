@@ -43,6 +43,7 @@
 	</properties>
 	
 	<modules>
+		<module>core/nsf-file-server-commons</module>
 		<module>core/nsf-file-server-filesystem</module>
 		<module>core/nsf-file-server-ssh</module>
 		

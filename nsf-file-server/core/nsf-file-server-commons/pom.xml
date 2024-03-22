@@ -8,15 +8,10 @@
 		<version>2.0.0-SNAPSHOT</version>
 		<relativePath>../..</relativePath>
 	</parent>
-	<artifactId>nsf-file-server-filesystem</artifactId>
-	<name>Java NIO 2 NSF Filesystem Provider</name>
+	<artifactId>nsf-file-server-commons</artifactId>
+	<name>NSF File Server Common Components</name>
 	
 	<dependencies>
-		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>nsf-file-server-commons</artifactId>
-			<version>${project.version}</version>
-		</dependency>
 		<dependency>
 			<groupId>com.hcl.xsp.p2</groupId>
 			<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
@@ -34,23 +29,6 @@
 			<artifactId>com.ibm.commons</artifactId>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.sshd</groupId>
-			<artifactId>sshd-sftp</artifactId>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-engine</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.glassfish.corba</groupId>
-			<artifactId>glassfish-corba-omgapi</artifactId>
-			<version>4.2.3</version>
-			<scope>provided</scope>
-		</dependency>
 	</dependencies>
 	
 	<build>
@@ -61,7 +39,7 @@
 				
 				<configuration>
 					<instructions>
-						<Bundle-SymbolicName>org.openntf.nsffile.fs</Bundle-SymbolicName>
+						<Bundle-SymbolicName>org.openntf.nsffile.commons</Bundle-SymbolicName>
 					</instructions>
 				</configuration>
 

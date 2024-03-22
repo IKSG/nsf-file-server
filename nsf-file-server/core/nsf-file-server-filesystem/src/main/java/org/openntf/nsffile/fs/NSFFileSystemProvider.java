@@ -49,9 +49,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.openntf.nsffile.commons.fs.attribute.NoneFileAttributeView;
 import org.openntf.nsffile.fs.attribute.NSFPosixFileAttributeView;
 import org.openntf.nsffile.fs.attribute.NSFUserDefinedFileAttributeView;
-import org.openntf.nsffile.fs.attribute.NoneFileAttributeView;
 import org.openntf.nsffile.fs.attribute.RootFileAttributes;
 import org.openntf.nsffile.fs.db.NSFAccessor;
 import org.openntf.nsffile.fs.util.NSFPathUtil;

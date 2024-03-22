@@ -25,18 +25,22 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
+import org.openntf.nsffile.commons.function.NotesDatabaseConsumer;
+import org.openntf.nsffile.commons.function.NotesDatabaseFunction;
+import org.openntf.nsffile.commons.function.NotesDocumentConsumer;
+import org.openntf.nsffile.commons.function.NotesDocumentFunction;
+import org.openntf.nsffile.commons.util.NSFFileUtil;
+import org.openntf.nsffile.commons.util.NotesThreadFactory;
+import org.openntf.nsffile.commons.util.TimedCacheHolder;
 import org.openntf.nsffile.fs.NSFFileSystem;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
 import org.openntf.nsffile.fs.NSFPath;
 import org.openntf.nsffile.fs.db.NSFAccessor;
-import org.openntf.nsffile.util.NotesThreadFactory;
 
-import com.ibm.commons.util.PathUtil;
 import com.ibm.commons.util.StringUtil;
 
 import lotus.domino.Database;
 import lotus.domino.Document;
-import lotus.domino.Name;
 import lotus.domino.NotesException;
 import lotus.domino.Session;
 import lotus.domino.DateTime;
@@ -173,52 +177,17 @@ public enum NSFPathUtil {
 		
 		URI base = toFileSystemURI(userName, apiPath);
 		
-		String pathInfo = concat("/", base.getPath()); //$NON-NLS-1$
+		String pathInfo = NSFFileUtil.concat("/", base.getPath()); //$NON-NLS-1$
 		if(StringUtil.isNotEmpty(pathBit)) {
-			pathInfo = concat(pathInfo, pathBit);
+			pathInfo = NSFFileUtil.concat(pathInfo, pathBit);
 		}
 		for(String bit : morePathBits) {
 			if(StringUtil.isNotEmpty(bit)) {
-				pathInfo = concat(pathInfo, bit);
+				pathInfo = NSFFileUtil.concat(pathInfo, bit);
 			}
 		}
 		
 		return new URI(NSFFileSystemProvider.SCHEME, userName, base.getHost(), -1, pathInfo, null, null);
-	}
-	
-	public static String concat(final char delim, final String... parts) {
-		if(parts == null || parts.length == 0) {
-			return StringUtil.EMPTY_STRING;
-		}
-		String path = parts[0];
-		for(int i = 1; i < parts.length; i++) {
-			path = PathUtil.concat(path, parts[i], delim);
-		}
-		return path;
-	}
-
-	public static String concat(final String... parts) {
-		return concat('/', parts);
-	}
-	
-	@FunctionalInterface
-	public static interface NotesDocumentFunction<T> {
-		T apply(Document doc) throws Exception;
-	}
-	
-	@FunctionalInterface
-	public static interface NotesDocumentConsumer {
-		void accept(Document doc) throws Exception;
-	}
-	
-	@FunctionalInterface
-	public static interface NotesDatabaseFunction<T> {
-		T apply(Database doc) throws Exception;
-	}
-	
-	@FunctionalInterface
-	public static interface NotesDatabaseConsumer {
-		void accept(Database doc) throws Exception;
 	}
 	
 	/**
@@ -276,7 +245,7 @@ public enum NSFPathUtil {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T callWithDatabase(NSFPath path, String cacheId, NotesDatabaseFunction<T> func) {
-		return NotesThreadFactory.callAs(dn(path.getFileSystem().getUserName()), session -> {
+		return NotesThreadFactory.callAs(NSFFileUtil.dn(path.getFileSystem().getUserName()), session -> {
 			Database database = getDatabase(session, path.getFileSystem());
 			if(StringUtil.isEmpty(cacheId)) {
 				return func.apply(database);
@@ -327,30 +296,17 @@ public enum NSFPathUtil {
 	 * @throws RuntimeException wrapping any exception thrown by the main body
 	 */
 	public static void runWithDatabase(NSFPath path, NotesDatabaseConsumer consumer) {
-		NotesThreadFactory.runAs(dn(path.getFileSystem().getUserName()), session -> {
+		NotesThreadFactory.runAs(NSFFileUtil.dn(path.getFileSystem().getUserName()), session -> {
 			Database database = getDatabase(session, path.getFileSystem());
 			consumer.accept(database);
 		});
 	}
 	
-	public static String shortCn(String name) {
-		return NotesThreadFactory.call(session -> {
-			Name n = session.createName(name);
-			try {
-				return n.getCommon().replaceAll("\\s+", ""); //$NON-NLS-1$ //$NON-NLS-2$
-			} finally {
-				n.recycle();
-			}
-		});
-	}
+	
 	
 	// *******************************************************************************
 	// * Internal utilities
 	// *******************************************************************************
-	
-	private static String dn(String name) {
-		return NotesThreadFactory.call(session -> session.createName(name).getCanonical());
-	}
 	
 	private static Database getDatabase(Session session, NSFFileSystem fileSystem) throws NotesException {
 		String nsfPath = fileSystem.getNsfPath();
@@ -367,9 +323,9 @@ public enum NSFPathUtil {
 					server = nsfPath.substring(0, bangIndex);
 					dbPath = nsfPath.substring(bangIndex+2);
 				}
-				if(isReplicaID(dbPath)) {
+				if(NSFFileUtil.isReplicaID(dbPath)) {
 					Database database = session.getDatabase(null, null);
-					database.openByReplicaID(server, normalizeReplicaID(dbPath));
+					database.openByReplicaID(server, NSFFileUtil.normalizeReplicaID(dbPath));
 					return database;
 				} else {
 					return session.getDatabase(server, dbPath);
@@ -378,35 +334,5 @@ public enum NSFPathUtil {
 				throw new RuntimeException(e);
 			}
 		});
-	}
-	
-	private static boolean isReplicaID(String dbPath) {
-		String id = normalizeReplicaID(dbPath);
-		if (id == null) {
-			return false;
-		} else {
-			for (int i = 0; i < 16; ++i) {
-				if ("0123456789ABCDEF".indexOf(id.charAt(i)) < 0) { //$NON-NLS-1$
-					return false;
-				}
-			}
-
-			return true;
-		}
-	}
-	
-	private static String normalizeReplicaID(String id) {
-		String replicaId = id;
-		if (StringUtil.isNotEmpty(replicaId)) {
-			if (replicaId.indexOf(':') == 8 && replicaId.length() == 17) {
-				replicaId = replicaId.substring(0, 8) + replicaId.substring(9, 17);
-			}
-
-			if (replicaId.length() == 16) {
-				return replicaId.toUpperCase();
-			}
-		}
-
-		return null;
 	}
 }

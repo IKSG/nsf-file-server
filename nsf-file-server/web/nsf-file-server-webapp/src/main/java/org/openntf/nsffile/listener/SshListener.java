@@ -25,9 +25,9 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.openntf.nsffile.commons.util.NotesThreadFactory;
 import org.openntf.nsffile.config.NSFConfiguration;
 import org.openntf.nsffile.ssh.SshServerDelegate;
-import org.openntf.nsffile.util.NotesThreadFactory;
 
 import lombok.SneakyThrows;
 

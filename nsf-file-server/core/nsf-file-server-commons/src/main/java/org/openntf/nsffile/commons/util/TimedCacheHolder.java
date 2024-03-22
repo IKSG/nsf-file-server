@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs.util;
+package org.openntf.nsffile.commons.util;
 
 import java.util.HashMap;
 import java.util.Map;

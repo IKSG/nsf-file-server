@@ -20,9 +20,9 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
-import org.openntf.nsffile.util.NotesThreadFactory;
-
 import com.ibm.domino.napi.c.C;
+
+import org.openntf.nsffile.commons.util.NotesThreadFactory;
 
 import lombok.SneakyThrows;
 import lotus.notes.NotesThread;

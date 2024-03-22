@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs.acl;
+package org.openntf.nsffile.commons;
 
 import java.nio.file.attribute.GroupPrincipal;
 import java.util.Collections;
@@ -21,7 +21,7 @@ import java.util.Collections;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 
-import org.openntf.nsffile.fs.db.NSFAccessor;
+import org.openntf.nsffile.commons.util.NSFFileUtil;
 
 /**
  * 
@@ -34,7 +34,7 @@ public class NotesPrincipal implements GroupPrincipal {
 	
 	public NotesPrincipal(String dominoName) {
 		try {
-			this.ldapName = new LdapName(NSFAccessor.dominoNameToLdap(dominoName));
+			this.ldapName = new LdapName(NSFFileUtil.dominoNameToLdap(dominoName));
 		} catch (InvalidNameException e) {
 			throw new RuntimeException(e);
 		}

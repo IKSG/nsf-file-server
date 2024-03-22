@@ -25,9 +25,9 @@ import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 
+import org.openntf.nsffile.commons.util.NotesThreadFactory;
 import org.openntf.nsffile.domino.config.DominoNSFConfiguration;
 import org.openntf.nsffile.ssh.SshServerDelegate;
-import org.openntf.nsffile.util.NotesThreadFactory;
 
 import com.ibm.designer.runtime.domino.adapter.ComponentModule;
 import com.ibm.designer.runtime.domino.adapter.HttpService;

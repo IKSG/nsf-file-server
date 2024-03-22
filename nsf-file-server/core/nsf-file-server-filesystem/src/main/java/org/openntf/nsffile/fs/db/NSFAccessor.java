@@ -45,12 +45,12 @@ import java.util.stream.Collectors;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 
+import org.openntf.nsffile.commons.NotesPrincipal;
+import org.openntf.nsffile.commons.fs.attribute.NSFFileAttributes;
+import org.openntf.nsffile.commons.fs.attribute.NSFFileAttributes.Type;
+import org.openntf.nsffile.commons.util.NotesThreadFactory;
 import org.openntf.nsffile.fs.NSFPath;
-import org.openntf.nsffile.fs.acl.NotesPrincipal;
-import org.openntf.nsffile.fs.attribute.NSFFileAttributes;
-import org.openntf.nsffile.fs.attribute.NSFFileAttributes.Type;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
-import org.openntf.nsffile.util.NotesThreadFactory;
 
 import com.ibm.commons.util.StringUtil;
 import com.ibm.designer.domino.napi.NotesConstants;

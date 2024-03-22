@@ -24,7 +24,7 @@ import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;
 import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
-import org.openntf.nsffile.util.NotesThreadFactory;
+import org.openntf.nsffile.commons.util.NotesThreadFactory;
 
 import com.ibm.commons.util.StringUtil;
 

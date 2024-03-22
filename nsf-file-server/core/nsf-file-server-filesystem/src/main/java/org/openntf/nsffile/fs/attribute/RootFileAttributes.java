@@ -24,7 +24,7 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Set;
 
-import org.openntf.nsffile.fs.acl.NotesPrincipal;
+import org.openntf.nsffile.commons.NotesPrincipal;
 
 public class RootFileAttributes implements PosixFileAttributes {
 	
