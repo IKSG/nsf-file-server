@@ -20,7 +20,7 @@
 		</dependency>
 		<dependency>
 			<groupId>com.hcl.xsp.p2</groupId>
-			<artifactId>com.ibm.domino.napi</artifactId>
+			<artifactId>com.ibm.domino.napi.impl</artifactId>
 			<classifier>lwpd.domino.napi</classifier>
 			<scope>provided</scope>
 		</dependency>
