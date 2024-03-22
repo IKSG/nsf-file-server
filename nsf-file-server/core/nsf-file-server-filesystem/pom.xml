@@ -62,6 +62,7 @@
 
 				<executions>
 					<execution>
+						<?m2e ignore?>
 						<id>bundle-manifest</id>
 						<phase>process-classes</phase>
 						<goals>
