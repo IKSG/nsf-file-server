@@ -36,6 +36,12 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
+			<groupId>com.hcl.xsp.p2</groupId>
+			<artifactId>com.ibm.domino.napi.impl</artifactId>
+			<classifier>lwpd.domino.napi</classifier>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
 			<groupId>com.ibm.sbt</groupId>
 			<artifactId>com.ibm.commons</artifactId>
 			<scope>provided</scope>

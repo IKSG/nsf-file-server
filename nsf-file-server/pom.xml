@@ -96,7 +96,7 @@
 			<dependency>
 				<groupId>org.projectlombok</groupId>
 				<artifactId>lombok</artifactId>
-				<version>1.18.10</version>
+				<version>1.18.32</version>
 				<scope>provided</scope>
 			</dependency>
 			<dependency>
@@ -156,6 +156,15 @@
 		</dependencies>
 	</dependencyManagement>
 	
+	<dependencies>
+		<dependency>
+			<groupId>org.glassfish.corba</groupId>
+			<artifactId>glassfish-corba-omgapi</artifactId>
+			<version>4.2.5</version>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+	
 	<build>
 		<plugins>
 			<plugin>
@@ -170,25 +179,30 @@
 			<plugins>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.13.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-assembly-plugin</artifactId>
-					<version>3.1.0</version>
+					<version>3.7.1</version>
 				</plugin>
 				<plugin>
 					<groupId>org.openntf.maven</groupId>
 					<artifactId>nsfodp-maven-plugin</artifactId>
-					<version>3.3.0</version>
+					<version>3.10.0</version>
 					<extensions>true</extensions>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-jar-plugin</artifactId>
-					<version>3.1.2</version>
+					<version>3.3.0</version>
 				</plugin>
 				
 				<plugin>
 					<groupId>org.apache.felix</groupId>
 					<artifactId>maven-bundle-plugin</artifactId>
-					<version>4.2.1</version>
+					<version>5.1.9</version>
 					<extensions>true</extensions>
 					<configuration>
 						<supportedProjectTypes>
