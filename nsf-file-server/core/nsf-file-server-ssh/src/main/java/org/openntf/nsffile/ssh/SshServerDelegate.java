@@ -36,6 +36,7 @@ import org.openntf.nsffile.ssh.scp.NSFScpFileOpener;
  * @author Jesse Gallagher
  * @since 1.0.0
  */
+@SuppressWarnings("nls")
 public class SshServerDelegate implements AutoCloseable {
 	public static final Logger log = Logger.getLogger(SshServerDelegate.class.getPackage().getName());
 	

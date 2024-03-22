@@ -86,7 +86,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		
 		String nsfPath = NSFPathUtil.extractApiPath(uri);
 		if(StringUtil.isEmpty(nsfPath)) {
-			throw new IllegalArgumentException("Unable to extract NSF path from " + uri);
+			throw new IllegalArgumentException("Unable to extract NSF path from " + uri); //$NON-NLS-1$
 		}
 		
 		String mapKey = uri.getUserInfo() + nsfPath;
@@ -103,7 +103,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		
 		String nsfPath = NSFPathUtil.extractApiPath(uri);
 		if(StringUtil.isEmpty(nsfPath)) {
-			throw new IllegalArgumentException("Unable to extract NSF path from " + uri);
+			throw new IllegalArgumentException("Unable to extract NSF path from " + uri); //$NON-NLS-1$
 		}
 		
 		String mapKey = uri.getUserInfo() + nsfPath;
@@ -116,7 +116,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		
 		String nsfPath = NSFPathUtil.extractApiPath(uri);
 		if(StringUtil.isEmpty(nsfPath)) {
-			throw new IllegalArgumentException("Unable to extract NSF path from " + uri);
+			throw new IllegalArgumentException("Unable to extract NSF path from " + uri); //$NON-NLS-1$
 		}
 		
 		String mapKey = uri.getUserInfo() + nsfPath;
@@ -214,7 +214,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		if (type.isAssignableFrom(PosixFileAttributes.class)) {
 			PosixFileAttributeView view = getFileAttributeView(path, PosixFileAttributeView.class, options);
 			if(view == null) {
-				throw new IOException("File does not exist: " + path);
+				throw new IOException("File does not exist: " + path); //$NON-NLS-1$
 			}
             return type.cast(view.readAttributes());
         }
@@ -281,7 +281,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 			LinkOption... options) throws IOException {
 		PosixFileAttributes v = readAttributes(path, PosixFileAttributes.class, options);
 		if(v == null) {
-			throw new IOException("File does not exist: " + path);
+			throw new IOException("File does not exist: " + path); //$NON-NLS-1$
 		}
 		if ("*".equals(attrs)) { //$NON-NLS-1$
 			attrs = "lastModifiedTime,lastAccessTime,creationTime,size,isRegularFile,isDirectory,isSymbolicLink,isOther,fileKey,owner,permissions,group"; //$NON-NLS-1$

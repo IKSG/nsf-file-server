@@ -37,6 +37,7 @@ import lombok.SneakyThrows;
  * @author Jesse Gallagher
  * @since 1.0.0
  */
+@SuppressWarnings("nls")
 public class SshListener implements ServletContextListener {
 	public static final Logger log = Logger.getLogger(SshListener.class.getPackage().getName());
 	

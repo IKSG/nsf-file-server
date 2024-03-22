@@ -46,6 +46,7 @@ import lotus.domino.DateTime;
  * @author Jesse Gallagher
  * @since 1.0.0
  */
+@SuppressWarnings("nls")
 public enum NSFPathUtil {
 	;
 	
@@ -70,7 +71,7 @@ public enum NSFPathUtil {
 	 * @since 1.0.0
 	 */
 	public static String extractApiPath(URI uri) {
-		Objects.requireNonNull(uri, "uri cannot be null");
+		Objects.requireNonNull(uri, "uri cannot be null"); //$NON-NLS-1$
 		
 		String host = decoder.apply(uri.getHost());
 		if(LOCAL_SERVER.equals(host)) {
