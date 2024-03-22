@@ -15,7 +15,6 @@
  */
 package org.openntf.nsffile.fs.attribute;
 
-import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributes;
@@ -28,7 +27,7 @@ import java.util.Set;
  * @author Jesse Gallagher
  * @since 1.0.0
  */
-public class NSFFileAttributes implements BasicFileAttributes, PosixFileAttributes {
+public class NSFFileAttributes implements PosixFileAttributes {
 	public enum Type {
 		File, Folder
 	}

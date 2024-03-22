@@ -19,8 +19,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributeView;
-import java.nio.file.attribute.FileOwnerAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributeView;
@@ -36,7 +34,7 @@ import java.util.Set;
  * @author Jesse Gallagher
  * @since 1.0.0
  */
-public class NoneFileAttributeView implements PosixFileAttributeView, BasicFileAttributeView, FileOwnerAttributeView, UserDefinedFileAttributeView {
+public class NoneFileAttributeView implements PosixFileAttributeView, UserDefinedFileAttributeView {
 	
 	private final Path path;
 	

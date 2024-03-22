@@ -16,7 +16,6 @@
 package org.openntf.nsffile.fs.acl;
 
 import java.nio.file.attribute.GroupPrincipal;
-import java.nio.file.attribute.UserPrincipal;
 import java.util.Collections;
 
 import javax.naming.InvalidNameException;
@@ -29,7 +28,7 @@ import org.openntf.nsffile.fs.db.NSFAccessor;
  * @author Jesse Gallagher
  * @since 1.0.0
  */
-public class NotesPrincipal implements UserPrincipal, GroupPrincipal {
+public class NotesPrincipal implements GroupPrincipal {
 	
 	private final LdapName ldapName;
 	

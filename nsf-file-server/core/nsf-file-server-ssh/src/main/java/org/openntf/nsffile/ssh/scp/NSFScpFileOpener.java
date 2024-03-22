@@ -21,35 +21,28 @@ import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermission;
+import java.text.MessageFormat;
 import java.util.Collections;
-import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import org.apache.sshd.common.scp.ScpTimestamp;
+import com.ibm.commons.util.StringUtil;
+
 import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
-
-import com.ibm.commons.util.StringUtil;
 
 /**
  * @author Jesse Gallagher
  * @since 1.0.0
  */
 public class NSFScpFileOpener extends DefaultScpFileOpener {
+	private static final Logger log = Logger.getLogger(NSFScpFileOpener.class.getPackage().getName());
 	
 	private final String nsfPath;
 	
 	public NSFScpFileOpener(String nsfPath) {
-		super();
 		this.nsfPath = nsfPath;
-	}
-
-	@Override
-	public Path resolveIncomingFilePath(org.apache.sshd.common.session.Session session, Path localPath,
-			String name, boolean preserve, Set<PosixFilePermission> permissions, ScpTimestamp time)
-			throws IOException {
-		return super.resolveIncomingFilePath(session, localPath, name, preserve, permissions, time);
 	}
 
 	@Override
@@ -61,7 +54,9 @@ public class NSFScpFileOpener extends DefaultScpFileOpener {
 			Path nsfPath = fs.getPath(path.toString());
 			return super.resolveIncomingReceiveLocation(session, nsfPath, recursive, shouldBeDir, preserve);
 		} catch(URISyntaxException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception resolving path for path {0}", path), e);
+			}
 			throw new RuntimeException(e);
 		}
 	}

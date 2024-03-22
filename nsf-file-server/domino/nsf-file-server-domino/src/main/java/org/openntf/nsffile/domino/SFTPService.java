@@ -18,7 +18,10 @@ package org.openntf.nsffile.domino;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 
@@ -40,6 +43,8 @@ import com.ibm.domino.napi.c.Os;
  * @since 1.0.0
  */
 public class SFTPService extends HttpService {
+	private static final Logger log = Logger.getLogger(SFTPService.class.getPackage().getName());
+	
 	public static final String ENV_ENABLE = "SFTPNSFEnable"; //$NON-NLS-1$
 	public static final String ENV_PORT = "SFTPNSFPort"; //$NON-NLS-1$
 	public static final int DEFAULT_PORT = 9022;
@@ -54,7 +59,9 @@ public class SFTPService extends HttpService {
 			String envEnable = Os.OSGetEnvironmentString(ENV_ENABLE);
 			enabled = !"0".equals(envEnable); //$NON-NLS-1$
 		} catch (NException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, MessageFormat.format("Encountered exception retrieving INI parameter {0}", ENV_ENABLE), e);
+			}
 		}
 		
 		if(enabled) {
@@ -70,7 +77,9 @@ public class SFTPService extends HttpService {
 					
 					server.start();
 				} catch(Throwable t) {
-					t.printStackTrace();
+					if(log.isLoggable(Level.SEVERE)) {
+						log.log(Level.SEVERE, "Encountered exception initializing SFTP server", t);
+					}
 					server = null;
 				}
 			});
@@ -86,7 +95,9 @@ public class SFTPService extends HttpService {
 				try {
 					server.close();
 				} catch (IOException e) {
-					e.printStackTrace();
+					if(log.isLoggable(Level.WARNING)) {
+						log.log(Level.WARNING, "Encountered exception closing SFTP server", e);
+					}
 				}
 			}
 			

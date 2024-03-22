@@ -29,13 +29,17 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
+import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import javax.naming.InvalidNameException;
@@ -72,6 +76,7 @@ import lotus.domino.ViewNavigator;
  */
 public enum NSFAccessor {
 	;
+	private static final Logger log = Logger.getLogger(NSFAccessor.class.getPackage().getName());
 	
 	/**
 	 * Returns a list of file names for files within the provided directory.
@@ -177,7 +182,9 @@ public enum NSFAccessor {
 				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch (RuntimeException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception storing attachment in path {0}", path), e);
+			}
 			throw new IOException(e);
 		}
 	}
@@ -201,7 +208,9 @@ public enum NSFAccessor {
 				}
 			});
 		} catch (RuntimeException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception creating directory {0}", dir), e);
+			}
 			throw new IOException(e);
 		}
 	}
@@ -226,7 +235,9 @@ public enum NSFAccessor {
 				}
 			});
 		} catch (RuntimeException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception deleting path {0}", path), e);
+			}
 			throw new IOException(e);
 		}
 	}
@@ -269,7 +280,9 @@ public enum NSFAccessor {
 				NSFPathUtil.invalidateDatabaseCache(database);
 			});
 		} catch (RuntimeException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception copying {0} to {1} with options {2}", source, target, Arrays.toString(options)), e);
+			}
 			throw new IOException(e);
 		}
 	}
@@ -306,7 +319,9 @@ public enum NSFAccessor {
 				NSFPathUtil.invalidateDatabaseCache(database);
 			});
 		} catch (RuntimeException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception moving {0} to {1} with options {2}", source, target, Arrays.toString(options)), e);
+			}
 			throw new IOException(e);
 		}
 	}
@@ -389,7 +404,9 @@ public enum NSFAccessor {
 				}
 			});
 		} catch(Exception e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception converting Domino name to LDAP: {0}", value), e);
+			}
 			throw new RuntimeException(e);
 		}
 	}
@@ -547,7 +564,9 @@ public enum NSFAccessor {
 				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch(RuntimeException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception setting owner of {0} to {1}", path, owner), e);
+			}
 			throw new IOException(e);
 		}
 	}
@@ -567,7 +586,9 @@ public enum NSFAccessor {
 				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch(RuntimeException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception setting group of {0} to {1}", path, group), e);
+			}
 			throw new IOException(e);
 		}
 	}
@@ -587,7 +608,9 @@ public enum NSFAccessor {
 				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch(RuntimeException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception setting permissions of {0} to {1}", path, perms), e);
+			}
 			throw new IOException(e);
 		}
 	}
@@ -625,7 +648,9 @@ public enum NSFAccessor {
 				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch(RuntimeException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception setting timestamps of {0} to {1}, {2}", path, lastModifiedTime, createTime), e);
+			}
 			throw new IOException(e);
 		}
 	}
@@ -655,7 +680,9 @@ public enum NSFAccessor {
 					.collect(Collectors.toList())
 			);
 		} catch(RuntimeException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception isting user-defined attributes for {0}", path), e);
+			}
 			throw new IOException(e);
 		}
 	}
@@ -680,7 +707,9 @@ public enum NSFAccessor {
 				return data.length;
 			});
 		} catch(RuntimeException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception setting user-defined attribute {0} on {1}", name, path), e);
+			}
 			throw new IOException(e);
 		}
 	}
@@ -704,7 +733,9 @@ public enum NSFAccessor {
 				}
 			});
 		} catch(RuntimeException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception deleting user-defined attribute {0} on {1}", name, path), e);
+			}
 			throw new IOException(e);
 		}
 	}
@@ -737,7 +768,9 @@ public enum NSFAccessor {
 				}
 			});
 		} catch(RuntimeException e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception retrieving user-defined attribute {0} of {1}", name, path), e);
+			}
 			throw new IOException(e);
 		}
 	}

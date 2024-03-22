@@ -18,13 +18,17 @@ package org.openntf.nsffile.fs;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
+import java.text.MessageFormat;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.openntf.nsffile.fs.db.NSFAccessor;
 
 public class NSFDirectoryStream implements DirectoryStream<Path> {
+	private static final Logger log = Logger.getLogger(NSFDirectoryStream.class.getPackage().getName());
 	
 	private final List<Path> paths;
 
@@ -34,7 +38,9 @@ public class NSFDirectoryStream implements DirectoryStream<Path> {
 				.map(name -> dir.resolve(name))
 				.collect(Collectors.toList());
 		} catch(Exception e) {
-			e.printStackTrace();
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, MessageFormat.format("Encountered exception constructing directory stream for provider {0}, dir {1}", provider, dir), e);
+			}
 			throw new RuntimeException(e);
 		}
 	}

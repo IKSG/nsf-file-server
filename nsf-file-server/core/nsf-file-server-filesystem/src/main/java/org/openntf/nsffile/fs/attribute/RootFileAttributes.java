@@ -15,7 +15,6 @@
  */
 package org.openntf.nsffile.fs.attribute;
 
-import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributes;
@@ -27,7 +26,7 @@ import java.util.Set;
 
 import org.openntf.nsffile.fs.acl.NotesPrincipal;
 
-public class RootFileAttributes implements BasicFileAttributes, PosixFileAttributes {
+public class RootFileAttributes implements PosixFileAttributes {
 	
 	// TODO read from DB
 

@@ -17,8 +17,6 @@ package org.openntf.nsffile.fs.attribute;
 
 import java.io.IOException;
 import java.nio.file.LinkOption;
-import java.nio.file.attribute.BasicFileAttributeView;
-import java.nio.file.attribute.FileOwnerAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributeView;
@@ -34,7 +32,7 @@ import org.openntf.nsffile.fs.db.NSFAccessor;
  * @author Jesse Gallagher
  * @since 1.0.0
  */
-public class NSFPosixFileAttributeView implements PosixFileAttributeView, BasicFileAttributeView, FileOwnerAttributeView {
+public class NSFPosixFileAttributeView implements PosixFileAttributeView {
 	
 	private final NSFPath path;
 	

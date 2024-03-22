@@ -60,7 +60,6 @@ public enum DominoNSFConfiguration {
 			}
 			this.port = port;
 		} catch(NException e) {
-			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
 	}

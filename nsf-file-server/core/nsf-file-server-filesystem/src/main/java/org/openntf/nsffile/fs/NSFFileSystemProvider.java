@@ -358,4 +358,9 @@ public class NSFFileSystemProvider extends FileSystemProvider {
             return false;
         }
     }
+
+	@Override
+	public String toString() {
+		return String.format("NSFFileSystemProvider [fileSystems=%s]", fileSystems); //$NON-NLS-1$
+	}
 }
