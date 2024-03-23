@@ -51,8 +51,6 @@
 		<module>domino/nsf-file-server-db-nsffilestore</module>
 		<module>domino/nsf-file-server-domino</module>
 		
-		<module>web/nsf-file-server-webapp</module>
-		
 		<module>dist/nsf-file-server-dist</module>
 	</modules>
 	
@@ -78,13 +76,6 @@
 				<groupId>jakarta.platform</groupId>
 				<artifactId>jakarta.jakartaee-bom</artifactId>
 				<version>8.0.0</version>
-				<scope>import</scope>
-				<type>pom</type>
-			</dependency>
-			<dependency>
-				<groupId>org.eclipse.microprofile</groupId>
-				<artifactId>microprofile</artifactId>
-				<version>3.1</version>
 				<scope>import</scope>
 				<type>pom</type>
 			</dependency>
