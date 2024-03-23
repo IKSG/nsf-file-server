@@ -1,0 +1,10 @@
+/META-INF/
+/build.properties
+/target/
+/.classpath
+/.project
+/.settings/
+/target/
+!/odp/.classpath
+!/odp/.project
+!/odp/.settings
