@@ -10,7 +10,7 @@
 		<version>2.0.0-SNAPSHOT</version>
 		<relativePath>../..</relativePath>
 	</parent>
-	<artifactId>nsf-file-server-db</artifactId>
+	<artifactId>nsf-file-server-db-nsffilestore</artifactId>
 	<packaging>domino-nsf</packaging>
 
 	<build>

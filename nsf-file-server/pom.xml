@@ -44,10 +44,11 @@
 	
 	<modules>
 		<module>core/nsf-file-server-commons</module>
-		<module>core/nsf-file-server-filesystem</module>
+		<module>core/nsf-file-server-fs-nsffilestore</module>
 		<module>core/nsf-file-server-ssh</module>
 		
-		<module>domino/nsf-file-server-db</module>
+		<module>domino/nsf-file-server-db-config</module>
+		<module>domino/nsf-file-server-db-nsffilestore</module>
 		<module>domino/nsf-file-server-domino</module>
 		
 		<module>web/nsf-file-server-webapp</module>

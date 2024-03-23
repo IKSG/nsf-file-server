@@ -8,7 +8,7 @@
 		<version>2.0.0-SNAPSHOT</version>
 		<relativePath>../..</relativePath>
 	</parent>
-	<artifactId>nsf-file-server-filesystem</artifactId>
+	<artifactId>nsf-file-server-fs-nsffilestore</artifactId>
 	<name>Java NIO 2 NSF Filesystem Provider</name>
 	
 	<dependencies>

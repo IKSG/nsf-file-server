@@ -14,7 +14,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
-			<artifactId>nsf-file-server-filesystem</artifactId>
+			<artifactId>nsf-file-server-fs-nsffilestore</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>

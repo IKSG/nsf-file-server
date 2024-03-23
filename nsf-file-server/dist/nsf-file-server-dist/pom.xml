@@ -22,7 +22,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.openntf.webapps</groupId>
-			<artifactId>nsf-file-server-db</artifactId>
+			<artifactId>nsf-file-server-db-config</artifactId>
 			<version>${project.version}</version>
 			<type>domino-nsf</type>
 		</dependency>
