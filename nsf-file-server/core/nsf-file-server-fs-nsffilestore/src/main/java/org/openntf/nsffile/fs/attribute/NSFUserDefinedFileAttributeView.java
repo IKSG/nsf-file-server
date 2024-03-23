@@ -26,7 +26,8 @@ import org.openntf.nsffile.fs.db.NSFAccessor;
 
 /**
  * Implementation of {@link UserDefinedFileAttributeView} that stores user-defined attributes
- * in custom data fields in items prefixed with {@value NSFFileSystemConstants#PREFIX_USERITEM}.
+ * in custom data fields in items prefixed with
+ * {@value org.openntf.nsffile.fs.NSFFileSystemConstants#PREFIX_USERITEM}.
  * 
  * @author Jesse Gallagher
  * @since 1.0.0
