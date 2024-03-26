@@ -28,7 +28,13 @@ import org.openntf.nsffile.commons.NotesPrincipal;
 
 public class RootFileAttributes implements PosixFileAttributes {
 	
-	// TODO read from DB
+	private final Instant modified;
+	private final Instant created;
+	
+	public RootFileAttributes(Instant modified, Instant created) {
+		this.modified = modified;
+		this.created = created;
+	}
 
 	@Override
 	public UserPrincipal owner() {
@@ -47,7 +53,7 @@ public class RootFileAttributes implements PosixFileAttributes {
 
 	@Override
 	public FileTime lastModifiedTime() {
-		return FileTime.from(Instant.EPOCH);
+		return FileTime.from(modified);
 	}
 
 	@Override
@@ -57,7 +63,7 @@ public class RootFileAttributes implements PosixFileAttributes {
 
 	@Override
 	public FileTime creationTime() {
-		return FileTime.from(Instant.EPOCH);
+		return FileTime.from(created);
 	}
 
 	@Override

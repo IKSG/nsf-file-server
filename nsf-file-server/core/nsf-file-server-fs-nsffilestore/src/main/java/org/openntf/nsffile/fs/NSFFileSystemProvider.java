@@ -56,6 +56,8 @@ import org.openntf.nsffile.fs.attribute.RootFileAttributes;
 import org.openntf.nsffile.fs.db.NSFAccessor;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 
+import lotus.domino.DateTime;
+
 import com.ibm.commons.util.StringUtil;
 
 /**
@@ -209,7 +211,16 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options)
 			throws IOException {
 		if("/".equals(path.toAbsolutePath().toString())) { //$NON-NLS-1$
-			return type.cast(new RootFileAttributes());
+			return NSFPathUtil.callWithDatabase((NSFPath)path, "rootAttribues", database -> { //$NON-NLS-1$
+				DateTime mod = database.getLastModified();
+				DateTime created = database.getCreated();
+				try {
+					return type.cast(new RootFileAttributes(mod.toJavaDate().toInstant(), created.toJavaDate().toInstant()));
+				} finally {
+					mod.recycle();
+					created.recycle();
+				}
+			});
 		}
 		if (type.isAssignableFrom(PosixFileAttributes.class)) {
 			PosixFileAttributeView view = getFileAttributeView(path, PosixFileAttributeView.class, options);
