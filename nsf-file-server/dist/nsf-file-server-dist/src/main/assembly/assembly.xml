@@ -49,15 +49,15 @@
 	</fileSets>
 	
 	<moduleSets>
-		<!-- The File Store Webapp -->
+		<!-- The Config NSF-->
 		<moduleSet>
 			<useAllReactorProjects>true</useAllReactorProjects>
 			<includes>
-				<include>org.openntf.webapps:nsf-file-server-webapp</include>
+				<include>org.openntf.webapps:nsf-file-server-db-config</include>
 			</includes>
 			
 			<binaries>
-				<outputFileNameMapping>nsffileserver.war</outputFileNameMapping>
+				<outputFileNameMapping>fileserverconfig.ntf</outputFileNameMapping>
 				<includeDependencies>false</includeDependencies>
 				<unpack>false</unpack>
 			</binaries>
@@ -67,11 +67,10 @@
 			<useAllReactorProjects>true</useAllReactorProjects>
 			<includes>
 				<include>org.openntf.webapps:nsf-file-server-db-config</include>
-				<include>org.openntf.webapps:nsf-file-server-db-nsffilestore</include>
 			</includes>
 			
 			<binaries>
-				<outputFileNameMapping>${module.artifactId}.ntf</outputFileNameMapping>
+				<outputFileNameMapping>filestore.ntf</outputFileNameMapping>
 				<includeDependencies>false</includeDependencies>
 				<unpack>false</unpack>
 			</binaries>
