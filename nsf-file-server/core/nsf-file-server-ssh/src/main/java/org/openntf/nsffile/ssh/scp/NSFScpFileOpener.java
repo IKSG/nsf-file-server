@@ -28,7 +28,7 @@ import java.util.logging.Logger;
 
 import com.ibm.commons.util.StringUtil;
 
-import org.apache.sshd.common.scp.helpers.DefaultScpFileOpener;
+import org.apache.sshd.scp.common.helpers.DefaultScpFileOpener;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 

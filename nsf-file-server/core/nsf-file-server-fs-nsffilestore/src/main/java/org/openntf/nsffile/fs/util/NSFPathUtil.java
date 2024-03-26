@@ -313,23 +313,7 @@ public enum NSFPathUtil {
 		String key = session.getEffectiveUserName() + nsfPath;
 		return THREAD_DATABASES.get().computeIfAbsent(key, k -> {
 			try {
-				int bangIndex = nsfPath.indexOf("!!"); //$NON-NLS-1$
-				String server;
-				String dbPath;
-				if(bangIndex < 0) {
-					server = ""; //$NON-NLS-1$
-					dbPath = nsfPath;
-				} else {
-					server = nsfPath.substring(0, bangIndex);
-					dbPath = nsfPath.substring(bangIndex+2);
-				}
-				if(NSFFileUtil.isReplicaID(dbPath)) {
-					Database database = session.getDatabase(null, null);
-					database.openByReplicaID(server, NSFFileUtil.normalizeReplicaID(dbPath));
-					return database;
-				} else {
-					return session.getDatabase(server, dbPath);
-				}
+				return NSFFileUtil.openDatabase(session, nsfPath);
 			} catch(NotesException e) {
 				throw new RuntimeException(e);
 			}

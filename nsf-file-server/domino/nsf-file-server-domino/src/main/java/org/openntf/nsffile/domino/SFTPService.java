@@ -25,6 +25,8 @@ import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 
+import org.apache.sshd.scp.server.ScpCommandFactory;
+import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.openntf.nsffile.commons.util.NotesThreadFactory;
 import org.openntf.nsffile.domino.config.DominoNSFConfiguration;
 import org.openntf.nsffile.ssh.SshServerDelegate;
@@ -35,7 +37,6 @@ import com.ibm.designer.runtime.domino.adapter.LCDEnvironment;
 import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpServletRequestAdapter;
 import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpServletResponseAdapter;
 import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpSessionAdapter;
-import com.ibm.domino.napi.NException;
 import com.ibm.domino.napi.c.Os;
 
 /**
@@ -45,8 +46,6 @@ import com.ibm.domino.napi.c.Os;
 public class SFTPService extends HttpService {
 	private static final Logger log = Logger.getLogger(SFTPService.class.getPackage().getName());
 	
-	public static final String ENV_ENABLE = "SFTPNSFEnable"; //$NON-NLS-1$
-	public static final String ENV_PORT = "SFTPNSFPort"; //$NON-NLS-1$
 	public static final int DEFAULT_PORT = 9022;
 	
 	private SshServerDelegate server;
@@ -55,14 +54,7 @@ public class SFTPService extends HttpService {
 	public SFTPService(LCDEnvironment env) {
 		super(env);
 		
-		try {
-			String envEnable = Os.OSGetEnvironmentString(ENV_ENABLE);
-			enabled = !"0".equals(envEnable); //$NON-NLS-1$
-		} catch (NException e) {
-			if(log.isLoggable(Level.WARNING)) {
-				log.log(Level.WARNING, MessageFormat.format("Encountered exception retrieving INI parameter {0}", ENV_ENABLE), e);
-			}
-		}
+		this.enabled = DominoNSFConfiguration.instance.isEnabled();
 		
 		if(enabled) {
 			// Kick off initialization on a separate thread to not block HTTP startup
@@ -71,11 +63,18 @@ public class SFTPService extends HttpService {
 					String dataDir = Os.OSGetEnvironmentString("Directory"); //$NON-NLS-1$
 					Path keyPath = Paths.get(dataDir, getClass().getPackage().getName() + ".keys"); //$NON-NLS-1$
 			
-					String nsfPath = DominoNSFConfiguration.instance.getNsfPath();
 					int port = DominoNSFConfiguration.instance.getPort();
-					this.server = new SshServerDelegate(nsfPath, port, keyPath, session -> DominoNSFConfiguration.instance.getFileSystem(session.getUsername()));
+					ScpCommandFactory scp = new ScpCommandFactory.Builder()
+						.withFileOpener(new CompositeScpFileOpener())
+						.build();
+					this.server = new SshServerDelegate(port, new SimpleGeneratorHostKeyProvider(keyPath), new CompositeNSFFileSystemFactory(), scp);
 					
 					server.start();
+					
+					if(log.isLoggable(Level.INFO)) {
+						log.info(MessageFormat.format("Initialized SFTP server on port {0}", Integer.toString(port)));
+					}
+					System.out.println(MessageFormat.format("Initialized SFTP server on port {0}", Integer.toString(port)));
 				} catch(Throwable t) {
 					if(log.isLoggable(Level.SEVERE)) {
 						log.log(Level.SEVERE, "Encountered exception initializing SFTP server", t);

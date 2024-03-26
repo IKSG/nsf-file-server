@@ -15,18 +15,32 @@
  */
 package org.openntf.nsffile.domino.config;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
-import java.util.Collections;
-
-import org.openntf.nsffile.fs.NSFFileSystemProvider;
-import org.openntf.nsffile.fs.util.NSFPathUtil;
+import java.text.MessageFormat;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.ibm.commons.util.StringUtil;
 import com.ibm.domino.napi.NException;
 import com.ibm.domino.napi.c.Os;
+
+import org.openntf.nsffile.commons.fs.CompositeFileSystem;
+import org.openntf.nsffile.commons.fs.CompositeFileSystemProvider;
+import org.openntf.nsffile.commons.util.NSFFileUtil;
+import org.openntf.nsffile.commons.util.NotesThreadFactory;
+import org.openntf.nsffile.ssh.spi.FileSystemMountProvider;
+
+import lotus.domino.Database;
+import lotus.domino.Document;
+import lotus.domino.View;
+import lotus.domino.ViewEntry;
+import lotus.domino.ViewNavigator;
+import lotus.notes.addins.DominoServer;
 
 /**
  * @author Jesse Gallagher
@@ -35,13 +49,21 @@ import com.ibm.domino.napi.c.Os;
 public enum DominoNSFConfiguration {
 	instance;
 	
-	public static final String ENV_DBPATH = "SFTPNSFPath"; //$NON-NLS-1$
-	public static final String DEFAULT_DBPATH = "filestore.nsf"; //$NON-NLS-1$
-	public static final String ENV_PORT = "SFTPNSFPort"; //$NON-NLS-1$
+	private static final Logger log = Logger.getLogger(DominoNSFConfiguration.class.getPackage().getName());
+	
+	public static final String ENV_DBPATH = "SFTPConfigPath"; //$NON-NLS-1$
+	public static final String DEFAULT_DBPATH = "fileserverconfig.nsf"; //$NON-NLS-1$
 	public static final int DEFAULT_PORT = 9022;
+	public static final String VIEW_MOUNTS = "Mounts"; //$NON-NLS-1$
+	public static final int COL_INDEX_PATH = 0;
+	public static final int COL_INDEX_TYPE = 1;
+	public static final int COL_INDEX_DATASOURCE = 2;
+	public static final int COL_INDEX_SERVERS = 3;
+	public static final String VIEW_CONFIG = "ServerConfigurations"; //$NON-NLS-1$
+	public static final String ITEM_ENABLED = "Enabled"; //$NON-NLS-1$
+	public static final String ITEM_PORT = "Port"; //$NON-NLS-1$
 
 	private final String nsfPath;
-	private final int port;
 	
 	private DominoNSFConfiguration() {
 		try {
@@ -50,34 +72,111 @@ public enum DominoNSFConfiguration {
 				envProperty = DEFAULT_DBPATH;
 			}
 			this.nsfPath = envProperty;
-			
-			String envPort = Os.OSGetEnvironmentString(ENV_PORT);
-			int port;
-			if(StringUtil.isEmpty(envPort)) {
-				port = DEFAULT_PORT;
-			} else {
-				port = Integer.valueOf(envPort);
-			}
-			this.port = port;
 		} catch(NException e) {
 			throw new RuntimeException(e);
 		}
 	}
 	
-	public String getNsfPath() {
+	public String getConfigNsfPath() {
 		return nsfPath;
 	}
 	
-	public int getPort() {
-		return port;
+	public boolean isEnabled() {
+		return NotesThreadFactory.call(dominoSession -> {
+			Database configNsf = NSFFileUtil.openDatabase(dominoSession, DominoNSFConfiguration.instance.getConfigNsfPath());
+			View mounts = configNsf.getView(DominoNSFConfiguration.VIEW_CONFIG);
+			Document serverDoc = mounts.getDocumentByKey(dominoSession.getUserName(), true);
+			if(serverDoc == null) {
+				return false;
+			} else {
+				return !"N".equals(serverDoc.getItemValueString(ITEM_ENABLED)); //$NON-NLS-1$
+			}
+		});
 	}
 	
-	public FileSystem getFileSystem(String username) throws IOException {
-		try {
-			URI uri = NSFPathUtil.toFileSystemURI(username, nsfPath);
-			return NSFFileSystemProvider.instance.getOrCreateFileSystem(uri, Collections.emptyMap());
-		} catch (URISyntaxException e) {
-			throw new RuntimeException(e);
+	public int getPort() {
+		return NotesThreadFactory.call(dominoSession -> {
+			Database configNsf = NSFFileUtil.openDatabase(dominoSession, DominoNSFConfiguration.instance.getConfigNsfPath());
+			View mounts = configNsf.getView(DominoNSFConfiguration.VIEW_CONFIG);
+			Document serverDoc = mounts.getDocumentByKey(dominoSession.getUserName(), true);
+			if(serverDoc == null) {
+				return DEFAULT_PORT;
+			} else {
+				int port = serverDoc.getItemValueInteger(ITEM_PORT);
+				return port == 0 ? DEFAULT_PORT : port;
+			}
+		});
+	}
+	
+	public CompositeFileSystem buildFileSystem(String username) {
+		// Read the view to create filesystems for each entry
+		Map<String, FileSystem> fileSystems = NotesThreadFactory.call(dominoSession -> {
+			try {
+				DominoServer server = new DominoServer();
+				@SuppressWarnings("unchecked")
+				Collection<String> names = server.getNamesList(dominoSession.getUserName());
+				
+				List<FileSystemMountProvider> providers = NSFFileUtil.findExtensions(FileSystemMountProvider.class);
+				if(log.isLoggable(Level.FINEST)) {
+					log.finest(MessageFormat.format("Found providers: {0}", providers));
+				}
+				
+				Map<String, FileSystem> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+				
+				Database configNsf = NSFFileUtil.openDatabase(dominoSession, DominoNSFConfiguration.instance.getConfigNsfPath());
+				View mounts = configNsf.getView(DominoNSFConfiguration.VIEW_MOUNTS);
+				ViewNavigator nav = mounts.createViewNav();
+				ViewEntry entry = nav.getFirst();
+				while(entry != null) {
+					entry.setPreferJavaDates(true);
+					List<?> columnValues = entry.getColumnValues();
+					
+					if(log.isLoggable(Level.FINEST)) {
+						log.finest(MessageFormat.format("Processing entry {0}", columnValues));
+					}
+					
+					List<String> servers = NSFFileUtil.toStringList(columnValues.get(DominoNSFConfiguration.COL_INDEX_SERVERS));
+					if(servers.stream().anyMatch(s -> names.contains(s))) {
+						if(log.isLoggable(Level.FINEST)) {
+							log.finest("Acceptable for current server");
+						}
+						
+						String path = (String)columnValues.get(DominoNSFConfiguration.COL_INDEX_PATH);
+						String type = (String)columnValues.get(DominoNSFConfiguration.COL_INDEX_TYPE);
+						String dataSource = (String)columnValues.get(DominoNSFConfiguration.COL_INDEX_DATASOURCE);
+						
+						FileSystemMountProvider provider = providers.stream()
+							.filter(p -> p.getName().equals(type))
+							.findFirst()
+							.orElseThrow(() -> new IllegalArgumentException(MessageFormat.format("Unable to find FileSystemMountProvider for type \"{0}\"", type)));
+						
+						if(log.isLoggable(Level.FINEST)) {
+							log.finest(MessageFormat.format("Found provider: {0}", provider));
+						}
+						
+						Map<String, Object> env = new HashMap<>();
+						env.put("username", username); //$NON-NLS-1$
+						FileSystem fs = provider.createFileSystem(dataSource, env);
+						result.put(path, fs);
+					}
+					
+					ViewEntry tempEntry = entry;
+					entry = nav.getNext();
+					tempEntry.recycle();
+				}
+				return result;
+			} catch(Throwable t) {
+				if(log.isLoggable(Level.SEVERE)) {
+					log.log(Level.SEVERE, "Encountered exception while building composite filesystem");
+				}
+				throw t;
+			}
+		});
+		
+		if(log.isLoggable(Level.INFO)) {
+			log.info(MessageFormat.format("Built filesystem list: {0}", fileSystems));
 		}
+		
+		return new CompositeFileSystem(CompositeFileSystemProvider.instance, fileSystems);
 	}
 }

@@ -15,14 +15,23 @@
  */
 package org.openntf.nsffile.commons.util;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.text.MessageFormat;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
+import com.ibm.commons.extension.ExtensionManager;
 import com.ibm.commons.util.PathUtil;
 import com.ibm.commons.util.StringUtil;
 
+import lotus.domino.Database;
 import lotus.domino.Name;
+import lotus.domino.NotesException;
+import lotus.domino.Session;
 
 /**
  * Common utilities for working with NSF-based filesystems
@@ -145,5 +154,54 @@ public enum NSFFileUtil {
 
 	public static String concat(final String... parts) {
 		return concat('/', parts);
+	}
+	
+	public static Database openDatabase(final Session session, final String nsfPath) throws NotesException {
+		int bangIndex = nsfPath.indexOf("!!"); //$NON-NLS-1$
+		String server;
+		String dbPath;
+		if(bangIndex < 0) {
+			server = ""; //$NON-NLS-1$
+			dbPath = nsfPath;
+		} else {
+			server = nsfPath.substring(0, bangIndex);
+			dbPath = nsfPath.substring(bangIndex+2);
+		}
+		if(NSFFileUtil.isReplicaID(dbPath)) {
+			Database database = session.getDatabase(null, null);
+			database.openByReplicaID(server, NSFFileUtil.normalizeReplicaID(dbPath));
+			return database;
+		} else {
+			return session.getDatabase(server, dbPath);
+		}
+	}
+	
+	public static List<String> toStringList(Object columnValue) {
+		if(columnValue instanceof List) {
+			return ((List<?>)columnValue).stream()
+				.map(Object::toString)
+				.collect(Collectors.toList());
+		} else if(columnValue == null) {
+			return Collections.emptyList();
+		} else {
+			return Collections.singletonList(columnValue.toString());
+		}
+	}
+	
+	/**
+	 * Finds extensions for the given class using the IBM Commons extension mechanism, creating new instances
+	 * of each found class to return.
+	 * 
+	 * <p>This method assumes that the extension point name is the same as the qualified class name.</p>
+	 * 
+	 * @param <T> the class of extension to find
+	 * @param extensionClass the class object representing the extension point
+	 * @return a {@link List} of service objects for the class
+	 * @since 2.0.0
+	 */
+	public static <T> List<T> findExtensions(Class<T> extensionClass) {
+		return AccessController.doPrivileged((PrivilegedAction<List<T>>)() ->
+			ExtensionManager.findServices(null, extensionClass.getClassLoader(), extensionClass.getName(), extensionClass)
+		);
 	}
 }

@@ -29,6 +29,10 @@
 			<artifactId>com.ibm.commons</artifactId>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.sshd</groupId>
+			<artifactId>sshd-sftp</artifactId>
+		</dependency>
 	</dependencies>
 	
 	<build>

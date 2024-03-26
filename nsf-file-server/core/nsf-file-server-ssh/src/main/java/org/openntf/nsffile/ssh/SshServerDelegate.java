@@ -16,19 +16,17 @@
 package org.openntf.nsffile.ssh;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.apache.sshd.server.scp.ScpCommandFactory;
-import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
+import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.openntf.nsffile.ssh.auth.NotesPasswordAuthenticator;
 import org.openntf.nsffile.ssh.auth.NotesPublicKeyAuthenticator;
-import org.openntf.nsffile.ssh.scp.NSFScpFileOpener;
 
 /**
  * Frontend-independent manager for running the SSH/SFTP server.
@@ -40,31 +38,30 @@ import org.openntf.nsffile.ssh.scp.NSFScpFileOpener;
 public class SshServerDelegate implements AutoCloseable {
 	public static final Logger log = Logger.getLogger(SshServerDelegate.class.getPackage().getName());
 	
-	private final String nsfPath;
 	private final int port;
-	private final Path keyPath;
+	private final KeyPairProvider keyPairProvider;
 	private final FileSystemFactory fileSystemFactory;
+	private final ScpCommandFactory scpCommandFactory;
 	
 	private SshServer server;
 
-	public SshServerDelegate(String nsfPath, int port, Path keyPath, FileSystemFactory fileSystemFactory) {
-		this.nsfPath = nsfPath;
+	public SshServerDelegate(int port, KeyPairProvider keyPairProvider, FileSystemFactory fileSystemFactory, ScpCommandFactory scpCommandFactory) {
 		this.port = port;
-		this.keyPath = keyPath;
+		this.keyPairProvider = keyPairProvider;
 		this.fileSystemFactory = fileSystemFactory;
+		this.scpCommandFactory = scpCommandFactory;
 	}
 	
 	public void start() throws IOException {
 		if(log.isLoggable(Level.INFO)) {
 			log.info(getClass().getSimpleName() + ": Startup");
-			log.info(getClass().getSimpleName() + ": Using NSF path " + nsfPath);
 			log.info(getClass().getSimpleName() + ": Using port " + port);
-			log.info(getClass().getSimpleName() + ": Using key path " + keyPath);
+			log.info(getClass().getSimpleName() + ": Using key provider " + keyPairProvider);
 		}
 		
 		server = SshServer.setUpDefaultServer();
 		server.setPort(port);
-		server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(keyPath));
+		server.setKeyPairProvider(keyPairProvider);
 		server.setPasswordAuthenticator(new NotesPasswordAuthenticator());
 		server.setPublickeyAuthenticator(new NotesPublicKeyAuthenticator());
 		server.setFileSystemFactory(fileSystemFactory);
@@ -73,10 +70,7 @@ public class SshServerDelegate implements AutoCloseable {
 			.build();
 		server.setSubsystemFactories(Collections.singletonList(sftp));
 		
-		ScpCommandFactory scp = new ScpCommandFactory.Builder()
-			.withFileOpener(new NSFScpFileOpener(nsfPath))
-			.build();
-		server.setCommandFactory(scp);
+		server.setCommandFactory(scpCommandFactory);
 		
 		server.start();
 	}

@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import org.apache.sshd.client.subsystem.sftp.fs.SftpFileSystem.DefaultUserPrincipalLookupService;
+import org.apache.sshd.sftp.client.fs.SftpFileSystem.DefaultUserPrincipalLookupService;
 import org.apache.sshd.common.file.util.BaseFileSystem;
 
 public class NSFFileSystem extends BaseFileSystem<NSFPath> {
