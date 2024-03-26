@@ -42,6 +42,7 @@ public class NotesPasswordAuthenticator extends AbstractNotesAuthenticator imple
 			if(StringUtil.isEmpty(hashPassword)) {
 				return false;
 			} else {
+				// TODO switch to NABLookupBasicAuthentication
 				String verifyFormula = StringUtil.format(" @VerifyPassword(\"{0}\"; \"{1}\") ", escapeForFormulaString(password), hashPassword); //$NON-NLS-1$
 				Object result = session.evaluate(verifyFormula).get(0);
 				if(Double.valueOf(1).equals(result)) {

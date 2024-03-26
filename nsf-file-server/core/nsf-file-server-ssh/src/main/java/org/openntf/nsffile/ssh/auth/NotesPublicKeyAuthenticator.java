@@ -50,11 +50,14 @@ public class NotesPublicKeyAuthenticator extends AbstractNotesAuthenticator impl
 				int space = publicKey.indexOf(' ');
 				String type = publicKey.substring(0, space);
 				int lastSpace = publicKey.lastIndexOf(' ');
+				if(lastSpace == space) {
+					// Then there's no trailing user/machine note
+					lastSpace = publicKey.length();
+				}
 				String encKey = publicKey.substring(space+1, lastSpace);
 				byte[] keyBytes = Base64.getDecoder().decode(encKey);
 				Buffer keyBuf = new ByteArrayBuffer(keyBytes);
 				// The first bit is "ssh-rsa" - discard
-				keyBuf.getString();
 				PublicKey dirKey = BufferPublicKeyParser.DEFAULT.getRawPublicKey(type, keyBuf);
 				return key.equals(dirKey);
 			}
