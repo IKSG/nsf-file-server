@@ -57,7 +57,7 @@
 									<description>NSF SFTP Server</description>
 									<copyright>2019-2020 Jesse Gallagher</copyright>
 									<license>Apache License 2.0</license>
-									<generateSourceFeature>true</generateSourceFeature>
+									<generateSourceFeature>false</generateSourceFeature>
 									<artifacts>
 										<artifact>
 											<id>${project.groupId}:nsf-file-server-domino:${project.version}</id>
