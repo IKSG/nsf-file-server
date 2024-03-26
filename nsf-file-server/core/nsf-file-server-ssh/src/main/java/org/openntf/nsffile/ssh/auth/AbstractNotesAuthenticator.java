@@ -16,10 +16,13 @@
 package org.openntf.nsffile.ssh.auth;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Vector;
 
 import com.ibm.commons.util.StringUtil;
+
+import org.openntf.nsffile.commons.util.NSFFileUtil;
 
 import lotus.domino.Directory;
 import lotus.domino.DirectoryNavigator;
@@ -36,6 +39,22 @@ public abstract class AbstractNotesAuthenticator {
 			return ""; //$NON-NLS-1$
 		} else {
 			return value.replace("\\", "\\\\").replace("\"", "\\\""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		}
+	}
+
+	protected List<String> getItemValueStringListForUser(Session session, String dominoName, String itemName) throws NotesException {
+		if(StringUtil.isEmpty(dominoName)) {
+			return Collections.emptyList();
+		} else {
+			Directory dir = session.getDirectory();
+			DirectoryNavigator nav = dir.lookupNames("$Users", new Vector<String>(Arrays.asList(dominoName)), new Vector<String>(Arrays.asList(itemName)), false); //$NON-NLS-1$
+			if(nav.findFirstMatch()) {
+				List<?> itemValue = nav.getFirstItemValue();
+
+				return NSFFileUtil.toStringList(itemValue);
+			} else {
+				return Collections.emptyList();
+			}
 		}
 	}
 

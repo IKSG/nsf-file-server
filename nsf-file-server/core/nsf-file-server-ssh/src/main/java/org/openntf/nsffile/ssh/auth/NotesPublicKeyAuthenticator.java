@@ -16,7 +16,11 @@
 package org.openntf.nsffile.ssh.auth;
 
 import java.security.PublicKey;
+import java.text.MessageFormat;
 import java.util.Base64;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -36,6 +40,7 @@ import lombok.SneakyThrows;
  * @since 1.0.0
  */
 public class NotesPublicKeyAuthenticator extends AbstractNotesAuthenticator implements PublickeyAuthenticator {
+	private static final Logger log = Logger.getLogger(NotesPublicKeyAuthenticator.class.getPackage().getName());
 	
 	public static final String ITEM_PUBKEY = "sshPublicKey"; //$NON-NLS-1$
 
@@ -43,23 +48,36 @@ public class NotesPublicKeyAuthenticator extends AbstractNotesAuthenticator impl
 	@SneakyThrows
 	public boolean authenticate(String username, PublicKey key, ServerSession serverSession) throws AsyncAuthException {
 		return NotesThreadFactory.call(session -> {
-			String publicKey = getItemValueStringForUser(session, username, ITEM_PUBKEY);
-			if(StringUtil.isEmpty(publicKey)) {
+			List<String> publicKeys = getItemValueStringListForUser(session, username, ITEM_PUBKEY);
+			if(publicKeys.isEmpty() || (publicKeys.size() == 1 && StringUtil.isEmpty(publicKeys.get(0)))) {
 				return false;
 			} else {
-				int space = publicKey.indexOf(' ');
-				String type = publicKey.substring(0, space);
-				int lastSpace = publicKey.lastIndexOf(' ');
-				if(lastSpace == space) {
-					// Then there's no trailing user/machine note
-					lastSpace = publicKey.length();
+				for(String publicKey : publicKeys) {
+					try {
+						int space = publicKey.indexOf(' ');
+						String type = publicKey.substring(0, space);
+						int lastSpace = publicKey.lastIndexOf(' ');
+						if(lastSpace == space) {
+							// Then there's no trailing user/machine note
+							lastSpace = publicKey.length();
+						}
+						String encKey = publicKey.substring(space+1, lastSpace);
+						byte[] keyBytes = Base64.getDecoder().decode(encKey);
+						Buffer keyBuf = new ByteArrayBuffer(keyBytes);
+						// The first bit is "ssh-rsa" - discard
+						keyBuf.getString();
+						PublicKey dirKey = BufferPublicKeyParser.DEFAULT.getRawPublicKey(type, keyBuf);
+						if(key.equals(dirKey)) {
+							return true;
+						}
+					} catch(Exception e) {
+						// Log and move on
+						if(log.isLoggable(Level.WARNING)) {
+							log.log(Level.WARNING, MessageFormat.format("Encountered exception parsing SSH public key {0}", publicKey), e);
+						}
+					}
 				}
-				String encKey = publicKey.substring(space+1, lastSpace);
-				byte[] keyBytes = Base64.getDecoder().decode(encKey);
-				Buffer keyBuf = new ByteArrayBuffer(keyBytes);
-				// The first bit is "ssh-rsa" - discard
-				PublicKey dirKey = BufferPublicKeyParser.DEFAULT.getRawPublicKey(type, keyBuf);
-				return key.equals(dirKey);
+				return false;
 			}
 		});
 	}
