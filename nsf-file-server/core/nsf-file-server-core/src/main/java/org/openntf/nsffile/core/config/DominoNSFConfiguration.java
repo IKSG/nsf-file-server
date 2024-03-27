@@ -39,6 +39,8 @@ import org.openntf.nsffile.core.util.NotesThreadFactory;
 
 import lotus.domino.Database;
 import lotus.domino.Document;
+import lotus.domino.NotesException;
+import lotus.domino.Session;
 import lotus.domino.View;
 import lotus.domino.ViewEntry;
 import lotus.domino.ViewNavigator;
@@ -62,11 +64,14 @@ public enum DominoNSFConfiguration {
 	public static final int COL_INDEX_DATASOURCE = 2;
 	public static final int COL_INDEX_SERVERS = 3;
 	public static final int COL_INDEX_ENV = 4;
+	
+	public static final String ITEM_SERVERNAME = "ServerName"; //$NON-NLS-1$
+	
 	public static final String VIEW_CONFIG = "ServerConfigurations"; //$NON-NLS-1$
 	public static final String FORM_CONFIG = "ServerConfiguration"; //$NON-NLS-1$
-	public static final String ITEM_SERVERNAME = "ServerName"; //$NON-NLS-1$
 	public static final String ITEM_ENABLED = "SSHEnabled"; //$NON-NLS-1$
 	public static final String ITEM_PORT = "SSHPort"; //$NON-NLS-1$
+	public static final String ITEM_PASSWORDAUTH = "SSHAllowPasswordAuth"; //$NON-NLS-1$
 	
 	public static final String VIEW_SSHKEYPAIRS = "ServerSSHKeyPairs"; //$NON-NLS-1$
 	public static final String FORM_SSHKEYPAIR = "ServerSSHKeyPair"; //$NON-NLS-1$
@@ -93,9 +98,7 @@ public enum DominoNSFConfiguration {
 	
 	public boolean isEnabled() {
 		return NotesThreadFactory.call(dominoSession -> {
-			Database configNsf = NSFFileUtil.openDatabase(dominoSession, DominoNSFConfiguration.instance.getConfigNsfPath());
-			View mounts = configNsf.getView(DominoNSFConfiguration.VIEW_CONFIG);
-			Document serverDoc = mounts.getDocumentByKey(dominoSession.getUserName(), true);
+			Document serverDoc = getServerDoc(dominoSession);
 			if(serverDoc == null) {
 				return false;
 			} else {
@@ -106,14 +109,24 @@ public enum DominoNSFConfiguration {
 	
 	public int getPort() {
 		return NotesThreadFactory.call(dominoSession -> {
-			Database configNsf = NSFFileUtil.openDatabase(dominoSession, DominoNSFConfiguration.instance.getConfigNsfPath());
-			View mounts = configNsf.getView(DominoNSFConfiguration.VIEW_CONFIG);
-			Document serverDoc = mounts.getDocumentByKey(dominoSession.getUserName(), true);
+			Document serverDoc = getServerDoc(dominoSession);
 			if(serverDoc == null) {
 				return DEFAULT_PORT;
 			} else {
 				int port = serverDoc.getItemValueInteger(ITEM_PORT);
 				return port == 0 ? DEFAULT_PORT : port;
+			}
+		});
+	}
+	
+	public boolean isAllowPasswordAuth() {
+		return NotesThreadFactory.call(dominoSession -> {
+			Document serverDoc = getServerDoc(dominoSession);
+			if(serverDoc == null) {
+				return true;
+			} else {
+				String allow = serverDoc.getItemValueString(ITEM_PASSWORDAUTH);
+				return !"N".equals(allow); //$NON-NLS-1$
 			}
 		});
 	}
@@ -198,5 +211,11 @@ public enum DominoNSFConfiguration {
 		}
 		
 		return new CompositeFileSystem(CompositeFileSystemProvider.instance, fileSystems);
+	}
+	
+	private Document getServerDoc(Session dominoSession) throws NotesException {
+		Database configNsf = NSFFileUtil.openDatabase(dominoSession, DominoNSFConfiguration.instance.getConfigNsfPath());
+		View serverDocs = configNsf.getView(DominoNSFConfiguration.VIEW_CONFIG);
+		return serverDocs.getDocumentByKey(dominoSession.getUserName(), true);
 	}
 }

@@ -23,8 +23,11 @@ import java.util.logging.Logger;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.scp.server.ScpCommandFactory;
+import org.apache.sshd.server.ServerBuilder;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
+import org.openntf.nsffile.core.config.DominoNSFConfiguration;
 import org.openntf.nsffile.ssh.auth.NotesPasswordAuthenticator;
 import org.openntf.nsffile.ssh.auth.NotesPublicKeyAuthenticator;
 
@@ -59,12 +62,19 @@ public class SshServerDelegate implements AutoCloseable {
 			log.info(getClass().getSimpleName() + ": Using key provider " + keyPairProvider);
 		}
 		
-		server = SshServer.setUpDefaultServer();
+		server = ServerBuilder.builder()
+			.fileSystemFactory(fileSystemFactory)
+			.publickeyAuthenticator(new NotesPublicKeyAuthenticator())
+			.build();
+		
 		server.setPort(port);
 		server.setKeyPairProvider(keyPairProvider);
-		server.setPasswordAuthenticator(new NotesPasswordAuthenticator());
-		server.setPublickeyAuthenticator(new NotesPublicKeyAuthenticator());
-		server.setFileSystemFactory(fileSystemFactory);
+		
+		if(DominoNSFConfiguration.instance.isAllowPasswordAuth()) {
+			server.setPasswordAuthenticator(new NotesPasswordAuthenticator());
+		} else {
+			server.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+		}
 		
 		SftpSubsystemFactory sftp = new SftpSubsystemFactory.Builder()
 			.build();
