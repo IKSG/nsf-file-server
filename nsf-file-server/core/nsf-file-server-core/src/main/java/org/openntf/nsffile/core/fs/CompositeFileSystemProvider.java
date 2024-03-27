@@ -263,13 +263,19 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 			CompositeFileSystem compositeFileSystem = ((CompositePath)path).getFileSystem();
 			Map<String, FileSystem> fileSystems = compositeFileSystem.getFileSystems();
 			
-			String mount = path.iterator().next().toString();
+			
+			String mount = StreamSupport.stream(path.spliterator(), false)
+				.filter(p -> !p.toString().isEmpty())
+				.findFirst()
+				.map(Path::toString)
+				.orElseThrow(() -> new IllegalArgumentException(format("Unable to find subdirectory delegate for path {0}", path)));
 			FileSystem fs = fileSystems.get(mount);
 			if(fs == null) {
 				throw new IllegalStateException(format("Unable to resolve mounted filesystem for \"{0}\"", mount));
 			}
 			
 			String[] parts = StreamSupport.stream(path.spliterator(), false)
+				.filter(p -> !p.toString().isEmpty())
 				.skip(1)
 				.map(Path::getFileName)
 				.map(Object::toString)
