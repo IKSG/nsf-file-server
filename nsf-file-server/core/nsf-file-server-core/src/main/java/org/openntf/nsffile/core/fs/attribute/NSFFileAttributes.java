@@ -13,67 +13,85 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs.attribute;
+package org.openntf.nsffile.core.fs.attribute;
 
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
-import java.time.Instant;
-import java.util.EnumSet;
 import java.util.Set;
 
-import org.openntf.nsffile.core.NotesPrincipal;
+/**
+ * 
+ * @author Jesse Gallagher
+ * @since 1.0.0
+ */
+public class NSFFileAttributes implements PosixFileAttributes {
+	public enum Type {
+		File, Folder
+	}
+	
+	private UserPrincipal owner;
 
-public class RootFileAttributes implements PosixFileAttributes {
-	
-	private final Instant modified;
-	private final Instant created;
-	
-	public RootFileAttributes(Instant modified, Instant created) {
-		this.modified = modified;
+	private GroupPrincipal group;
+	private Type type;
+	private FileTime lastModified;
+	private FileTime lastAccessed;
+	private FileTime created;
+	private long size;
+	private Set<PosixFilePermission> permissions;
+
+	public NSFFileAttributes(UserPrincipal owner, GroupPrincipal group, Type type, FileTime lastModified,
+			FileTime lastAccessed, FileTime created, long size, Set<PosixFilePermission> permissions) {
+		this.owner = owner;
+		this.group = group;
+		this.type = type;
+		this.lastModified = lastModified;
+		this.lastAccessed = lastAccessed;
 		this.created = created;
+		this.size = size;
+		this.permissions = permissions;
 	}
 
 	@Override
 	public UserPrincipal owner() {
-		return new NotesPrincipal("CN=root"); //$NON-NLS-1$
+		return owner;
 	}
 
 	@Override
 	public GroupPrincipal group() {
-		return new NotesPrincipal("CN=wheel"); //$NON-NLS-1$
+		return group;
 	}
 
 	@Override
 	public Set<PosixFilePermission> permissions() {
-		return EnumSet.allOf(PosixFilePermission.class);
+		return permissions;
 	}
 
 	@Override
 	public FileTime lastModifiedTime() {
-		return FileTime.from(modified);
+		return lastModified;
 	}
 
 	@Override
 	public FileTime lastAccessTime() {
-		return FileTime.from(Instant.now());
+		return lastAccessed;
 	}
 
 	@Override
 	public FileTime creationTime() {
-		return FileTime.from(created);
+		return created;
 	}
 
 	@Override
 	public boolean isRegularFile() {
-		return false;
+		return type == Type.File;
 	}
 
 	@Override
 	public boolean isDirectory() {
-		return true;
+		return type == Type.Folder;
 	}
 
 	@Override
@@ -88,12 +106,11 @@ public class RootFileAttributes implements PosixFileAttributes {
 
 	@Override
 	public long size() {
-		return 0;
+		return type == Type.File ? size : 0;
 	}
 
 	@Override
 	public Object fileKey() {
 		return null;
 	}
-
 }

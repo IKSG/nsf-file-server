@@ -25,7 +25,7 @@ import java.util.Map;
 
 import com.ibm.commons.util.StringUtil;
 
-import org.openntf.nsffile.commons.spi.FileSystemMountProvider;
+import org.openntf.nsffile.core.spi.FileSystemMountProvider;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 

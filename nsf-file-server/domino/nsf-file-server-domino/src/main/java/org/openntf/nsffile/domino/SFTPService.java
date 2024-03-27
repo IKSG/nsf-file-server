@@ -27,7 +27,7 @@ import javax.servlet.ServletException;
 
 import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.openntf.nsffile.commons.util.NotesThreadFactory;
+import org.openntf.nsffile.core.util.NotesThreadFactory;
 import org.openntf.nsffile.domino.config.DominoNSFConfiguration;
 import org.openntf.nsffile.ssh.SshServerDelegate;
 

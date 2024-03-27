@@ -57,9 +57,9 @@ import java.util.stream.Collectors;
 import com.ibm.commons.util.StringUtil;
 import com.ibm.designer.domino.napi.NotesConstants;
 
-import org.openntf.nsffile.commons.NotesPrincipal;
-import org.openntf.nsffile.commons.fs.attribute.NSFFileAttributes;
-import org.openntf.nsffile.commons.fs.attribute.NSFFileAttributes.Type;
+import org.openntf.nsffile.core.NotesPrincipal;
+import org.openntf.nsffile.core.fs.attribute.NSFFileAttributes;
+import org.openntf.nsffile.core.fs.attribute.NSFFileAttributes.Type;
 import org.openntf.nsffile.fs.NSFPath;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 

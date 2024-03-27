@@ -13,31 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.ssh.provider;
+package org.openntf.nsffile.core.fs;
 
 import java.io.IOException;
-import java.net.URI;
-import java.nio.file.FileSystem;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Map;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import org.apache.sshd.common.file.root.RootedFileSystemProvider;
-import org.openntf.nsffile.core.spi.FileSystemMountProvider;
-
-public class URIMountProvider implements FileSystemMountProvider {
-
-	@Override
-	public String getName() {
-		return "uri"; //$NON-NLS-1$
+public class CompositeDirectoryStream implements DirectoryStream<Path> {
+	private final List<Path> paths;
+	
+	public CompositeDirectoryStream(CompositeFileSystem fileSystem) {
+		paths = fileSystem.getFileSystems().keySet()
+			.stream()
+			.map(mount -> fileSystem.getPath("/", mount)) //$NON-NLS-1$
+			.collect(Collectors.toList());
 	}
 
 	@Override
-	public FileSystem createFileSystem(String dataSource, Map<String, Object> env) throws IOException {
-		RootedFileSystemProvider provider = new RootedFileSystemProvider();
-		URI uri = URI.create(dataSource);
-		Path path = Paths.get(uri);
-		return provider.newFileSystem(path, env);
+	public Iterator<Path> iterator() {
+		return paths.iterator();
+	}
+
+	@Override
+	public void close() throws IOException {
+		
 	}
 
 }

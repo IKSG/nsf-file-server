@@ -22,7 +22,7 @@ import java.util.Vector;
 
 import com.ibm.commons.util.StringUtil;
 
-import org.openntf.nsffile.commons.util.NSFFileUtil;
+import org.openntf.nsffile.core.util.NSFFileUtil;
 
 import lotus.domino.Directory;
 import lotus.domino.DirectoryNavigator;

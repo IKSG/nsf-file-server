@@ -29,11 +29,11 @@ import com.ibm.commons.util.StringUtil;
 import com.ibm.domino.napi.NException;
 import com.ibm.domino.napi.c.Os;
 
-import org.openntf.nsffile.commons.fs.CompositeFileSystem;
-import org.openntf.nsffile.commons.fs.CompositeFileSystemProvider;
-import org.openntf.nsffile.commons.spi.FileSystemMountProvider;
-import org.openntf.nsffile.commons.util.NSFFileUtil;
-import org.openntf.nsffile.commons.util.NotesThreadFactory;
+import org.openntf.nsffile.core.fs.CompositeFileSystem;
+import org.openntf.nsffile.core.fs.CompositeFileSystemProvider;
+import org.openntf.nsffile.core.spi.FileSystemMountProvider;
+import org.openntf.nsffile.core.util.NSFFileUtil;
+import org.openntf.nsffile.core.util.NotesThreadFactory;
 
 import lotus.domino.Database;
 import lotus.domino.Document;

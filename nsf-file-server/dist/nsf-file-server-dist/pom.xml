@@ -16,12 +16,6 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.openntf.webapps</groupId>
-			<artifactId>nsf-file-server-webapp</artifactId>
-			<version>${project.version}</version>
-			<type>war</type>
-		</dependency>
-		<dependency>
-			<groupId>org.openntf.webapps</groupId>
 			<artifactId>nsf-file-server-db-config</artifactId>
 			<version>${project.version}</version>
 			<type>domino-nsf</type>
@@ -55,7 +49,7 @@
 									<label>NSF SFTP Server</label>
 									<providerName>OpenNTF</providerName>
 									<description>NSF SFTP Server</description>
-									<copyright>2019-2020 Jesse Gallagher</copyright>
+									<copyright>2019-2024 Jesse Gallagher</copyright>
 									<license>Apache License 2.0</license>
 									<generateSourceFeature>false</generateSourceFeature>
 									<artifacts>

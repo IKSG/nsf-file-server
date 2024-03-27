@@ -13,31 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.ssh.provider;
+package org.openntf.nsffile.core.spi;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.FileSystem;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 
-import org.apache.sshd.common.file.root.RootedFileSystemProvider;
-import org.openntf.nsffile.core.spi.FileSystemMountProvider;
-
-public class URIMountProvider implements FileSystemMountProvider {
-
-	@Override
-	public String getName() {
-		return "uri"; //$NON-NLS-1$
-	}
-
-	@Override
-	public FileSystem createFileSystem(String dataSource, Map<String, Object> env) throws IOException {
-		RootedFileSystemProvider provider = new RootedFileSystemProvider();
-		URI uri = URI.create(dataSource);
-		Path path = Paths.get(uri);
-		return provider.newFileSystem(path, env);
-	}
-
+/**
+ * Service interface to declare a filesystem mount type as configured
+ * in the NSF.
+ */
+public interface FileSystemMountProvider {
+	String getName();
+	
+	FileSystem createFileSystem(String dataSource, Map<String, Object> env) throws IOException;
 }
