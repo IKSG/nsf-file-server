@@ -9,3 +9,7 @@ Thumbs.db
 *.iml
 
 .factorypath
+
+.project
+.classpath
+/.settings/
