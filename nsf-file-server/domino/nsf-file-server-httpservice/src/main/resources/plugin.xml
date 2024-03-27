@@ -19,7 +19,7 @@
 <?eclipse version="3.4"?>
 <plugin>
 	<extension point="com.ibm.commons.Extension">
-		<service type="com.ibm.xsp.adapter.serviceFactory" class="org.openntf.nsffile.domino.SFTPServiceFactory"/>
+		<service type="com.ibm.xsp.adapter.serviceFactory" class="org.openntf.nsffile.httpservice.SFTPServiceFactory"/>
 	</extension>
 	
 	<extension point="com.ibm.commons.Extension">

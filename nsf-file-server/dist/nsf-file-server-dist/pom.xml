@@ -54,7 +54,7 @@
 									<generateSourceFeature>false</generateSourceFeature>
 									<artifacts>
 										<artifact>
-											<id>${project.groupId}:nsf-file-server-domino:${project.version}</id>
+											<id>${project.groupId}:nsf-file-server-httpservice:${project.version}</id>
 											<transitive>false</transitive>
 										</artifact>
 									</artifacts>

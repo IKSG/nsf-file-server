@@ -7,9 +7,9 @@
 		<version>2.0.0-SNAPSHOT</version>
 		<relativePath>../..</relativePath>
 	</parent>
-	<artifactId>nsf-file-server-domino</artifactId>
+	<artifactId>nsf-file-server-httpservice</artifactId>
 	<packaging>bundle</packaging>
-	<name>NSF File Server Domino Host</name>
+	<name>NSF File Server Domino HttpService Host</name>
 	
 	<dependencies>
 		<dependency>
@@ -61,7 +61,7 @@
 				<extensions>true</extensions>
 				<configuration>
 					<instructions>
-						<Bundle-SymbolicName>org.openntf.nsffile.domino;singleton:=true</Bundle-SymbolicName>
+						<Bundle-SymbolicName>org.openntf.nsffile.httpservice;singleton:=true</Bundle-SymbolicName>
 						<Bundle-RequiredExecutionEnvironment>JavaSE-1.8</Bundle-RequiredExecutionEnvironment>
 						<Export-Package/>
 						<Require-Bundle>

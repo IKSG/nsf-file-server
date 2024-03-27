@@ -49,7 +49,7 @@
 		
 		<module>domino/nsf-file-server-db-config</module>
 		<module>domino/nsf-file-server-db-nsffilestore</module>
-		<module>domino/nsf-file-server-domino</module>
+		<module>domino/nsf-file-server-httpservice</module>
 		
 		<module>dist/nsf-file-server-dist</module>
 	</modules>

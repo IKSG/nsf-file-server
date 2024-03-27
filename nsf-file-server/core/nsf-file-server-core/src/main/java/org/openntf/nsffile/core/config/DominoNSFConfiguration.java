@@ -132,7 +132,6 @@ public enum DominoNSFConfiguration {
 	}
 	
 	public CompositeFileSystem buildFileSystem(String username) {
-		log.setLevel(Level.ALL);
 		// Read the view to create filesystems for each entry
 		Map<String, FileSystem> fileSystems = NotesThreadFactory.call(dominoSession -> {
 			try {

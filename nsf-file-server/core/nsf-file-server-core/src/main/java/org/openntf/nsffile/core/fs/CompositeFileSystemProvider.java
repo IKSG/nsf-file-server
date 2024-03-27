@@ -55,10 +55,6 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 	public static final Logger log = Logger.getLogger(CompositeFileSystemProvider.class.getPackage().getName());
 	
 	public static final CompositeFileSystemProvider instance = new CompositeFileSystemProvider();
-	
-	public CompositeFileSystemProvider() {
-		log.setLevel(Level.ALL);
-	}
 
 	// *******************************************************************************
 	// * Filesystem Operations

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.domino;
+package org.openntf.nsffile.httpservice;
 
 import java.io.IOException;
 import java.text.MessageFormat;
