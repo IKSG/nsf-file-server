@@ -6,10 +6,27 @@ This project is a Domino HTTP OSGi application that that launches an SFTP server
 
 The server is configured by creating a database using the included "fileserverconfig.ntf" template and placing it in the root of the server's data directory as "fileserverconfig.nsf". The path to the config NSF can be overridden using the `SFTPConfigPath` notes.ini parameter.
 
-Inside the config NSF, you can specify per-server configuration for whether to enable the service and which port to use, as well as the sub directory "mounts" that will appear as the root of the SFTP server. There are currently two types supported:
+Inside the config NSF, you can specify per-server configuration for whether to enable the service and which port to use, as well as the sub directory "mounts" that will appear as the root of the SFTP server and a JSON-formatted configuration for the "env" property of the call to create the filesystem in Java.
 
-- The NSF document layout, which is a database created using the included "filestore.ntf" template and which stores files as individual documents with the file data as an attachment. It presents a POSIX-like view of the NSF documents as a filesystem
-- Generic URIs, which will be passed to the Java NIO `Paths.get(uri)` method to be handled if an applicable provider exists. Note that this support is incomplete
+There are currently three types supported:
+
+##### NSF Document Layout
+
+This is an NSF database created using the included "filestore.ntf". This stores files as individual documents with the file data as attachments, presenting a POSIX-like view of these documents in a hierarchy. The Data Source value for these should be the path to the NSF, such as "store/docs.nsf".
+
+These NSFs are accessed as the connecting user, and so ACLs are enforced.
+
+##### Server Filesystem
+
+This is a mount from the local server filesystem, where the Data Source is an OS-dependent file path such as "C:\docs" or "/home/notes".
+
+The filesystem is accessed as the user Domino is running as.
+
+##### Generic URIs
+
+These URIs are passed to Java's NIO FileSystem class as-is, with a parsed version of the Environment configuration. The supported types depend on what's available in the JVM, but currently the standard types are local filesystems (better handled above for Windows) and ZIP files.
+
+To open a ZIP or JAR file, specify a URL like "jar:file:///C:/somefile.zip!/" and specify an environment configuration like `{"create":"true","encoding":"utf-8"}`. This is described somewhat more in [the official Java documentation](https://docs.oracle.com/javase/8/docs/technotes/guides/io/fsp/zipfilesystemprovider.html).
 
 ### Authentication
 
