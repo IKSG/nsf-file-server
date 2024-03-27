@@ -114,8 +114,8 @@ public class SFTPService extends HttpService {
 	// *******************************************************************************
 
 	@Override
-	public boolean doService(String arg0, String arg1, HttpSessionAdapter arg2, HttpServletRequestAdapter arg3,
-			HttpServletResponseAdapter arg4) throws ServletException, IOException {
+	public boolean doService(String contextPath, String path, HttpSessionAdapter httpSession, HttpServletRequestAdapter httpRequest,
+			HttpServletResponseAdapter httpResponse) throws ServletException, IOException {
 		// NOP
 		return false;
 	}
