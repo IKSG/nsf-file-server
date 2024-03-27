@@ -102,6 +102,7 @@ public class NSFHostKeyProvider extends SimpleGeneratorHostKeyProvider {
 	        keyPairDoc.replaceItemValue(DominoNSFConfiguration.ITEM_PUBKEY, Base64.getMimeEncoder().encodeToString(data)).setSummary(false);
 	        
 	        keyPairDoc.encrypt();
+	        keyPairDoc.computeWithForm(false, false);
 	        keyPairDoc.save();
 		});
 	}
