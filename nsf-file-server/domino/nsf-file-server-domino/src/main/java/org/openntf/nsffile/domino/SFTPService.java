@@ -16,8 +16,6 @@
 package org.openntf.nsffile.domino;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.logging.Level;
@@ -25,19 +23,20 @@ import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 
-import org.apache.sshd.scp.server.ScpCommandFactory;
-import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.openntf.nsffile.core.util.NotesThreadFactory;
-import org.openntf.nsffile.domino.config.DominoNSFConfiguration;
-import org.openntf.nsffile.ssh.SshServerDelegate;
-
 import com.ibm.designer.runtime.domino.adapter.ComponentModule;
 import com.ibm.designer.runtime.domino.adapter.HttpService;
 import com.ibm.designer.runtime.domino.adapter.LCDEnvironment;
 import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpServletRequestAdapter;
 import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpServletResponseAdapter;
 import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpSessionAdapter;
-import com.ibm.domino.napi.c.Os;
+
+import org.apache.sshd.scp.server.ScpCommandFactory;
+import org.openntf.nsffile.core.config.DominoNSFConfiguration;
+import org.openntf.nsffile.core.util.NotesThreadFactory;
+import org.openntf.nsffile.ssh.CompositeNSFFileSystemFactory;
+import org.openntf.nsffile.ssh.NSFHostKeyProvider;
+import org.openntf.nsffile.ssh.SshServerDelegate;
+import org.openntf.nsffile.ssh.scp.CompositeScpFileOpener;
 
 /**
  * @author Jesse Gallagher
@@ -60,14 +59,11 @@ public class SFTPService extends HttpService {
 			// Kick off initialization on a separate thread to not block HTTP startup
 			NotesThreadFactory.executor.submit(() -> {
 				try {
-					String dataDir = Os.OSGetEnvironmentString("Directory"); //$NON-NLS-1$
-					Path keyPath = Paths.get(dataDir, getClass().getPackage().getName() + ".keys"); //$NON-NLS-1$
-			
 					int port = DominoNSFConfiguration.instance.getPort();
 					ScpCommandFactory scp = new ScpCommandFactory.Builder()
 						.withFileOpener(new CompositeScpFileOpener())
 						.build();
-					this.server = new SshServerDelegate(port, new SimpleGeneratorHostKeyProvider(keyPath), new CompositeNSFFileSystemFactory(), scp);
+					this.server = new SshServerDelegate(port, new NSFHostKeyProvider(), new CompositeNSFFileSystemFactory(), scp);
 					
 					server.start();
 					

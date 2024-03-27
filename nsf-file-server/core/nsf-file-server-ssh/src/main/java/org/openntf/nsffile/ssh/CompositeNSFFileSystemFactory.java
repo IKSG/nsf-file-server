@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.domino;
+package org.openntf.nsffile.ssh;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -21,7 +21,7 @@ import java.nio.file.Path;
 
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.session.SessionContext;
-import org.openntf.nsffile.domino.config.DominoNSFConfiguration;
+import org.openntf.nsffile.core.config.DominoNSFConfiguration;
 
 public class CompositeNSFFileSystemFactory implements FileSystemFactory {
 	@Override

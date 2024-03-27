@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.domino;
+package org.openntf.nsffile.ssh.scp;
 
-import org.openntf.nsffile.domino.config.DominoNSFConfiguration;
-import org.openntf.nsffile.ssh.scp.NSFScpFileOpener;
+import org.openntf.nsffile.core.config.DominoNSFConfiguration;
 
 public class CompositeScpFileOpener extends NSFScpFileOpener {
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.domino.config;
+package org.openntf.nsffile.core.config;
 
 import java.nio.file.FileSystem;
 import java.text.MessageFormat;
@@ -63,8 +63,15 @@ public enum DominoNSFConfiguration {
 	public static final int COL_INDEX_SERVERS = 3;
 	public static final int COL_INDEX_ENV = 4;
 	public static final String VIEW_CONFIG = "ServerConfigurations"; //$NON-NLS-1$
-	public static final String ITEM_ENABLED = "Enabled"; //$NON-NLS-1$
-	public static final String ITEM_PORT = "Port"; //$NON-NLS-1$
+	public static final String FORM_CONFIG = "ServerConfiguration"; //$NON-NLS-1$
+	public static final String ITEM_SERVERNAME = "ServerName"; //$NON-NLS-1$
+	public static final String ITEM_ENABLED = "SSHEnabled"; //$NON-NLS-1$
+	public static final String ITEM_PORT = "SSHPort"; //$NON-NLS-1$
+	
+	public static final String VIEW_SSHKEYPAIRS = "ServerSSHKeyPairs"; //$NON-NLS-1$
+	public static final String FORM_SSHKEYPAIR = "ServerSSHKeyPair"; //$NON-NLS-1$
+	public static final String ITEM_PUBKEY = "PublicKey"; //$NON-NLS-1$
+	public static final String ITEM_PRIVATEKEY = "PrivateKey"; //$NON-NLS-1$
 
 	private final String nsfPath;
 	
