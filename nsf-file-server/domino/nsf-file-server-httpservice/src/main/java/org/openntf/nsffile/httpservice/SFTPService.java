@@ -96,13 +96,15 @@ public class SFTPService extends HttpService {
 		
 		if(enabled) {
 			if(server != null) {
-				try {
-					server.close();
-				} catch (IOException e) {
-					if(log.isLoggable(Level.WARNING)) {
-						log.log(Level.WARNING, "Encountered exception closing SFTP server", e);
+				NotesThreadFactory.run(dominoSession -> {
+					try {
+						server.close();
+					} catch (IOException e) {
+						if(log.isLoggable(Level.WARNING)) {
+							log.log(Level.WARNING, "Encountered exception closing SFTP server", e);
+						}
 					}
-				}
+				});
 			}
 			
 			NotesThreadFactory.term();

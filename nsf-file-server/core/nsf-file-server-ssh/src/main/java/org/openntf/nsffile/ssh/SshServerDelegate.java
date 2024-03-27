@@ -16,9 +16,15 @@
 package org.openntf.nsffile.ssh;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.hcl.domino.DominoClient;
+import com.hcl.domino.DominoClientBuilder;
+import com.hcl.domino.DominoProcess;
+import com.hcl.domino.server.ServerStatusLine;
 
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -47,6 +53,8 @@ public class SshServerDelegate implements AutoCloseable {
 	private final ScpCommandFactory scpCommandFactory;
 	
 	private SshServer server;
+	private DominoClient dominoClient;
+	private ServerStatusLine statusLine;
 
 	public SshServerDelegate(int port, KeyPairProvider keyPairProvider, FileSystemFactory fileSystemFactory, ScpCommandFactory scpCommandFactory) {
 		this.port = port;
@@ -83,12 +91,24 @@ public class SshServerDelegate implements AutoCloseable {
 		server.setCommandFactory(scpCommandFactory);
 		
 		server.start();
+		
+		DominoProcess.get().initializeThread();
+		dominoClient = DominoClientBuilder.newDominoClient().build();
+		statusLine = dominoClient.getServerAdmin().createServerStatusLine("SFTP Server");
+		statusLine.setLine(MessageFormat.format("Listen for connect requests on TCP Port:{0}", Integer.toString(port)));
 	}
 	
 	@Override
 	public void close() throws IOException {
+		DominoProcess.get().initializeThread();
 		if(server != null) {
 			server.close();
+		}
+		if(statusLine != null) {
+			statusLine.close();
+		}
+		if(dominoClient != null) {
+			dominoClient.close();
 		}
 	}
 }
