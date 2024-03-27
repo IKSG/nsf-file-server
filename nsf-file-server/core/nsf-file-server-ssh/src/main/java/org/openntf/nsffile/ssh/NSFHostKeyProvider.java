@@ -18,11 +18,11 @@ package org.openntf.nsffile.ssh;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
-import java.util.Base64;
 
 import com.ibm.commons.util.StringUtil;
 
@@ -64,12 +64,12 @@ public class NSFHostKeyProvider extends SimpleGeneratorHostKeyProvider {
 			}
 			
 			// The full pair is in PrivateKey
-			String privateKeyB64 = keyPairDoc.getItemValueString(DominoNSFConfiguration.ITEM_PRIVATEKEY);
-			if(StringUtil.isEmpty(privateKeyB64)) {
+			String privateKey = keyPairDoc.getItemValueString(DominoNSFConfiguration.ITEM_PRIVATEKEY);
+			if(StringUtil.isEmpty(privateKey)) {
 				return null;
 			}
 			
-			byte[] privateKeyData = Base64.getMimeDecoder().decode(privateKeyB64);
+			byte[] privateKeyData = privateKey.getBytes(StandardCharsets.UTF_8);
 			try(ByteArrayInputStream is = new ByteArrayInputStream(privateKeyData)) {
 				return SecurityUtils.loadKeyPairIdentities(session, () -> "NSF", is, null); //$NON-NLS-1$
 			}
@@ -91,18 +91,20 @@ public class NSFHostKeyProvider extends SimpleGeneratorHostKeyProvider {
 	            data = out.toByteArray();
 	        }
 	        
-	        keyPairDoc.replaceItemValue(DominoNSFConfiguration.ITEM_PRIVATEKEY, Base64.getMimeEncoder().encodeToString(data)).setEncrypted(true);
+	        keyPairDoc.replaceItemValue(DominoNSFConfiguration.ITEM_PRIVATEKEY, new String(data, StandardCharsets.UTF_8)).setEncrypted(true);
 	        
+	        // Base64-encoded data with human-readable label 
 	        try(ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 	        	writer.writePublicKey(kp, "public key", out); //$NON-NLS-1$
 	        	out.flush();
 	        	data = out.toByteArray();
 	        }
 	        
-	        keyPairDoc.replaceItemValue(DominoNSFConfiguration.ITEM_PUBKEY, Base64.getMimeEncoder().encodeToString(data)).setSummary(false);
+	        keyPairDoc.replaceItemValue(DominoNSFConfiguration.ITEM_PUBKEY, new String(data, StandardCharsets.UTF_8)).setSummary(false);
 	        
 	        keyPairDoc.encrypt();
 	        keyPairDoc.computeWithForm(false, false);
+	        keyPairDoc.sign();
 	        keyPairDoc.save();
 		});
 	}
