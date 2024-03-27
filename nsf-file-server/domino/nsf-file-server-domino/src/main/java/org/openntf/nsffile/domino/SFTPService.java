@@ -60,10 +60,11 @@ public class SFTPService extends HttpService {
 			NotesThreadFactory.executor.submit(() -> {
 				try {
 					int port = DominoNSFConfiguration.instance.getPort();
+					CompositeNSFFileSystemFactory fileSystemFactory = new CompositeNSFFileSystemFactory();
 					ScpCommandFactory scp = new ScpCommandFactory.Builder()
-						.withFileOpener(new CompositeScpFileOpener())
+						.withFileOpener(new CompositeScpFileOpener(fileSystemFactory))
 						.build();
-					this.server = new SshServerDelegate(port, new NSFHostKeyProvider(), new CompositeNSFFileSystemFactory(), scp);
+					this.server = new SshServerDelegate(port, new NSFHostKeyProvider(), fileSystemFactory, scp);
 					
 					server.start();
 					

@@ -15,14 +15,38 @@
  */
 package org.openntf.nsffile.ssh.scp;
 
-import org.openntf.nsffile.core.config.DominoNSFConfiguration;
+import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 
-public class CompositeScpFileOpener extends NSFScpFileOpener {
+import com.ibm.commons.util.StringUtil;
 
-	public CompositeScpFileOpener() {
-		// TODO make actually composite
-		super(DominoNSFConfiguration.instance.getConfigNsfPath());
+import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.scp.common.helpers.DefaultScpFileOpener;
+
+public class CompositeScpFileOpener extends DefaultScpFileOpener {
+	private final FileSystemFactory fileSystemFactory;
+
+	public CompositeScpFileOpener(FileSystemFactory fileSystemFactory) {
+		this.fileSystemFactory = fileSystemFactory;
 	}
 
+	@Override
+	public Path resolveIncomingReceiveLocation(org.apache.sshd.common.session.Session session, Path path,
+			boolean recursive, boolean shouldBeDir, boolean preserve) throws IOException {
+		FileSystem fs = fileSystemFactory.createFileSystem(session);
+		Path nsfPath = fs.getPath(path.toString());
+		return super.resolveIncomingReceiveLocation(session, nsfPath, recursive, shouldBeDir, preserve);
+	}
 
+	@Override
+	public Path resolveLocalPath(org.apache.sshd.common.session.Session session, FileSystem fileSystem,
+			String commandPath) throws IOException, InvalidPathException {
+		if(".".equals(commandPath) || StringUtil.isEmpty(commandPath)) { //$NON-NLS-1$
+			return fileSystem.getPath("/"); //$NON-NLS-1$
+		} else {
+			return fileSystem.getPath(commandPath);
+		}
+	}
 }
