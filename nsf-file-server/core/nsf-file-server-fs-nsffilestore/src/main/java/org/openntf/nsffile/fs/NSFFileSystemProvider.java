@@ -38,6 +38,7 @@ import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
+import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -276,9 +277,9 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 		NSFPath p = (NSFPath)path;
 		NSFFileSystem fs = p.getFileSystem();
 		Collection<String> views = fs.supportedFileAttributeViews();
-		if (GenericUtils.isEmpty(views) || (!views.contains(view))) {
+		if (GenericUtils.isEmpty(views) || !views.contains(view)) {
 			throw new UnsupportedOperationException(
-					"readAttributes(" + path + ")[" + view + ":" + attrs + "] view not supported: " + views); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			MessageFormat.format("readAttributes({0})[{1}:{2}] view not supported: {3}", path, view, attrs, views)); //$NON-NLS-1$
 		}
 
 		if ("basic".equalsIgnoreCase(view) || "posix".equalsIgnoreCase(view) || "owner".equalsIgnoreCase(view)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$

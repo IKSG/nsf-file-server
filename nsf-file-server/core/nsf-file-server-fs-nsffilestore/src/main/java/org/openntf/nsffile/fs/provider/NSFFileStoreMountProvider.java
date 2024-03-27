@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.ssh.provider;
+package org.openntf.nsffile.fs.provider;
 
 import java.io.IOException;
 import java.net.URI;

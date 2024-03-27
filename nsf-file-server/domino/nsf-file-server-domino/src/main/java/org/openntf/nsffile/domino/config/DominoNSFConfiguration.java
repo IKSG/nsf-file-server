@@ -26,6 +26,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.ibm.commons.util.StringUtil;
+import com.ibm.commons.util.io.json.JsonJavaFactory;
+import com.ibm.commons.util.io.json.JsonParser;
 import com.ibm.domino.napi.NException;
 import com.ibm.domino.napi.c.Os;
 
@@ -59,6 +61,7 @@ public enum DominoNSFConfiguration {
 	public static final int COL_INDEX_TYPE = 1;
 	public static final int COL_INDEX_DATASOURCE = 2;
 	public static final int COL_INDEX_SERVERS = 3;
+	public static final int COL_INDEX_ENV = 4;
 	public static final String VIEW_CONFIG = "ServerConfigurations"; //$NON-NLS-1$
 	public static final String ITEM_ENABLED = "Enabled"; //$NON-NLS-1$
 	public static final String ITEM_PORT = "Port"; //$NON-NLS-1$
@@ -109,6 +112,7 @@ public enum DominoNSFConfiguration {
 	}
 	
 	public CompositeFileSystem buildFileSystem(String username) {
+		log.setLevel(Level.ALL);
 		// Read the view to create filesystems for each entry
 		Map<String, FileSystem> fileSystems = NotesThreadFactory.call(dominoSession -> {
 			try {
@@ -144,6 +148,7 @@ public enum DominoNSFConfiguration {
 						String path = (String)columnValues.get(DominoNSFConfiguration.COL_INDEX_PATH);
 						String type = (String)columnValues.get(DominoNSFConfiguration.COL_INDEX_TYPE);
 						String dataSource = (String)columnValues.get(DominoNSFConfiguration.COL_INDEX_DATASOURCE);
+						String envJson = (String)columnValues.get(DominoNSFConfiguration.COL_INDEX_ENV);
 						
 						FileSystemMountProvider provider = providers.stream()
 							.filter(p -> p.getName().equals(type))
@@ -155,7 +160,15 @@ public enum DominoNSFConfiguration {
 						}
 						
 						Map<String, Object> env = new HashMap<>();
+						
+						if(envJson != null && !envJson.trim().isEmpty()) {
+							@SuppressWarnings("unchecked")
+							Map<String, Object> parsedEnv = (Map<String, Object>)JsonParser.fromJson(JsonJavaFactory.instance, envJson);
+							env.putAll(parsedEnv);
+						}
+						
 						env.put("username", username); //$NON-NLS-1$
+						
 						FileSystem fs = provider.createFileSystem(dataSource, env);
 						result.put(path, fs);
 					}

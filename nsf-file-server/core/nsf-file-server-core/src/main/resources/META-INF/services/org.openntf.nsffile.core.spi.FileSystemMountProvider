@@ -1,0 +1,2 @@
+org.openntf.nsffile.core.provider.URIMountProvider
+org.openntf.nsffile.core.provider.LocalFileSystemMountProvider

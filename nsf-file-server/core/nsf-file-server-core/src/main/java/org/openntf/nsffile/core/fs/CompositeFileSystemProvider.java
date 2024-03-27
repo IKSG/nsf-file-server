@@ -15,6 +15,8 @@
  */
 package org.openntf.nsffile.core.fs;
 
+import static java.text.MessageFormat.format;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.FileChannel;
@@ -35,7 +37,6 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.spi.FileSystemProvider;
-import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -45,11 +46,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.StreamSupport;
 
+import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.client.fs.SftpPosixFileAttributes;
+
 public class CompositeFileSystemProvider extends FileSystemProvider {
 	public static final String SCHEME = "compositefs"; //$NON-NLS-1$
 	public static final Logger log = Logger.getLogger(CompositeFileSystemProvider.class.getPackage().getName());
 	
 	public static final CompositeFileSystemProvider instance = new CompositeFileSystemProvider();
+	
+	public CompositeFileSystemProvider() {
+		log.setLevel(Level.ALL);
+	}
 
 	// *******************************************************************************
 	// * Filesystem Operations
@@ -90,6 +99,9 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 			}
 		} else {
 			Path delegate = getDelegate(path);
+			if(log.isLoggable(Level.FINEST)) {
+				log.finest(format("Checking access for delegate {0} - {1}", delegate, Arrays.toString(modes)));
+			}
 			delegate.getFileSystem().provider().checkAccess(delegate, modes);
 		}
 	}
@@ -117,18 +129,27 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 	@Override
 	public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
 		Path delegate = getDelegate(path);
+		if(log.isLoggable(Level.FINEST)) {
+			log.finest(format("Getting attributes view {0} for delegate {1}", type, path));
+		}
 		return Files.getFileAttributeView(delegate, type, options);
 	}
 
 	@Override
 	public FileStore getFileStore(Path path) throws IOException {
 		Path delegate = getDelegate(path);
+		if(log.isLoggable(Level.FINEST)) {
+			log.finest(format("Getting fileStore for delegate {0}", path));
+		}
 		return Files.getFileStore(delegate);
 	}
 
 	@Override
 	public boolean isHidden(Path path) throws IOException {
 		Path delegate = getDelegate(path);
+		if(log.isLoggable(Level.FINEST)) {
+			log.finest(format("isHidden {0}", delegate));
+		}
 		return Files.isHidden(delegate);
 	}
 
@@ -155,7 +176,7 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 	@Override
 	public DirectoryStream<Path> newDirectoryStream(Path dir, Filter<? super Path> filter) throws IOException {
 		if(log.isLoggable(Level.FINEST)) {
-			log.finest(MessageFormat.format("Opening directory stream for {0}", dir));
+			log.finest(format("Opening directory stream for {0}", dir));
 		}
 		if("/".equals(dir.toString())) { //$NON-NLS-1$
 			// Special case for the root
@@ -163,6 +184,9 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 			return new CompositeDirectoryStream(fileSystem);
 		}
 		Path delegate = getDelegate(dir);
+		if(log.isLoggable(Level.FINEST)) {
+			log.finest(format("Getting newDirectoryStream for delegate {0}", delegate));
+		}
 		return Files.newDirectoryStream(delegate);
 	}
 	
@@ -173,6 +197,9 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 			throw new UnsupportedOperationException();
 		}
 		Path delegate = getDelegate(path);
+		if(log.isLoggable(Level.FINEST)) {
+			log.finest(format("Getting fileChannel for delegate {0}", delegate));
+		}
 		return delegate.getFileSystem().provider().newFileChannel(delegate, options, attrs);
 	}
 
@@ -188,7 +215,18 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 			return null;
 		}
 		Path delegate = getDelegate(path);
-		return Files.readAttributes(delegate, type, options);
+		if(log.isLoggable(Level.FINEST)) {
+			log.finest(format("readAttributes type {0} for delegate {1}", type, delegate));
+		}
+		try {
+			return Files.readAttributes(delegate, type, options);
+		} catch(UnsupportedOperationException e) {
+			// For Windows filesystem binds, since we declare POSIX compliance for SFTP purposes
+			if(PosixFileAttributes.class.isAssignableFrom(type) && OsUtils.isWin32()) {
+				return type.cast(new SftpPosixFileAttributes(path, new SftpClient.Attributes()));
+			}
+			throw e;
+		}
 	}
 
 	@Override
@@ -197,7 +235,15 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 			return Collections.emptyMap();
 		}
 		Path delegate = getDelegate(path);
-		return Files.readAttributes(delegate, attributes, options);
+		if(log.isLoggable(Level.FINEST)) {
+			log.finest(format("readAttributes name {0} for delegate {1}", attributes, delegate));
+		}
+		try {
+			return Files.readAttributes(delegate, attributes, options);
+		} catch(UnsupportedOperationException e) {
+			// This is common for things like an expectation of reading ZIP data for an NSF system.
+			return Collections.emptyMap();
+		}
 	}
 
 	@Override
@@ -206,28 +252,38 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 			return;
 		}
 		Path delegate = getDelegate(path);
+		if(log.isLoggable(Level.FINEST)) {
+			log.finest(format("setAttribute name {0} for delegate {1}", attribute, delegate));
+		}
 		Files.setAttribute(delegate, attribute, value, options);
 	}
 
 	private Path getDelegate(Path path) {
-		CompositeFileSystem compositeFileSystem = ((CompositePath)path).getFileSystem();
-		Map<String, FileSystem> fileSystems = compositeFileSystem.getFileSystems();
-		
-		String mount = path.iterator().next().toString();
-		FileSystem fs = fileSystems.get(mount);
-		if(fs == null) {
-			throw new IllegalStateException(MessageFormat.format("Unable to resolve mounted filesystem for \"{0}\"", mount));
+		try {
+			CompositeFileSystem compositeFileSystem = ((CompositePath)path).getFileSystem();
+			Map<String, FileSystem> fileSystems = compositeFileSystem.getFileSystems();
+			
+			String mount = path.iterator().next().toString();
+			FileSystem fs = fileSystems.get(mount);
+			if(fs == null) {
+				throw new IllegalStateException(format("Unable to resolve mounted filesystem for \"{0}\"", mount));
+			}
+			
+			String[] parts = StreamSupport.stream(path.spliterator(), false)
+				.skip(1)
+				.map(Path::getFileName)
+				.map(Object::toString)
+				.toArray(String[]::new);
+			Path result = fs.getPath("/", parts); //$NON-NLS-1$
+			if(log.isLoggable(Level.FINEST)) {
+				log.finest(format("Delegate path for {0} resolved to {1} in filesystem {2}", path, result, fs));
+			}
+			return result;
+		} catch(Exception e) {
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, format("Encountered exception trying to find delegate for {0}", path), e);
+			}
+			throw e;
 		}
-		
-		String[] parts = StreamSupport.stream(path.spliterator(), false)
-			.skip(1)
-			.map(Path::getFileName)
-			.map(Object::toString)
-			.toArray(String[]::new);
-		Path result = fs.getPath("/", parts); //$NON-NLS-1$
-		if(log.isLoggable(Level.FINEST)) {
-			log.finest(MessageFormat.format("Delegate path for {0} resolved to {1} in filesystem {2}", path, result, fs));
-		}
-		return result;
 	}
 }
