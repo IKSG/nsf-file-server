@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.ssh.spi;
+package org.openntf.nsffile.commons.spi;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -26,5 +26,5 @@ import java.util.Map;
 public interface FileSystemMountProvider {
 	String getName();
 	
-	FileSystem createFileSystem(String dataSource, Map<String, ?> env) throws IOException;
+	FileSystem createFileSystem(String dataSource, Map<String, Object> env) throws IOException;
 }

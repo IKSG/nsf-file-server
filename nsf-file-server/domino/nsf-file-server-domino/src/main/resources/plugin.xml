@@ -23,9 +23,9 @@
 	</extension>
 	
 	<extension point="com.ibm.commons.Extension">
-		<service type="org.openntf.nsffile.ssh.spi.FileSystemMountProvider" class="org.openntf.nsffile.ssh.provider.URIMountProvider"/>
+		<service type="org.openntf.nsffile.commons.spi.FileSystemMountProvider" class="org.openntf.nsffile.ssh.provider.URIMountProvider"/>
 	</extension>
 	<extension point="com.ibm.commons.Extension">
-		<service type="org.openntf.nsffile.ssh.spi.FileSystemMountProvider" class="org.openntf.nsffile.ssh.provider.NSFFileStoreMountProvider"/>
+		<service type="org.openntf.nsffile.commons.spi.FileSystemMountProvider" class="org.openntf.nsffile.ssh.provider.NSFFileStoreMountProvider"/>
 	</extension>
 </plugin>

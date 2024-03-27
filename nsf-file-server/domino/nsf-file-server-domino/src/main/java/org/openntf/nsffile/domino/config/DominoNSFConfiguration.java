@@ -31,9 +31,9 @@ import com.ibm.domino.napi.c.Os;
 
 import org.openntf.nsffile.commons.fs.CompositeFileSystem;
 import org.openntf.nsffile.commons.fs.CompositeFileSystemProvider;
+import org.openntf.nsffile.commons.spi.FileSystemMountProvider;
 import org.openntf.nsffile.commons.util.NSFFileUtil;
 import org.openntf.nsffile.commons.util.NotesThreadFactory;
-import org.openntf.nsffile.ssh.spi.FileSystemMountProvider;
 
 import lotus.domino.Database;
 import lotus.domino.Document;

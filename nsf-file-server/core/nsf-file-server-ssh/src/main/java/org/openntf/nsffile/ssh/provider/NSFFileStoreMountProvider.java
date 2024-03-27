@@ -25,9 +25,9 @@ import java.util.Map;
 
 import com.ibm.commons.util.StringUtil;
 
+import org.openntf.nsffile.commons.spi.FileSystemMountProvider;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
-import org.openntf.nsffile.ssh.spi.FileSystemMountProvider;
 
 public class NSFFileStoreMountProvider implements FileSystemMountProvider {
 	public static final String KEY_USERNAME = "username"; //$NON-NLS-1$
@@ -38,7 +38,7 @@ public class NSFFileStoreMountProvider implements FileSystemMountProvider {
 	}
 
 	@Override
-	public FileSystem createFileSystem(String dataSource, Map<String, ?> env) throws IOException {
+	public FileSystem createFileSystem(String dataSource, Map<String, Object> env) throws IOException {
 		String username = (String)env.get(KEY_USERNAME);
 		if(StringUtil.isEmpty(username)) {
 			throw new IllegalArgumentException(MessageFormat.format("env map must contain a {0} key", KEY_USERNAME));
