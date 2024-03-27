@@ -73,14 +73,6 @@
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>jakarta.platform</groupId>
-				<artifactId>jakarta.jakartaee-bom</artifactId>
-				<version>8.0.0</version>
-				<scope>import</scope>
-				<type>pom</type>
-			</dependency>
-			
-			<dependency>
 				<groupId>com.ibm.sbt</groupId>
 				<artifactId>com.ibm.commons</artifactId>
 				<version>9.0.0</version>
@@ -145,6 +137,11 @@
 						<artifactId>com.ibm.notes.java.api</artifactId>
 					</exclusion>
 				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>com.hcl.domino</groupId>
+				<artifactId>domino-jnx-jna</artifactId>
+				<version>1.37.0</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

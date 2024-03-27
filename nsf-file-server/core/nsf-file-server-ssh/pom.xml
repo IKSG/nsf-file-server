@@ -42,6 +42,10 @@
 			<classifier>Notes</classifier>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.hcl.domino</groupId>
+			<artifactId>domino-jnx-jna</artifactId>
+		</dependency>
 	</dependencies>
 	
 	<build>

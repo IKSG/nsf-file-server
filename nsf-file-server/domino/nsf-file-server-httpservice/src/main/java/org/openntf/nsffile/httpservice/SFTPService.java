@@ -23,6 +23,8 @@ import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 
+import com.hcl.domino.DominoProcess;
+import com.hcl.domino.commons.util.DominoUtils;
 import com.ibm.designer.runtime.domino.adapter.ComponentModule;
 import com.ibm.designer.runtime.domino.adapter.HttpService;
 import com.ibm.designer.runtime.domino.adapter.LCDEnvironment;
@@ -52,6 +54,12 @@ public class SFTPService extends HttpService {
 
 	public SFTPService(LCDEnvironment env) {
 		super(env);
+
+		DominoUtils.setJavaProperty("jnx.noinit", "true"); //$NON-NLS-1$ //$NON-NLS-2$
+		DominoUtils.setJavaProperty("jnx.noterm", "true"); //$NON-NLS-1$ //$NON-NLS-2$
+		DominoUtils.setJavaProperty("jnx.noinittermthread", "true"); //$NON-NLS-1$ //$NON-NLS-2$
+		DominoUtils.setJavaProperty("jnx.skipthreadwarning", "true"); //$NON-NLS-1$ //$NON-NLS-2$
+		DominoProcess.get().initializeProcess(new String[0]);
 		
 		this.enabled = DominoNSFConfiguration.instance.isEnabled();
 		
