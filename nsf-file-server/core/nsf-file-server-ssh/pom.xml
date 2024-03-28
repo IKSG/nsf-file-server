@@ -44,7 +44,7 @@
 		</dependency>
 		<dependency>
 			<groupId>com.hcl.domino</groupId>
-			<artifactId>domino-jnx-jna</artifactId>
+			<artifactId>domino-jnx-api</artifactId>
 		</dependency>
 	</dependencies>
 	

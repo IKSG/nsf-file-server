@@ -26,6 +26,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import com.hcl.domino.DominoClient;
+import com.hcl.domino.DominoClientBuilder;
+import com.hcl.domino.DominoProcess;
 import com.ibm.domino.napi.NException;
 import com.ibm.domino.napi.c.Os;
 
@@ -49,8 +52,18 @@ public class NotesThreadFactory implements ThreadFactory {
 	}
 	
 	@FunctionalInterface
+	public static interface NotesJNXFunction<T> {
+		T apply(DominoClient client) throws Exception;
+	}
+	
+	@FunctionalInterface
 	public static interface NotesConsumer {
 		void accept(Session session) throws Exception;
+	}
+	
+	@FunctionalInterface
+	public static interface NotesJNXConsumer {
+		void accept(DominoClient client) throws Exception;
 	}
 	
 	private static final ThreadLocal<Map<String, Session>> THREAD_SESSION_MAP = ThreadLocal.withInitial(HashMap::new);
@@ -83,6 +96,30 @@ public class NotesThreadFactory implements ThreadFactory {
 	}
 	
 	/**
+	 * Evaluates the provided function in a separate {@link NotesThread} with
+	 * a {@link Session} for the active Notes ID.
+	 * 
+	 * @param <T> the type of object returned by {@code func}
+	 * @param func the function to call
+	 * @return the return value of {@code func}
+	 * @throws RuntimeException wrapping any exception thrown by the main body
+	 */
+	public static <T> T callJnx(NotesJNXFunction<T> func) {
+		try {
+			return NotesThreadFactory.executor.submit(() -> {
+				try(DominoClient client = DominoClientBuilder.newDominoClient().asIDUser().build()) {
+					return func.apply(client);
+				} catch(Throwable t) {
+					t.printStackTrace();
+					throw t;
+				}
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	/**
 	 * Evaluates the provided consumer in a separate {@link NotesThread} with
 	 * a {@link Session} for the active Notes ID.
 	 * 
@@ -92,6 +129,20 @@ public class NotesThreadFactory implements ThreadFactory {
 	public static void run(NotesConsumer func) {
 		call(session -> {
 			func.accept(session);
+			return null;
+		});
+	}
+	
+	/**
+	 * Evaluates the provided consumer in a separate {@link NotesThread} with
+	 * a {@link Session} for the active Notes ID.
+	 * 
+	 * @param func the consumer to call
+	 * @throws RuntimeException wrapping any exception thrown by the main body
+	 */
+	public static void runJnx(NotesJNXConsumer func) {
+		callJnx(client -> {
+			func.accept(client);
 			return null;
 		});
 	}
@@ -138,7 +189,14 @@ public class NotesThreadFactory implements ThreadFactory {
 	public Thread newThread(Runnable r) {
 		return new NotesThread(r) {
 			@Override
+			public void initThread() {
+				super.initThread();
+				DominoProcess.get().initializeThread();
+			}
+			
+			@Override
 			public void termThread() {
+				
 				for(Session session : THREAD_SESSION_MAP.get().values()) {
 					try {
 						session.recycle();
@@ -156,6 +214,8 @@ public class NotesThreadFactory implements ThreadFactory {
 				THREAD_HANDLES.get().clear();
 				
 				super.termThread();
+				
+				DominoProcess.get().terminateThread();
 			}
 		};
 	}

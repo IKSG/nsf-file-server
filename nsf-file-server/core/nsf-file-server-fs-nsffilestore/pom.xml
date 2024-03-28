@@ -30,6 +30,10 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
+			<groupId>com.hcl.domino</groupId>
+			<artifactId>domino-jnx-api</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>com.ibm.sbt</groupId>
 			<artifactId>com.ibm.commons</artifactId>
 			<scope>provided</scope>
