@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.hcl.domino.DominoClient;
 import com.hcl.domino.DominoClientBuilder;
+import com.hcl.domino.DominoProcess;
 import com.hcl.domino.misc.JNXThread;
 
 /**
@@ -136,5 +137,7 @@ public class NotesThreadFactory implements ThreadFactory {
 			scheduler.awaitTermination(1, TimeUnit.MINUTES);
 		} catch(InterruptedException e) {
 		}
+		
+		DominoProcess.get().terminateProcess();
 	}
 }

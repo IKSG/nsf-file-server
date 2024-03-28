@@ -23,7 +23,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.text.MessageFormat;
+import java.util.EnumSet;
 
+import com.hcl.domino.DominoClient;
+import com.hcl.domino.data.Database;
+import com.hcl.domino.data.Document;
+import com.hcl.domino.data.Document.EncryptionMode;
+import com.hcl.domino.data.DominoCollection;
+import com.hcl.domino.data.Item.ItemFlag;
 import com.ibm.commons.util.StringUtil;
 
 import org.apache.sshd.common.config.keys.writer.openssh.OpenSSHKeyPairResourceWriter;
@@ -32,14 +40,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.openntf.nsffile.core.config.DominoNSFConfiguration;
-import org.openntf.nsffile.fs.util.LSXBEThreadFactory;
-import org.openntf.nsffile.fs.util.NSFPathUtil;
-
-import lotus.domino.Database;
-import lotus.domino.Document;
-import lotus.domino.NotesException;
-import lotus.domino.Session;
-import lotus.domino.View;
+import org.openntf.nsffile.core.util.NotesThreadFactory;
 
 /**
  * This subclass of {@link AbstractGeneratorHostKeyProvider} overrides a few methods
@@ -57,14 +58,14 @@ public class NSFHostKeyProvider extends SimpleGeneratorHostKeyProvider {
 	@Override
 	protected Iterable<KeyPair> loadFromFile(SessionContext session, String alg, Path keyPath)
 			throws IOException, GeneralSecurityException {
-		return LSXBEThreadFactory.call(dominoSession -> {
-			Document keyPairDoc = getKeyPairDocument(dominoSession, false);
+		return NotesThreadFactory.call(client -> {
+			Document keyPairDoc = getKeyPairDocument(client, false);
 			if(keyPairDoc == null) {
 				return null;
 			}
 			
 			// The full pair is in PrivateKey
-			String privateKey = keyPairDoc.getItemValueString(DominoNSFConfiguration.ITEM_PRIVATEKEY);
+			String privateKey = keyPairDoc.get(DominoNSFConfiguration.ITEM_PRIVATEKEY, String.class, null);
 			if(StringUtil.isEmpty(privateKey)) {
 				return null;
 			}
@@ -79,8 +80,8 @@ public class NSFHostKeyProvider extends SimpleGeneratorHostKeyProvider {
 	@Override
 	protected void writeKeyPair(KeyPair kp, Path keyPath) throws IOException, GeneralSecurityException {
 		// Also write it to the NSF to see how that shakes out
-		LSXBEThreadFactory.run(dominoSession -> {
-			Document keyPairDoc = getKeyPairDocument(dominoSession, true);
+		NotesThreadFactory.run(client -> {
+			Document keyPairDoc = getKeyPairDocument(client, true);
 			
 			OpenSSHKeyPairResourceWriter writer = new OpenSSHKeyPairResourceWriter();
 			
@@ -91,7 +92,7 @@ public class NSFHostKeyProvider extends SimpleGeneratorHostKeyProvider {
 	            data = out.toByteArray();
 	        }
 	        
-	        keyPairDoc.replaceItemValue(DominoNSFConfiguration.ITEM_PRIVATEKEY, new String(data, StandardCharsets.UTF_8)).setEncrypted(true);
+	        keyPairDoc.replaceItemValue(DominoNSFConfiguration.ITEM_PRIVATEKEY, EnumSet.of(ItemFlag.SEALED), new String(data, StandardCharsets.UTF_8));
 	        
 	        // Base64-encoded data with human-readable label 
 	        try(ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -100,24 +101,28 @@ public class NSFHostKeyProvider extends SimpleGeneratorHostKeyProvider {
 	        	data = out.toByteArray();
 	        }
 	        
-	        keyPairDoc.replaceItemValue(DominoNSFConfiguration.ITEM_PUBKEY, new String(data, StandardCharsets.UTF_8)).setSummary(false);
-	        
-	        keyPairDoc.encrypt();
-	        keyPairDoc.computeWithForm(false, false);
+	        keyPairDoc.replaceItemValue(DominoNSFConfiguration.ITEM_PUBKEY, new String(data, StandardCharsets.UTF_8));
+
+	        keyPairDoc.computeWithForm(true, null);
 	        keyPairDoc.sign();
+	        keyPairDoc = keyPairDoc.copyAndEncrypt(null, EnumSet.of(EncryptionMode.ENCRYPT_WITH_USER_PUBLIC_KEY));
 	        keyPairDoc.save();
 		});
 	}
 	
-	private Document getKeyPairDocument(Session dominoSession, boolean create) throws NotesException {
-		Database configDb = NSFPathUtil.openDatabase(dominoSession, DominoNSFConfiguration.instance.getConfigNsfPath());
-		View keyPairs = configDb.getView(DominoNSFConfiguration.VIEW_SSHKEYPAIRS);
-		Document keyPairDoc = keyPairs.getDocumentByKey(dominoSession.getUserName(), true);
-		if(keyPairDoc == null && create) {
-			keyPairDoc = configDb.createDocument();
-			keyPairDoc.replaceItemValue("Form", DominoNSFConfiguration.FORM_SSHKEYPAIR); //$NON-NLS-1$
-			keyPairDoc.replaceItemValue(DominoNSFConfiguration.ITEM_SERVERNAME, dominoSession.getUserName());
-		}
-		return keyPairDoc;
+	private Document getKeyPairDocument(DominoClient client, boolean create) {
+		Database configDb = client.openDatabase(DominoNSFConfiguration.instance.getConfigNsfPath());
+		DominoCollection keyPairs = configDb.openCollection(DominoNSFConfiguration.VIEW_SSHKEYPAIRS)
+			.orElseThrow(() -> new IllegalStateException(MessageFormat.format("Unable to open view \"{0}\" in database \"{1}\"", DominoNSFConfiguration.VIEW_SSHKEYPAIRS, DominoNSFConfiguration.instance.getConfigNsfPath())));;
+		return keyPairs.query()
+			.selectByKey(client.getIDUserName(), true)
+			.firstId()
+			.flatMap(configDb::getDocumentById)
+			.orElseGet(() -> {
+				Document keyPairDoc = configDb.createDocument();
+				keyPairDoc.replaceItemValue("Form", DominoNSFConfiguration.FORM_SSHKEYPAIR); //$NON-NLS-1$
+				keyPairDoc.replaceItemValue(DominoNSFConfiguration.ITEM_SERVERNAME, client.getIDUserName());
+				return keyPairDoc;
+			});
 	}
 }

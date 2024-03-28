@@ -14,7 +14,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
-			<artifactId>nsf-file-server-fs-nsffilestore</artifactId>
+			<artifactId>nsf-file-server-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		
@@ -34,12 +34,6 @@
 		<dependency>
 			<groupId>com.ibm.sbt</groupId>
 			<artifactId>com.ibm.commons</artifactId>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.hcl.xsp.p2</groupId>
-			<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
-			<classifier>Notes</classifier>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>

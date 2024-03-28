@@ -17,13 +17,14 @@ package org.openntf.nsffile.ssh.auth;
 
 import java.security.PublicKey;
 import java.text.MessageFormat;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
-import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.hcl.domino.DominoClient;
+import com.ibm.commons.util.StringUtil;
 
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -32,15 +33,7 @@ import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.openntf.nsffile.core.util.NSFFileUtil;
-import org.openntf.nsffile.fs.util.LSXBEThreadFactory;
-
-import com.ibm.commons.util.StringUtil;
-
-import lombok.SneakyThrows;
-import lotus.domino.Directory;
-import lotus.domino.DirectoryNavigator;
-import lotus.domino.NotesException;
-import lotus.domino.Session;
+import org.openntf.nsffile.core.util.NotesThreadFactory;
 
 /**
  * 
@@ -53,10 +46,9 @@ public class NotesPublicKeyAuthenticator implements PublickeyAuthenticator {
 	public static final String ITEM_PUBKEY = "sshPublicKey"; //$NON-NLS-1$
 
 	@Override
-	@SneakyThrows
 	public boolean authenticate(String username, PublicKey key, ServerSession serverSession) throws AsyncAuthException {
-		return LSXBEThreadFactory.call(session -> {
-			List<String> publicKeys = getItemValueStringListForUser(session, username, ITEM_PUBKEY);
+		return NotesThreadFactory.call(client -> {
+			List<String> publicKeys = getItemValueStringListForUser(client, username, ITEM_PUBKEY);
 			if(publicKeys.isEmpty() || (publicKeys.size() == 1 && StringUtil.isEmpty(publicKeys.get(0)))) {
 				return false;
 			} else {
@@ -90,19 +82,15 @@ public class NotesPublicKeyAuthenticator implements PublickeyAuthenticator {
 		});
 	}
 	
-	protected List<String> getItemValueStringListForUser(Session session, String dominoName, String itemName) throws NotesException {
+	protected List<String> getItemValueStringListForUser(DominoClient client, String dominoName, String itemName) {
 		if(StringUtil.isEmpty(dominoName)) {
 			return Collections.emptyList();
 		} else {
-			Directory dir = session.getDirectory();
-			DirectoryNavigator nav = dir.lookupNames("$Users", new Vector<String>(Arrays.asList(dominoName)), new Vector<String>(Arrays.asList(itemName)), false); //$NON-NLS-1$
-			if(nav.findFirstMatch()) {
-				List<?> itemValue = nav.getFirstItemValue();
-
-				return NSFFileUtil.toStringList(itemValue);
-			} else {
-				return Collections.emptyList();
-			}
+			return client.openUserDirectory(null)
+				.lookupUserValue(dominoName, itemName)
+				.map(result -> result.get(itemName))
+				.map(NSFFileUtil::toStringList)
+				.orElseGet(Collections::emptyList);
 		}
 	}
 
