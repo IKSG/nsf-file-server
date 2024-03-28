@@ -15,6 +15,10 @@
  */
 package org.openntf.nsffile.core.util;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.text.MessageFormat;
@@ -42,6 +46,8 @@ public enum NSFFileUtil {
 	;
 	
 	private static final Logger log = Logger.getLogger(NSFFileUtil.class.getPackage().getName());
+	
+	private static Path tempDir;
 	
 	/**
 	 * <p>Takes an Domino-format name and converts it to LDAP format.</p>
@@ -203,5 +209,58 @@ public enum NSFFileUtil {
 		return AccessController.doPrivileged((PrivilegedAction<List<T>>)() ->
 			ExtensionManager.findServices(null, extensionClass.getClassLoader(), extensionClass.getName(), extensionClass)
 		);
+	}
+	
+	/**
+	 * Sets the directory to use for creating temp files directories, instead of the
+	 * system-default one.
+	 * 
+	 * @param tempDirectory the directory to use to store temporary files
+	 * @since 2.0.0
+	 */
+	public static void setTempDirectory(Path tempDirectory) {
+		tempDir = tempDirectory;
+	}
+	
+	/**
+	 * Creates a temporary directory. This uses {@link Files#createTempDirectory}, but will do
+	 * so in a customized directory if specified.
+	 * 
+     * @param prefix the prefix string to be used in generating the directory's name;
+     *        may be {@code null}
+     * @param attrs an optional list of file attributes to set atomically when
+     *        creating the directory
+	 * @return a {@link Path} for the newly-created directory
+	 * @throws IOException if the directory could not be created
+	 * @since 2.0.0
+	 */
+	public static Path createTempDirectory(String prefix, FileAttribute<?>... attrs) throws IOException {
+		if(tempDir == null) {
+			return Files.createTempDirectory(prefix, attrs);
+		} else {
+			return Files.createTempDirectory(tempDir, prefix, attrs);
+		}
+	}
+	
+	/**
+	 * Creates a temporary directory. This uses {@link Files#createTempDirectory}, but will do
+	 * so in a customized directory if specified.
+	 * 
+     * @param prefix the prefix string to be used in generating the directory's name;
+     *        may be {@code null}
+     * @param suffix the suffix string to be used in generating the file's name;
+     *        may be {@code null}, in which case "{@code .tmp}" is used
+     * @param attrs an optional list of file attributes to set atomically when
+     *        creating the directory
+	 * @return a {@link Path} for the newly-created directory
+	 * @throws IOException if the directory could not be created
+	 * @since 2.0.0
+	 */
+	public static Path createTempFile(String prefix, String suffix, FileAttribute<?>... attrs) throws IOException {
+		if(tempDir == null) {
+			return Files.createTempFile(prefix, suffix, attrs);
+		} else {
+			return Files.createTempFile(tempDir, suffix, prefix, attrs);
+		}
 	}
 }

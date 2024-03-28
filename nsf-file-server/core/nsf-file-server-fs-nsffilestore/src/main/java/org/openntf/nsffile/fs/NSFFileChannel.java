@@ -16,6 +16,7 @@
 package org.openntf.nsffile.fs;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -31,6 +32,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
+import org.openntf.nsffile.core.util.NSFFileUtil;
 import org.openntf.nsffile.fs.db.NSFAccessor;
 
 /**
@@ -57,8 +59,15 @@ public class NSFFileChannel extends FileChannel {
 		this.path = path;
 		this.options = options;
 		
-		// TODO implement TRUNCATE_EXISTING
-		this.tempFile = NSFAccessor.extractAttachment(path);
+		if(options.contains(StandardOpenOption.TRUNCATE_EXISTING)) {
+			try {
+				this.tempFile = NSFFileUtil.createTempFile(getClass().getSimpleName(), path.getFileName().toString());
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		} else {
+			this.tempFile = NSFAccessor.extractAttachment(path);
+		}
 		
 		this.openForWrite = !Collections.disjoint(WRITE_OPTIONS, options);
 	}

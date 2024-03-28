@@ -60,6 +60,7 @@ import com.ibm.designer.domino.napi.NotesConstants;
 import org.openntf.nsffile.core.NotesPrincipal;
 import org.openntf.nsffile.core.fs.attribute.NSFFileAttributes;
 import org.openntf.nsffile.core.fs.attribute.NSFFileAttributes.Type;
+import org.openntf.nsffile.core.util.NSFFileUtil;
 import org.openntf.nsffile.fs.NSFPath;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 
@@ -139,7 +140,7 @@ public enum NSFAccessor {
 	 */
 	public static Path extractAttachment(NSFPath path) {
 		return NSFPathUtil.callWithDocument(path, null, doc -> {
-			Path resultParent = Files.createTempDirectory(path.getFileName().toString());
+			Path resultParent = NSFFileUtil.createTempDirectory(path.getFileName().toString());
 			Path result = resultParent.resolve(path.getFileName().toString());
 			if(doc.hasItem(ITEM_FILE)) {
 				// TODO add sanity checks
