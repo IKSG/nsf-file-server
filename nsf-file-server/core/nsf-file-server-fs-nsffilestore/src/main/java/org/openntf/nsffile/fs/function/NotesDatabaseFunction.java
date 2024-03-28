@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.core.function;
+package org.openntf.nsffile.fs.function;
 
-import lotus.domino.Document;
+import lotus.domino.Database;
 
 @FunctionalInterface
-public interface NotesDocumentConsumer {
-	void accept(Document doc) throws Exception;
+public interface NotesDatabaseFunction<T> {
+	T apply(Database doc) throws Exception;
 }

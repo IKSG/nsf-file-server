@@ -13,18 +13,6 @@
 	
 	<dependencies>
 		<dependency>
-			<groupId>com.hcl.xsp.p2</groupId>
-			<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
-			<classifier>Notes</classifier>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.hcl.xsp.p2</groupId>
-			<artifactId>com.ibm.domino.napi.impl</artifactId>
-			<classifier>lwpd.domino.napi</classifier>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
 			<groupId>com.hcl.domino</groupId>
 			<artifactId>domino-jnx-api</artifactId>
 		</dependency>

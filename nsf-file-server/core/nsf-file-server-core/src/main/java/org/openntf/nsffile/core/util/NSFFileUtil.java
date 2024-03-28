@@ -28,14 +28,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import com.hcl.domino.naming.Names;
 import com.ibm.commons.extension.ExtensionManager;
 import com.ibm.commons.util.PathUtil;
 import com.ibm.commons.util.StringUtil;
-
-import lotus.domino.Database;
-import lotus.domino.Name;
-import lotus.domino.NotesException;
-import lotus.domino.Session;
 
 /**
  * Common utilities for working with NSF-based filesystems
@@ -68,31 +64,26 @@ public enum NSFFileUtil {
 					return value;
 				}
 			}
-			return NotesThreadFactory.call(session -> {
-				Name name = session.createName(value);
-				try {
-					String dn = name.getCanonical();
-					if(!dn.contains("=")) { //$NON-NLS-1$
-						return dn;
-					}
-					StringBuilder result = new StringBuilder();
-					for(String component : dn.split("/")) { //$NON-NLS-1$
-						if(result.length() > 0) {
-							result.append(',');
-						}
-						int indexEq = component == null ? -1 : component.indexOf('=');
-						if(component != null && indexEq > -1) {
-							result.append(component.substring(0, indexEq).toLowerCase());
-							result.append('=');
-							result.append(component.substring(indexEq+1));
-						} else {
-							result.append(component);
-						}
-					}
-					return result.toString();
-				} finally {
-					name.recycle();
+			return NotesThreadFactory.call(client -> {
+				String dn = Names.toCanonical(value);
+				if(!dn.contains("=")) { //$NON-NLS-1$
+					return dn;
 				}
+				StringBuilder result = new StringBuilder();
+				for(String component : dn.split("/")) { //$NON-NLS-1$
+					if(result.length() > 0) {
+						result.append(',');
+					}
+					int indexEq = component == null ? -1 : component.indexOf('=');
+					if(component != null && indexEq > -1) {
+						result.append(component.substring(0, indexEq).toLowerCase());
+						result.append('=');
+						result.append(component.substring(indexEq+1));
+					} else {
+						result.append(component);
+					}
+				}
+				return result.toString();
 			});
 		} catch(Exception e) {
 			if(log.isLoggable(Level.SEVERE)) {
@@ -133,17 +124,12 @@ public enum NSFFileUtil {
 	}
 
 	public static String dn(String name) {
-		return NotesThreadFactory.call(session -> session.createName(name).getCanonical());
+		return NotesThreadFactory.call(client -> Names.toCanonical(name));
 	}
 
 	public static String shortCn(String name) {
-		return NotesThreadFactory.call(session -> {
-			Name n = session.createName(name);
-			try {
-				return n.getCommon().replaceAll("\\s+", ""); //$NON-NLS-1$ //$NON-NLS-2$
-			} finally {
-				n.recycle();
-			}
+		return NotesThreadFactory.call(client -> {
+			return Names.toCommon(name).replaceAll("\\s+", ""); //$NON-NLS-1$ //$NON-NLS-2$
 		});
 	}
 
@@ -162,25 +148,6 @@ public enum NSFFileUtil {
 		return concat('/', parts);
 	}
 	
-	public static Database openDatabase(final Session session, final String nsfPath) throws NotesException {
-		int bangIndex = nsfPath.indexOf("!!"); //$NON-NLS-1$
-		String server;
-		String dbPath;
-		if(bangIndex < 0) {
-			server = ""; //$NON-NLS-1$
-			dbPath = nsfPath;
-		} else {
-			server = nsfPath.substring(0, bangIndex);
-			dbPath = nsfPath.substring(bangIndex+2);
-		}
-		if(NSFFileUtil.isReplicaID(dbPath)) {
-			Database database = session.getDatabase(null, null);
-			database.openByReplicaID(server, NSFFileUtil.normalizeReplicaID(dbPath));
-			return database;
-		} else {
-			return session.getDatabase(server, dbPath);
-		}
-	}
 	
 	public static List<String> toStringList(Object columnValue) {
 		if(columnValue instanceof List) {

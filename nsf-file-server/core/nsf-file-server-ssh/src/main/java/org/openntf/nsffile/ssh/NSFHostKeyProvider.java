@@ -32,8 +32,8 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.openntf.nsffile.core.config.DominoNSFConfiguration;
-import org.openntf.nsffile.core.util.NSFFileUtil;
-import org.openntf.nsffile.core.util.NotesThreadFactory;
+import org.openntf.nsffile.fs.util.LSXBEThreadFactory;
+import org.openntf.nsffile.fs.util.NSFPathUtil;
 
 import lotus.domino.Database;
 import lotus.domino.Document;
@@ -57,7 +57,7 @@ public class NSFHostKeyProvider extends SimpleGeneratorHostKeyProvider {
 	@Override
 	protected Iterable<KeyPair> loadFromFile(SessionContext session, String alg, Path keyPath)
 			throws IOException, GeneralSecurityException {
-		return NotesThreadFactory.call(dominoSession -> {
+		return LSXBEThreadFactory.call(dominoSession -> {
 			Document keyPairDoc = getKeyPairDocument(dominoSession, false);
 			if(keyPairDoc == null) {
 				return null;
@@ -79,7 +79,7 @@ public class NSFHostKeyProvider extends SimpleGeneratorHostKeyProvider {
 	@Override
 	protected void writeKeyPair(KeyPair kp, Path keyPath) throws IOException, GeneralSecurityException {
 		// Also write it to the NSF to see how that shakes out
-		NotesThreadFactory.run(dominoSession -> {
+		LSXBEThreadFactory.run(dominoSession -> {
 			Document keyPairDoc = getKeyPairDocument(dominoSession, true);
 			
 			OpenSSHKeyPairResourceWriter writer = new OpenSSHKeyPairResourceWriter();
@@ -110,7 +110,7 @@ public class NSFHostKeyProvider extends SimpleGeneratorHostKeyProvider {
 	}
 	
 	private Document getKeyPairDocument(Session dominoSession, boolean create) throws NotesException {
-		Database configDb = NSFFileUtil.openDatabase(dominoSession, DominoNSFConfiguration.instance.getConfigNsfPath());
+		Database configDb = NSFPathUtil.openDatabase(dominoSession, DominoNSFConfiguration.instance.getConfigNsfPath());
 		View keyPairs = configDb.getView(DominoNSFConfiguration.VIEW_SSHKEYPAIRS);
 		Document keyPairDoc = keyPairs.getDocumentByKey(dominoSession.getUserName(), true);
 		if(keyPairDoc == null && create) {

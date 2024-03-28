@@ -22,11 +22,6 @@ import javax.naming.AuthenticationException;
 import javax.naming.AuthenticationNotSupportedException;
 import javax.naming.NameNotFoundException;
 
-import com.hcl.domino.DominoClient;
-import com.hcl.domino.DominoClientBuilder;
-import com.hcl.domino.DominoProcess;
-import com.hcl.domino.DominoProcess.DominoThreadContext;
-
 import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordChangeRequiredException;
@@ -46,17 +41,12 @@ public class NotesPasswordAuthenticator implements PasswordAuthenticator {
 	@SneakyThrows
 	public boolean authenticate(String username, String password, ServerSession sshSession)
 			throws PasswordChangeRequiredException, AsyncAuthException {
-		return NotesThreadFactory.call(session -> {
-			try(
-				DominoThreadContext ctx = DominoProcess.get().initializeThread();
-				DominoClient client = DominoClientBuilder.newDominoClient().build();
-			) {
-				try {
-					client.validateCredentials(null, username, password);
-					return true;
-				} catch(NameNotFoundException | AuthenticationException | AuthenticationNotSupportedException e) {
-					return false;
-				}
+		return NotesThreadFactory.call(client -> {
+			try {
+				client.validateCredentials(null, username, password);
+				return true;
+			} catch(NameNotFoundException | AuthenticationException | AuthenticationNotSupportedException e) {
+				return false;
 			} catch(Throwable t) {
 				if(log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, "Encountered exception validating Internet password", t);

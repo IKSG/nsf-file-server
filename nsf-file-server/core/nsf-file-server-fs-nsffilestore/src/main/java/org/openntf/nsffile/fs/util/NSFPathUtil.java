@@ -25,17 +25,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.openntf.nsffile.core.function.NotesDatabaseConsumer;
-import org.openntf.nsffile.core.function.NotesDatabaseFunction;
-import org.openntf.nsffile.core.function.NotesDocumentConsumer;
-import org.openntf.nsffile.core.function.NotesDocumentFunction;
 import org.openntf.nsffile.core.util.NSFFileUtil;
-import org.openntf.nsffile.core.util.NotesThreadFactory;
 import org.openntf.nsffile.core.util.TimedCacheHolder;
 import org.openntf.nsffile.fs.NSFFileSystem;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
 import org.openntf.nsffile.fs.NSFPath;
 import org.openntf.nsffile.fs.db.NSFAccessor;
+import org.openntf.nsffile.fs.function.NotesDatabaseConsumer;
+import org.openntf.nsffile.fs.function.NotesDatabaseFunction;
+import org.openntf.nsffile.fs.function.NotesDocumentConsumer;
+import org.openntf.nsffile.fs.function.NotesDocumentFunction;
 
 import com.ibm.commons.util.StringUtil;
 
@@ -245,7 +244,7 @@ public enum NSFPathUtil {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T callWithDatabase(NSFPath path, String cacheId, NotesDatabaseFunction<T> func) {
-		return NotesThreadFactory.callAs(NSFFileUtil.dn(path.getFileSystem().getUserName()), session -> {
+		return LSXBEThreadFactory.callAs(NSFFileUtil.dn(path.getFileSystem().getUserName()), session -> {
 			Database database = getDatabase(session, path.getFileSystem());
 			if(StringUtil.isEmpty(cacheId)) {
 				return func.apply(database);
@@ -296,12 +295,31 @@ public enum NSFPathUtil {
 	 * @throws RuntimeException wrapping any exception thrown by the main body
 	 */
 	public static void runWithDatabase(NSFPath path, NotesDatabaseConsumer consumer) {
-		NotesThreadFactory.runAs(NSFFileUtil.dn(path.getFileSystem().getUserName()), session -> {
+		LSXBEThreadFactory.runAs(NSFFileUtil.dn(path.getFileSystem().getUserName()), session -> {
 			Database database = getDatabase(session, path.getFileSystem());
 			consumer.accept(database);
 		});
 	}
-	
+
+	public static Database openDatabase(final Session session, final String nsfPath) throws NotesException {
+		int bangIndex = nsfPath.indexOf("!!"); //$NON-NLS-1$
+		String server;
+		String dbPath;
+		if(bangIndex < 0) {
+			server = ""; //$NON-NLS-1$
+			dbPath = nsfPath;
+		} else {
+			server = nsfPath.substring(0, bangIndex);
+			dbPath = nsfPath.substring(bangIndex+2);
+		}
+		if(NSFFileUtil.isReplicaID(dbPath)) {
+			Database database = session.getDatabase(null, null);
+			database.openByReplicaID(server, NSFFileUtil.normalizeReplicaID(dbPath));
+			return database;
+		} else {
+			return session.getDatabase(server, dbPath);
+		}
+	}
 	
 	
 	// *******************************************************************************
@@ -313,7 +331,7 @@ public enum NSFPathUtil {
 		String key = session.getEffectiveUserName() + nsfPath;
 		return THREAD_DATABASES.get().computeIfAbsent(key, k -> {
 			try {
-				return NSFFileUtil.openDatabase(session, nsfPath);
+				return openDatabase(session, nsfPath);
 			} catch(NotesException e) {
 				throw new RuntimeException(e);
 			}

@@ -32,7 +32,7 @@ import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.openntf.nsffile.core.util.NSFFileUtil;
-import org.openntf.nsffile.core.util.NotesThreadFactory;
+import org.openntf.nsffile.fs.util.LSXBEThreadFactory;
 
 import com.ibm.commons.util.StringUtil;
 
@@ -55,7 +55,7 @@ public class NotesPublicKeyAuthenticator implements PublickeyAuthenticator {
 	@Override
 	@SneakyThrows
 	public boolean authenticate(String username, PublicKey key, ServerSession serverSession) throws AsyncAuthException {
-		return NotesThreadFactory.call(session -> {
+		return LSXBEThreadFactory.call(session -> {
 			List<String> publicKeys = getItemValueStringListForUser(session, username, ITEM_PUBKEY);
 			if(publicKeys.isEmpty() || (publicKeys.size() == 1 && StringUtil.isEmpty(publicKeys.get(0)))) {
 				return false;

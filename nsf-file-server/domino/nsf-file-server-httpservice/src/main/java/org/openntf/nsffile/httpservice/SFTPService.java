@@ -57,7 +57,6 @@ public class SFTPService extends HttpService {
 
 		DominoUtils.setJavaProperty("jnx.noinit", "true"); //$NON-NLS-1$ //$NON-NLS-2$
 		DominoUtils.setJavaProperty("jnx.noterm", "true"); //$NON-NLS-1$ //$NON-NLS-2$
-		DominoUtils.setJavaProperty("jnx.noinittermthread", "true"); //$NON-NLS-1$ //$NON-NLS-2$
 		DominoUtils.setJavaProperty("jnx.skipthreadwarning", "true"); //$NON-NLS-1$ //$NON-NLS-2$
 		DominoProcess.get().initializeProcess(new String[0]);
 		
@@ -96,7 +95,7 @@ public class SFTPService extends HttpService {
 		
 		if(enabled) {
 			if(server != null) {
-				NotesThreadFactory.run(dominoSession -> {
+				NotesThreadFactory.run(client -> {
 					try {
 						server.close();
 					} catch (IOException e) {

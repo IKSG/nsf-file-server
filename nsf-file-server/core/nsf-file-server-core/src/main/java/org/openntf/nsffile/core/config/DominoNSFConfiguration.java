@@ -83,7 +83,7 @@ public enum DominoNSFConfiguration {
 	
 	public String getConfigNsfPath() {
 		if(this.nsfPath == null) {
-			this.nsfPath = NotesThreadFactory.callJnx(client -> {
+			this.nsfPath = NotesThreadFactory.call(client -> {
 				String envProperty = client.getDominoRuntime().getPropertyString(ENV_DBPATH);
 				if(StringUtil.isEmpty(envProperty)) {
 					envProperty = DEFAULT_DBPATH;
@@ -95,7 +95,7 @@ public enum DominoNSFConfiguration {
 	}
 	
 	public boolean isEnabled() {
-		return NotesThreadFactory.callJnx(client -> {
+		return NotesThreadFactory.call(client -> {
 			return getServerDoc(client)
 				.map(doc -> !"N".equals(doc.getAsText(ITEM_ENABLED, ' '))) //$NON-NLS-1$
 				.orElse(true);
@@ -103,7 +103,7 @@ public enum DominoNSFConfiguration {
 	}
 	
 	public int getPort() {
-		return NotesThreadFactory.callJnx(client -> {
+		return NotesThreadFactory.call(client -> {
 			int port = getServerDoc(client)
 				.map(doc -> doc.get(ITEM_PORT, int.class, 0))
 				.orElse(0);
@@ -112,7 +112,7 @@ public enum DominoNSFConfiguration {
 	}
 	
 	public boolean isAllowPasswordAuth() {
-		return NotesThreadFactory.callJnx(client -> {
+		return NotesThreadFactory.call(client -> {
 			return getServerDoc(client)
 				.map(doc -> "Y".equals(doc.getAsText(ITEM_PASSWORDAUTH, ' '))) //$NON-NLS-1$
 				.orElse(false);
@@ -121,7 +121,7 @@ public enum DominoNSFConfiguration {
 	
 	public CompositeFileSystem buildFileSystem(String username) {
 		// Read the view to create filesystems for each entry
-		Map<String, FileSystem> fileSystems = NotesThreadFactory.callJnx(client -> {
+		Map<String, FileSystem> fileSystems = NotesThreadFactory.call(client -> {
 			try {
 				List<String> names = Names.buildNamesList(client, client.getIDUserName()).toList();
 				
@@ -136,7 +136,6 @@ public enum DominoNSFConfiguration {
 				return mounts.query()
 					.readColumnValues()
 					.build(0, Integer.MAX_VALUE, new CollectionEntryProcessor<Map<String, FileSystem>>() {
-						
 					@Override
 					public Map<String, FileSystem> start() {
 						return new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
