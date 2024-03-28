@@ -126,7 +126,7 @@ public enum DominoNSFConfiguration {
 				return true;
 			} else {
 				String allow = serverDoc.getItemValueString(ITEM_PASSWORDAUTH);
-				return !"N".equals(allow); //$NON-NLS-1$
+				return !"Y".equals(allow); //$NON-NLS-1$
 			}
 		});
 	}

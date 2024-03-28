@@ -32,8 +32,8 @@ To open a ZIP or JAR file, specify a URL like "jar:file:///C:/somefile.zip!/" an
 
 The spawned SSH server uses the current server's Domino directories for authentication. It supports two methods:
 
-- Password authentication using the "HTTPPassword" item in the user's person document
 - RSA public key authentication using a public key stored in the "sshPublicKey" item in the user's person document. This should be a text item containing the same contents as a "id_rsa.pub" file from OpenSSH, and it can be multi-value via line breaks
+- Password authentication using the same mechanism as HTTP password auth. This method is off by default
 
 ## Building
 
