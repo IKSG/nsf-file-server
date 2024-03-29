@@ -1,1 +1,1 @@
-org.openntf.nsffile.fs.provider.NSFFileStoreMountProvider
+org.openntf.nsffile.fs.nsffilestore.provider.NSFStoreMountProvider

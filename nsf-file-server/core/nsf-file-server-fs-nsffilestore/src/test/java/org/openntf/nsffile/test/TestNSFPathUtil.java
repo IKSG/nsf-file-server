@@ -21,7 +21,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.junit.jupiter.api.Test;
-import org.openntf.nsffile.fs.util.NSFPathUtil;
+import org.openntf.nsffile.fs.nsffilestore.util.NSFPathUtil;
 
 @SuppressWarnings("nls")
 public class TestNSFPathUtil {

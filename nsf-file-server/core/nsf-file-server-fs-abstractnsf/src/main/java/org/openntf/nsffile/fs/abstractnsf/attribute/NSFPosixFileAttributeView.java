@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs.attribute;
+package org.openntf.nsffile.fs.abstractnsf.attribute;
 
 import java.io.IOException;
 import java.nio.file.LinkOption;
@@ -25,8 +25,8 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Set;
 
-import org.openntf.nsffile.fs.NSFPath;
-import org.openntf.nsffile.fs.db.NSFAccessor;
+import org.openntf.nsffile.fs.abstractnsf.NSFPath;
+import org.openntf.nsffile.fs.abstractnsf.db.NSFAccessor;
 
 /**
  * @author Jesse Gallagher
@@ -34,9 +34,11 @@ import org.openntf.nsffile.fs.db.NSFAccessor;
  */
 public class NSFPosixFileAttributeView implements PosixFileAttributeView {
 	
+	private final NSFAccessor accessor;
 	private final NSFPath path;
 	
-	public NSFPosixFileAttributeView(NSFPath path, LinkOption... options) {
+	public NSFPosixFileAttributeView(NSFAccessor accessor, NSFPath path, LinkOption... options) {
+		this.accessor = accessor;
 		this.path = path;
     }
 
@@ -48,7 +50,7 @@ public class NSFPosixFileAttributeView implements PosixFileAttributeView {
 	@Override
 	public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
 		// lastAccessTime is intentionally ignored, as it cannot be set in the NSF
-		NSFAccessor.setTimes(this.path, lastModifiedTime, createTime);
+		accessor.setTimes(this.path, lastModifiedTime, createTime);
 	}
 
 	@Override
@@ -58,22 +60,22 @@ public class NSFPosixFileAttributeView implements PosixFileAttributeView {
 
 	@Override
 	public void setOwner(UserPrincipal owner) throws IOException {
-		NSFAccessor.setOwner(this.path, owner);
+		accessor.setOwner(this.path, owner);
 	}
 
 	@Override
 	public synchronized PosixFileAttributes readAttributes() throws IOException {
-		return NSFAccessor.readAttributes(this.path);
+		return accessor.readAttributes(this.path);
 	}
 
 	@Override
 	public void setPermissions(Set<PosixFilePermission> perms) throws IOException {
-		NSFAccessor.setPermissions(this.path, perms);
+		accessor.setPermissions(this.path, perms);
 	}
 
 	@Override
 	public void setGroup(GroupPrincipal group) throws IOException {
-		NSFAccessor.setGroup(this.path, group);
+		accessor.setGroup(this.path, group);
 	}
 	
 }

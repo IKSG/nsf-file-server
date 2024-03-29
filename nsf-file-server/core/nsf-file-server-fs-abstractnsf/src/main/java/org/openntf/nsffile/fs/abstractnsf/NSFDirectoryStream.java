@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs;
+package org.openntf.nsffile.fs.abstractnsf;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -25,16 +25,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import org.openntf.nsffile.fs.db.NSFAccessor;
-
 public class NSFDirectoryStream implements DirectoryStream<Path> {
 	private static final Logger log = Logger.getLogger(NSFDirectoryStream.class.getPackage().getName());
 	
 	private final List<Path> paths;
 
-	public NSFDirectoryStream(NSFFileSystemProvider provider, NSFPath dir) {
+	public NSFDirectoryStream(AbstractNSFFileSystemProvider provider, NSFPath dir) {
 		try {
-			this.paths = NSFAccessor.getDirectoryEntries(dir).parallelStream()
+			this.paths = provider.getAccessor().getDirectoryEntries(dir).parallelStream()
 				.map(name -> dir.resolve(name))
 				.collect(Collectors.toList());
 		} catch(Exception e) {

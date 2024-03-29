@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs;
+package org.openntf.nsffile.fs.abstractnsf;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;

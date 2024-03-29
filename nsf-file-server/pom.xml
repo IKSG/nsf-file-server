@@ -44,6 +44,7 @@
 	
 	<modules>
 		<module>core/nsf-file-server-core</module>
+		<module>core/nsf-file-server-fs-abstractnsf</module>
 		<module>core/nsf-file-server-fs-nsffilestore</module>
 		<module>core/nsf-file-server-ssh</module>
 		

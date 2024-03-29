@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs;
+package org.openntf.nsffile.fs.abstractnsf;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -33,7 +33,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.openntf.nsffile.core.util.NSFFileUtil;
-import org.openntf.nsffile.fs.db.NSFAccessor;
+import org.openntf.nsffile.fs.abstractnsf.db.NSFAccessor;
 
 /**
  * 
@@ -54,10 +54,12 @@ public class NSFFileChannel extends FileChannel {
 	private final Path tempFile;
 	private Set<? extends OpenOption> options;
 	private final boolean openForWrite;
+	private final NSFAccessor accessor;
 	
-	public NSFFileChannel(NSFPath path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) {
+	public NSFFileChannel(NSFAccessor accessor, NSFPath path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) {
 		this.path = path;
 		this.options = options;
+		this.accessor = accessor;
 		
 		if(options.contains(StandardOpenOption.TRUNCATE_EXISTING)) {
 			try {
@@ -66,7 +68,7 @@ public class NSFFileChannel extends FileChannel {
 				throw new UncheckedIOException(e);
 			}
 		} else {
-			this.tempFile = NSFAccessor.extractAttachment(path);
+			this.tempFile = accessor.extractAttachment(path);
 		}
 		
 		this.openForWrite = !Collections.disjoint(WRITE_OPTIONS, options);
@@ -165,7 +167,7 @@ public class NSFFileChannel extends FileChannel {
 		this.tempFileChannel = null;
 		
 		if(openForWrite) {
-			NSFAccessor.storeAttachment(path, this.tempFile);
+			accessor.storeAttachment(path, this.tempFile);
 		}
 		
 		Files.deleteIfExists(this.tempFile);

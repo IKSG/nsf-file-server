@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs;
+package org.openntf.nsffile.fs.abstractnsf;
 
 import java.io.IOException;
 import java.nio.file.FileStore;
@@ -33,7 +33,7 @@ public class NSFFileSystem extends BaseFileSystem<NSFPath> {
 	private final String nsfPath;
 	private final List<FileStore> fileStores;
 	
-	public NSFFileSystem(NSFFileSystemProvider provider, String userName, String nsfPath) {
+	public NSFFileSystem(AbstractNSFFileSystemProvider provider, String userName, String nsfPath) {
 		super(provider);
 		
 		this.userName = userName;

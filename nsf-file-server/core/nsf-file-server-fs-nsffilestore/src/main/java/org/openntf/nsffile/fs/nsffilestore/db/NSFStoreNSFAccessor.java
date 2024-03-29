@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs.db;
+package org.openntf.nsffile.fs.nsffilestore.db;
 
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.DATATYPE_NAME;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.FORM_FOLDER;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_CREATED;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_FILE;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_GROUP;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_MODIFIED;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_OWNER;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_PARENT;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.ITEM_PERMISSIONS;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.PREFIX_USERITEM;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.VIEW_FILESBYPARENT;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.VIEW_FILESBYPARENT_INDEX_NAME;
-import static org.openntf.nsffile.fs.NSFFileSystemConstants.VIEW_FILESBYPATH;
+import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.DATATYPE_NAME;
+import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.FORM_FOLDER;
+import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_CREATED;
+import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_FILE;
+import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_GROUP;
+import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_MODIFIED;
+import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_OWNER;
+import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_PARENT;
+import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_PERMISSIONS;
+import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.PREFIX_USERITEM;
+import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.VIEW_FILESBYPARENT;
+import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.VIEW_FILESBYPARENT_INDEX_NAME;
+import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.VIEW_FILESBYPATH;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,8 +63,10 @@ import com.hcl.domino.data.Database.Action;
 import com.hcl.domino.data.Document;
 import com.hcl.domino.data.Document.LockMode;
 import com.hcl.domino.data.DominoCollection;
+import com.hcl.domino.data.DominoDateTime;
 import com.hcl.domino.data.UserData;
 import com.hcl.domino.misc.NotesConstants;
+import com.hcl.domino.misc.Ref;
 import com.hcl.domino.richtext.RichTextWriter;
 import com.ibm.commons.util.StringUtil;
 
@@ -72,8 +74,10 @@ import org.openntf.nsffile.core.NotesPrincipal;
 import org.openntf.nsffile.core.fs.attribute.NSFFileAttributes;
 import org.openntf.nsffile.core.fs.attribute.NSFFileAttributes.Type;
 import org.openntf.nsffile.core.util.NSFFileUtil;
-import org.openntf.nsffile.fs.NSFPath;
-import org.openntf.nsffile.fs.util.NSFPathUtil;
+import org.openntf.nsffile.fs.abstractnsf.db.NSFAccessor;
+import org.openntf.nsffile.fs.abstractnsf.NSFPath;
+import org.openntf.nsffile.fs.abstractnsf.attribute.RootFileAttributes;
+import org.openntf.nsffile.fs.nsffilestore.util.NSFPathUtil;
 
 /**
  * Central class for NSF access methods.
@@ -81,17 +85,12 @@ import org.openntf.nsffile.fs.util.NSFPathUtil;
  * @author Jesse Gallagher
  * @since 1.0.0
  */
-public enum NSFAccessor {
-	;
-	private static final Logger log = Logger.getLogger(NSFAccessor.class.getPackage().getName());
+public enum NSFStoreNSFAccessor implements NSFAccessor {
+	instance;
+	private static final Logger log = Logger.getLogger(NSFStoreNSFAccessor.class.getPackage().getName());
 	
-	/**
-	 * Returns a list of file names for files within the provided directory.
-	 * 
-	 * @param dir the directory to list
-	 * @return a {@link List} of individual file names, in alphabetical order
-	 */
-	public static List<String> getDirectoryEntries(NSFPath dir) {
+	@Override
+	public List<String> getDirectoryEntries(NSFPath dir) {
 		String cacheId = "entries-" + dir; //$NON-NLS-1$
 		return NSFPathUtil.callWithDatabase(dir, cacheId, database -> {
 			DominoCollection filesByParent = database.openCollection(VIEW_FILESBYPARENT)
@@ -122,17 +121,8 @@ public enum NSFAccessor {
 		});
 	}
 	
-	/**
-	 * Extracts the attachment from the provided NSF path.
-	 * 
-	 * <p>The extracted file will have the same name as the {code path}'s file name, and
-	 * will be housed within a temporary directory. Both the returned file and its parent
-	 * should be deleted when no longer needed.</p>
-	 * 
-	 * @param path the path of the file to extract
-	 * @return a {@link Path} to a temporary file holding the attachment contents
-	 */
-	public static Path extractAttachment(NSFPath path) {
+	@Override
+	public Path extractAttachment(NSFPath path) {
 		return NSFPathUtil.callWithDocument(path, null, doc -> {
 			Path resultParent = NSFFileUtil.createTempDirectory(path.getFileName().toString());
 			Path result = resultParent.resolve(path.getFileName().toString());
@@ -154,14 +144,8 @@ public enum NSFAccessor {
 		});
 	}
 	
-	/**
-	 * Stores the provided attachment data in the named path.
-	 * 
-	 * @param path the path to the file inside the NSF
-	 * @param attachmentData the path to the attachment data stored on disk
-	 * @throws IOException if there is a problem attaching the data
-	 */
-	public static void storeAttachment(NSFPath path, Path attachmentData) throws IOException {
+	@Override
+	public void storeAttachment(NSFPath path, Path attachmentData) throws IOException {
 		try {
 			NSFPathUtil.runWithDocument(path, doc -> {
 				if(doc.isNew()) {
@@ -186,14 +170,8 @@ public enum NSFAccessor {
 		}
 	}
 	
-	/**
-	 * Creates a directory entry for the provided path, if it doesn't currently exist.
-	 * 
-	 * @param dir the path of the desired directory
-	 * @param attrs the attributes of the directory to create
-	 * @throws IOException if there is a problem creating the directory document
-	 */
-	public static void createDirectory(NSFPath dir, FileAttribute<?>... attrs) throws IOException {
+	@Override
+	public void createDirectory(NSFPath dir, FileAttribute<?>... attrs) throws IOException {
 		// TODO support attrs
 		try {
 			NSFPathUtil.runWithDocument(dir, doc -> {
@@ -212,13 +190,8 @@ public enum NSFAccessor {
 		}
 	}
 
-	/**
-	 * Deletes the file or folder at the provided path, if it exists.
-	 * 
-	 * @param path the path of the file to delete
-	 * @throws IOException if there is a problem deleting the file
-	 */
-	public static void delete(NSFPath path) throws IOException {
+	@Override
+	public void delete(NSFPath path) throws IOException {
 		// TODO throw exception if it is a non-empty directory
 		try {
 			NSFPathUtil.runWithDocument((NSFPath)path, doc -> {
@@ -239,19 +212,12 @@ public enum NSFAccessor {
 		}
 	}
 	
-	/**
-	 * Copies the provided source note to the target, deleting the target if it exists.
-	 * 
-	 * @param source the source path to copy
-	 * @param target the target path
-	 * @param options Java NIO copy options
-	 * @throws IOException if there is a database problem copying the file
-	 */
-	public static void copy(NSFPath source, NSFPath target, CopyOption... options) throws IOException {
+	@Override
+	public void copy(NSFPath source, NSFPath target, CopyOption... options) throws IOException {
 		// TODO respect options
 		try {
 			NSFPathUtil.runWithDatabase(source, database -> {
-				Document targetDoc = NSFAccessor.getDocument(target, database);
+				Document targetDoc = NSFStoreNSFAccessor.getDocument(target, database);
 				if(!targetDoc.isNew()) {
 					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
 						targetDoc.lock(targetDoc.getParentDatabase().getParentDominoClient().getEffectiveUserName(), LockMode.HardOrProvisional);
@@ -259,7 +225,7 @@ public enum NSFAccessor {
 					targetDoc.delete();
 				}
 				
-				Document doc = NSFAccessor.getDocument(source, database);
+				Document doc = NSFStoreNSFAccessor.getDocument(source, database);
 				targetDoc = doc.copyToDatabase(database);
 				targetDoc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
 				targetDoc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
@@ -275,18 +241,11 @@ public enum NSFAccessor {
 		}
 	}
 
-	/**
-	 * Moves the provided source note to the target, deleting the target if it exists.
-	 * 
-	 * @param source the source path to move
-	 * @param target the target path
-	 * @param options Java NIO copy options
-	 * @throws IOException if there is a database problem moving the file
-	 */
-	public static void move(NSFPath source, NSFPath target, CopyOption... options) throws IOException {
+	@Override
+	public void move(NSFPath source, NSFPath target, CopyOption... options) throws IOException {
 		try {
 			NSFPathUtil.runWithDatabase(source, database -> {
-				Document targetDoc = NSFAccessor.getDocument(target, database);
+				Document targetDoc = NSFStoreNSFAccessor.getDocument(target, database);
 				if(!targetDoc.isNew()) {
 					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
 						targetDoc.lock(targetDoc.getParentDatabase().getParentDominoClient().getEffectiveUserName(), LockMode.HardOrProvisional);
@@ -294,7 +253,7 @@ public enum NSFAccessor {
 					targetDoc.delete();
 				}
 				
-				Document doc = NSFAccessor.getDocument((NSFPath)source, database);
+				Document doc = NSFStoreNSFAccessor.getDocument((NSFPath)source, database);
 				doc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
 				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
 				doc.computeWithForm(true, null);
@@ -309,13 +268,8 @@ public enum NSFAccessor {
 		}
 	}
 	
-	/**
-	 * Checks if the provided path exists in the database.
-	 * 
-	 * @param path the path of the file or folder to check
-	 * @return whether the file currently exists in the database
-	 */
-	public static boolean exists(NSFPath path) {
+	@Override
+	public boolean exists(NSFPath path) {
 		if("/".equals(path.toString())) { //$NON-NLS-1$
 			return true;
 		}
@@ -330,8 +284,9 @@ public enum NSFAccessor {
 				.isPresent();
 		});
 	}
-	
-	public static NSFFileAttributes readAttributes(NSFPath path) {
+
+	@Override
+	public NSFFileAttributes readAttributes(NSFPath path) {
 		String cacheId = "attrs-" + path; //$NON-NLS-1$
 		return NSFPathUtil.callWithDocument(path, cacheId, doc -> {
 			NotesPrincipal owner;
@@ -385,14 +340,8 @@ public enum NSFAccessor {
 		});
 	}
 	
-	/**
-	 * Sets the owner of the provided path to the provided name.
-	 * 
-	 * @param path the path of the file or folder to set
-	 * @param owner the new owner name
-	 * @throws IOException if there is a database problem setting the owner
-	 */
-	public static void setOwner(NSFPath path, UserPrincipal owner) throws IOException {
+	@Override
+	public void setOwner(NSFPath path, UserPrincipal owner) throws IOException {
 		try {
 			NSFPathUtil.runWithDocument(path, doc -> {
 				doc.replaceItemValue(ITEM_OWNER, owner.getName());
@@ -407,14 +356,8 @@ public enum NSFAccessor {
 		}
 	}
 	
-	/**
-	 * Sets the group of the provided path to the provided name.
-	 * 
-	 * @param path the path of the file or folder to set
-	 * @param group the new group name
-	 * @throws IOException if there is a database problem setting the group
-	 */
-	public static void setGroup(NSFPath path, UserPrincipal group) throws IOException {
+	@Override
+	public void setGroup(NSFPath path, UserPrincipal group) throws IOException {
 		try {
 			NSFPathUtil.runWithDocument(path, doc -> {
 				doc.replaceItemValue(ITEM_GROUP, group.getName());
@@ -429,14 +372,8 @@ public enum NSFAccessor {
 		}
 	}
 	
-	/**
-	 * Sets the permissions of the provided path to the provided name.
-	 * 
-	 * @param path the path of the file or folder to set
-	 * @param perms the new permissions
-	 * @throws IOException if there is a database problem setting the permissions
-	 */
-	public static void setPermissions(NSFPath path, Set<PosixFilePermission> perms) throws IOException {
+	@Override
+	public void setPermissions(NSFPath path, Set<PosixFilePermission> perms) throws IOException {
 		try {
 			NSFPathUtil.runWithDocument(path, doc -> {
 				doc.replaceItemValue(ITEM_PERMISSIONS, PosixFilePermissions.toString(perms));
@@ -451,15 +388,8 @@ public enum NSFAccessor {
 		}
 	}
 	
-	/**
-	 * Sets the modified and/or creation time of the provided path.
-	 * 
-	 * @param path the path of the file to set
-	 * @param lastModifiedTime the last modified time, if desired
-	 * @param createTime the creation time, if desired
-	 * @throws IOException if there is a database problem setting the metadata
-	 */
-	public static void setTimes(NSFPath path, FileTime lastModifiedTime, FileTime createTime) throws IOException {
+	@Override
+	public void setTimes(NSFPath path, FileTime lastModifiedTime, FileTime createTime) throws IOException {
 		try {
 			NSFPathUtil.runWithDocument(path, doc -> {
 				if(lastModifiedTime != null) {
@@ -480,14 +410,8 @@ public enum NSFAccessor {
 		}
 	}
 	
-	/**
-	 * Lists the names of any user-defined attributes on the provided path
-	 * 
-	 * @param path the path to check
-	 * @return a {@link List} of attribute names
-	 * @throws IOException if there is a DB problem reading the names
-	 */
-	public static List<String> listUserDefinedAttributes(NSFPath path) throws IOException {
+	@Override
+	public List<String> listUserDefinedAttributes(NSFPath path) throws IOException {
 		try {
 			String cacheId = "userAttrs-" + path; //$NON-NLS-1$
 			return NSFPathUtil.callWithDocument(path, cacheId, doc ->
@@ -504,16 +428,8 @@ public enum NSFAccessor {
 		}
 	}
 	
-	/**
-	 * Writes the provided data to the named user-defined attribute in the path
-	 * 
-	 * @param path the path of the file to amend
-	 * @param name the name of the user-defined attribute
-	 * @param src a buffer containing the data
-	 * @return the number of bytes written
-	 * @throws IOException if there is a DB problem writing the data
-	 */
-	public static int writeUserDefinedAttribute(NSFPath path, String name, ByteBuffer src) throws IOException {
+	@Override
+	public int writeUserDefinedAttribute(NSFPath path, String name, ByteBuffer src) throws IOException {
 		try {
 			return NSFPathUtil.callWithDocument(path, null, doc -> {
 				String itemName = PREFIX_USERITEM + name;
@@ -532,14 +448,8 @@ public enum NSFAccessor {
 		}
 	}
 
-	/**
-	 * Deletes the named user-defined attribute from the provided path
-	 * 
-	 * @param path the path of the file to adjust
-	 * @param name the name of the user-defined attribute
-	 * @throws IOException if there is a DB problem deleting the data
-	 */
-	public static void deleteUserDefinedAttribute(NSFPath path, String name) throws IOException {
+	@Override
+	public void deleteUserDefinedAttribute(NSFPath path, String name) throws IOException {
 		try {
 			NSFPathUtil.runWithDocument(path, doc -> {
 				String itemName = PREFIX_USERITEM + name;
@@ -558,15 +468,8 @@ public enum NSFAccessor {
 		}
 	}
 	
-	/**
-	 * Reads the provided user-defined attribute from the provided path.
-	 * 
-	 * @param path the path of the file to read
-	 * @param name the name of the attribute to read
-	 * @return the attribute data as a byte array
-	 * @throws IOException if there is a DB problem reading the data
-	 */
-	public static byte[] getUserDefinedAttribute(NSFPath path, String name) throws IOException {
+	@Override
+	public byte[] getUserDefinedAttribute(NSFPath path, String name) throws IOException {
 		try {
 			String cacheId = "userAttrVal-" + path + name; //$NON-NLS-1$
 			return NSFPathUtil.callWithDocument(path, cacheId, doc -> {
@@ -592,6 +495,17 @@ public enum NSFAccessor {
 			}
 			throw new IOException(e);
 		}
+	}
+
+	@Override
+	public RootFileAttributes getRootFileAttributes(Path path) {
+		return NSFPathUtil.callWithDatabase((NSFPath)path, "rootAttribues", database -> { //$NON-NLS-1$
+			Ref<DominoDateTime> mod = new Ref<>();
+			database.getModifiedTime(mod, null);
+			DominoDateTime created = database.getCreated();
+			
+			return new RootFileAttributes(Instant.from(mod.get()), Instant.from(created));
+		});
 	}
 
 	/**

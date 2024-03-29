@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs;
+package org.openntf.nsffile.fs.abstractnsf;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessMode;
@@ -24,7 +23,6 @@ import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
 import java.nio.file.DirectoryStream.Filter;
 import java.nio.file.FileStore;
-import java.nio.file.FileSystem;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
@@ -39,28 +37,22 @@ import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.text.MessageFormat;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.ibm.commons.util.StringUtil;
+
 import org.apache.sshd.common.util.GenericUtils;
 import org.openntf.nsffile.core.fs.attribute.NoneFileAttributeView;
-import org.openntf.nsffile.fs.attribute.NSFPosixFileAttributeView;
-import org.openntf.nsffile.fs.attribute.NSFUserDefinedFileAttributeView;
-import org.openntf.nsffile.fs.attribute.RootFileAttributes;
-import org.openntf.nsffile.fs.db.NSFAccessor;
-import org.openntf.nsffile.fs.util.NSFPathUtil;
-
-import com.hcl.domino.data.DominoDateTime;
-import com.hcl.domino.misc.Ref;
-import com.ibm.commons.util.StringUtil;
+import org.openntf.nsffile.fs.abstractnsf.attribute.NSFPosixFileAttributeView;
+import org.openntf.nsffile.fs.abstractnsf.attribute.NSFUserDefinedFileAttributeView;
+import org.openntf.nsffile.fs.abstractnsf.db.NSFAccessor;
 
 /**
  * Java NIO Filesystem implementation for NSF file storage.
@@ -68,68 +60,17 @@ import com.ibm.commons.util.StringUtil;
  * @author Jesse Gallagher
  * @since 1.0.0
  */
-public class NSFFileSystemProvider extends FileSystemProvider {
-	public static final String SCHEME = "nsffilestore"; //$NON-NLS-1$
-	public static final Logger log = Logger.getLogger(NSFFileSystemProvider.class.getPackage().getName());
+public abstract class AbstractNSFFileSystemProvider extends FileSystemProvider {
+	public static final Logger log = Logger.getLogger(AbstractNSFFileSystemProvider.class.getPackage().getName());
 	
-	public static final NSFFileSystemProvider instance = new NSFFileSystemProvider();
+	private final NSFAccessor accessor;
 	
-	private Map<String, FileSystem> fileSystems = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-
-	// *******************************************************************************
-	// * Filesystem Operations
-	// *******************************************************************************
-	
-	@Override
-	public String getScheme() {
-		return SCHEME;
+	public AbstractNSFFileSystemProvider(NSFAccessor accessor) {
+		this.accessor = accessor;
 	}
 	
-	public FileSystem getOrCreateFileSystem(URI uri, Map<String, ?> env) throws IOException {
-		Objects.requireNonNull(uri, "uri cannot be null"); //$NON-NLS-1$
-		
-		String nsfPath = NSFPathUtil.extractApiPath(uri);
-		if(StringUtil.isEmpty(nsfPath)) {
-			throw new IllegalArgumentException("Unable to extract NSF path from " + uri); //$NON-NLS-1$
-		}
-		
-		String mapKey = uri.getUserInfo() + nsfPath;
-		FileSystem fs = fileSystems.get(mapKey);
-		if(fs == null || !fs.isOpen()) {
-			fileSystems.put(mapKey,new NSFFileSystem(this, uri.getUserInfo(), nsfPath));
-		}
-		return fileSystems.get(mapKey);
-	}
-
-	@Override
-	public FileSystem newFileSystem(URI uri, Map<String, ?> env) throws IOException {
-		Objects.requireNonNull(uri, "uri cannot be null"); //$NON-NLS-1$
-		
-		String nsfPath = NSFPathUtil.extractApiPath(uri);
-		if(StringUtil.isEmpty(nsfPath)) {
-			throw new IllegalArgumentException("Unable to extract NSF path from " + uri); //$NON-NLS-1$
-		}
-		
-		String mapKey = uri.getUserInfo() + nsfPath;
-		return fileSystems.put(mapKey, new NSFFileSystem(this, uri.getUserInfo(), nsfPath));
-	}
-
-	@Override
-	public FileSystem getFileSystem(URI uri) {
-		Objects.requireNonNull(uri, "uri cannot be null"); //$NON-NLS-1$
-		
-		String nsfPath = NSFPathUtil.extractApiPath(uri);
-		if(StringUtil.isEmpty(nsfPath)) {
-			throw new IllegalArgumentException("Unable to extract NSF path from " + uri); //$NON-NLS-1$
-		}
-		
-		String mapKey = uri.getUserInfo() + nsfPath;
-		return fileSystems.get(mapKey);
-	}
-
-	@Override
-	public Path getPath(URI uri) {
-		return getFileSystem(uri).getPath(NSFPathUtil.extractPathInfo(uri));
+	public NSFAccessor getAccessor() {
+		return accessor;
 	}
 	
 	// *******************************************************************************
@@ -145,7 +86,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	@Override
 	public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
 			throws IOException {
-		return new NSFFileChannel((NSFPath)path, options, attrs);
+		return new NSFFileChannel(accessor, (NSFPath)path, options, attrs);
 	}
 
 	@Override
@@ -155,22 +96,22 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
-		NSFAccessor.createDirectory((NSFPath)dir, attrs);
+		accessor.createDirectory((NSFPath)dir, attrs);
 	}
 
 	@Override
 	public void delete(Path path) throws IOException {
-		NSFAccessor.delete((NSFPath)path);
+		accessor.delete((NSFPath)path);
 	}
 
 	@Override
 	public void copy(Path source, Path target, CopyOption... options) throws IOException {
-		NSFAccessor.copy((NSFPath)source, (NSFPath)target, options);
+		accessor.copy((NSFPath)source, (NSFPath)target, options);
 	}
 
 	@Override
 	public void move(Path source, Path target, CopyOption... options) throws IOException {
-		NSFAccessor.move((NSFPath)source, (NSFPath)target, options);
+		accessor.move((NSFPath)source, (NSFPath)target, options);
 	}
 
 	@Override
@@ -191,7 +132,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void checkAccess(Path path, AccessMode... modes) throws IOException {
-		if(!NSFAccessor.exists((NSFPath)path)) {
+		if(!accessor.exists((NSFPath)path)) {
 			throw new NoSuchFileException(path.toString());
 		}
 	}
@@ -199,13 +140,13 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	@Override
 	public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
 		// TODO cache these?
-		if(!NSFAccessor.exists((NSFPath)path)) {
+		if(!accessor.exists((NSFPath)path)) {
 			return type.cast(new NoneFileAttributeView(path));
 		}
 		if(type.isAssignableFrom(UserDefinedFileAttributeView.class)) {
-			return type.cast(new NSFUserDefinedFileAttributeView((NSFPath)path, options));
+			return type.cast(new NSFUserDefinedFileAttributeView(accessor, (NSFPath)path, options));
 		} else {
-			return type.cast(new NSFPosixFileAttributeView((NSFPath)path, options));
+			return type.cast(new NSFPosixFileAttributeView(accessor, (NSFPath)path, options));
 		}
 	}
 
@@ -213,13 +154,7 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 	public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options)
 			throws IOException {
 		if("/".equals(path.toAbsolutePath().toString())) { //$NON-NLS-1$
-			return NSFPathUtil.callWithDatabase((NSFPath)path, "rootAttribues", database -> { //$NON-NLS-1$
-				Ref<DominoDateTime> mod = new Ref<>();
-				database.getModifiedTime(mod, null);
-				DominoDateTime created = database.getCreated();
-				
-				return type.cast(new RootFileAttributes(Instant.from(mod.get()), Instant.from(created)));
-			});
+			return type.cast(accessor.getRootFileAttributes(path));
 		}
 		if (type.isAssignableFrom(PosixFileAttributes.class)) {
 			PosixFileAttributeView view = getFileAttributeView(path, PosixFileAttributeView.class, options);
@@ -368,9 +303,4 @@ public class NSFFileSystemProvider extends FileSystemProvider {
             return false;
         }
     }
-
-	@Override
-	public String toString() {
-		return String.format("NSFFileSystemProvider [fileSystems=%s]", fileSystems); //$NON-NLS-1$
-	}
 }

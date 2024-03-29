@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs.util;
+package org.openntf.nsffile.fs.nsffilestore.util;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -32,14 +32,14 @@ import java.util.logging.Logger;
 import org.openntf.nsffile.core.util.NSFFileUtil;
 import org.openntf.nsffile.core.util.NotesThreadFactory;
 import org.openntf.nsffile.core.util.TimedCacheHolder;
-import org.openntf.nsffile.fs.NSFFileSystem;
-import org.openntf.nsffile.fs.NSFFileSystemProvider;
-import org.openntf.nsffile.fs.NSFPath;
-import org.openntf.nsffile.fs.db.NSFAccessor;
-import org.openntf.nsffile.fs.function.NotesDatabaseConsumer;
-import org.openntf.nsffile.fs.function.NotesDatabaseFunction;
-import org.openntf.nsffile.fs.function.NotesDocumentConsumer;
-import org.openntf.nsffile.fs.function.NotesDocumentFunction;
+import org.openntf.nsffile.fs.abstractnsf.NSFFileSystem;
+import org.openntf.nsffile.fs.nsffilestore.NSFStoreFileSystemProvider;
+import org.openntf.nsffile.fs.abstractnsf.NSFPath;
+import org.openntf.nsffile.fs.nsffilestore.db.NSFStoreNSFAccessor;
+import org.openntf.nsffile.fs.abstractnsf.function.NotesDatabaseConsumer;
+import org.openntf.nsffile.fs.abstractnsf.function.NotesDatabaseFunction;
+import org.openntf.nsffile.fs.abstractnsf.function.NotesDocumentConsumer;
+import org.openntf.nsffile.fs.abstractnsf.function.NotesDocumentFunction;
 
 import com.hcl.domino.DominoClient;
 import com.hcl.domino.data.Database;
@@ -162,7 +162,7 @@ public enum NSFPathUtil {
 		}
 		host = encoder.apply(host);
 		nsfPath = "/" + encoder.apply(nsfPath); //$NON-NLS-1$
-		return new URI(NSFFileSystemProvider.SCHEME, userName, host, -1, nsfPath, null, null);
+		return new URI(NSFStoreFileSystemProvider.SCHEME, userName, host, -1, nsfPath, null, null);
 	}
 	
 	/**
@@ -192,7 +192,7 @@ public enum NSFPathUtil {
 			}
 		}
 		
-		return new URI(NSFFileSystemProvider.SCHEME, userName, base.getHost(), -1, pathInfo, null, null);
+		return new URI(NSFStoreFileSystemProvider.SCHEME, userName, base.getHost(), -1, pathInfo, null, null);
 	}
 	
 	/**
@@ -208,7 +208,7 @@ public enum NSFPathUtil {
 	 */
 	public static <T> T callWithDocument(NSFPath path, String cacheId, NotesDocumentFunction<T> func) {
 		return callWithDatabase(path, cacheId, database -> {
-			Document doc = NSFAccessor.getDocument(path, database);
+			Document doc = NSFStoreNSFAccessor.getDocument(path, database);
 			return func.apply(doc);
 		});
 	}
@@ -222,7 +222,7 @@ public enum NSFPathUtil {
 	 */
 	public static void runWithDocument(NSFPath path, NotesDocumentConsumer consumer) {
 		runWithDatabase(path, database -> {
-			Document doc = NSFAccessor.getDocument(path, database);
+			Document doc = NSFStoreNSFAccessor.getDocument(path, database);
 			consumer.accept(doc);
 		});
 	}

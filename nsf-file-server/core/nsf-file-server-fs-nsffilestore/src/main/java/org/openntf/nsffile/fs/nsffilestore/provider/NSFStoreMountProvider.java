@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs.provider;
+package org.openntf.nsffile.fs.nsffilestore.provider;
 
 import java.io.IOException;
 import java.net.URI;
@@ -26,15 +26,15 @@ import java.util.Map;
 import com.ibm.commons.util.StringUtil;
 
 import org.openntf.nsffile.core.spi.FileSystemMountProvider;
-import org.openntf.nsffile.fs.NSFFileSystemProvider;
-import org.openntf.nsffile.fs.util.NSFPathUtil;
+import org.openntf.nsffile.fs.nsffilestore.NSFStoreFileSystemProvider;
+import org.openntf.nsffile.fs.nsffilestore.util.NSFPathUtil;
 
-public class NSFFileStoreMountProvider implements FileSystemMountProvider {
+public class NSFStoreMountProvider implements FileSystemMountProvider {
 	public static final String KEY_USERNAME = "username"; //$NON-NLS-1$
 
 	@Override
 	public String getName() {
-		return NSFFileSystemProvider.SCHEME;
+		return NSFStoreFileSystemProvider.SCHEME;
 	}
 
 	@Override
@@ -45,7 +45,7 @@ public class NSFFileStoreMountProvider implements FileSystemMountProvider {
 		}
 		try {
 			URI uri = NSFPathUtil.toFileSystemURI(username, dataSource);
-			return NSFFileSystemProvider.instance.getOrCreateFileSystem(uri, Collections.emptyMap());
+			return NSFStoreFileSystemProvider.instance.getOrCreateFileSystem(uri, Collections.emptyMap());
 		} catch (URISyntaxException e) {
 			throw new IOException(MessageFormat.format("Unable to build URI for data source {0}", dataSource), e);
 		}

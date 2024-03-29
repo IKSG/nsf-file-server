@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs.function;
+package org.openntf.nsffile.fs.abstractnsf.function;
 
-import com.hcl.domino.data.Database;
+import com.hcl.domino.data.Document;
 
 @FunctionalInterface
-public interface NotesDatabaseFunction<T> {
-	T apply(Database doc) throws Exception;
+public interface NotesDocumentConsumer {
+	void accept(Document doc) throws Exception;
 }

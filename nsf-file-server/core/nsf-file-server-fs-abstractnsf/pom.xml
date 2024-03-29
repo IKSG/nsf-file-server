@@ -8,23 +8,14 @@
 		<version>2.0.0-SNAPSHOT</version>
 		<relativePath>../..</relativePath>
 	</parent>
-	<artifactId>nsf-file-server-fs-nsffilestore</artifactId>
-	<name>Java NIO 2 NSF Filesystem Provider</name>
+	<artifactId>nsf-file-server-fs-abstractnsf</artifactId>
+	<name>Abstract implementation classes for NSF-based filesystems</name>
 	
 	<dependencies>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>nsf-file-server-core</artifactId>
 			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>nsf-file-server-fs-abstractnsf</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.hcl.domino</groupId>
-			<artifactId>domino-jnx-api</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.ibm.sbt</groupId>
@@ -34,19 +25,6 @@
 		<dependency>
 			<groupId>org.apache.sshd</groupId>
 			<artifactId>sshd-sftp</artifactId>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-engine</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.glassfish.corba</groupId>
-			<artifactId>glassfish-corba-omgapi</artifactId>
-			<version>4.2.3</version>
-			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 	

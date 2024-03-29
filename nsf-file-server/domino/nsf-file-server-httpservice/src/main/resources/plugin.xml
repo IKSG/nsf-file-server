@@ -29,6 +29,6 @@
 		<service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.core.provider.LocalFileSystemMountProvider"/>
 	</extension>
 	<extension point="com.ibm.commons.Extension">
-		<service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.fs.provider.NSFFileStoreMountProvider"/>
+		<service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.fs.nsffilestore.provider.NSFStoreMountProvider"/>
 	</extension>
 </plugin>
