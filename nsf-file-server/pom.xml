@@ -131,15 +131,6 @@
 		</dependencies>
 	</dependencyManagement>
 	
-	<dependencies>
-		<dependency>
-			<groupId>org.glassfish.corba</groupId>
-			<artifactId>glassfish-corba-omgapi</artifactId>
-			<version>4.2.5</version>
-			<scope>provided</scope>
-		</dependency>
-	</dependencies>
-	
 	<build>
 		<pluginManagement>
 			<plugins>
