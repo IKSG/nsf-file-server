@@ -64,6 +64,10 @@ public class NSFHostKeyProvider extends SimpleGeneratorHostKeyProvider {
 				return null;
 			}
 			
+			if(keyPairDoc.isEncrypted()) {
+				keyPairDoc.decrypt(null);
+			}
+			
 			// The full pair is in PrivateKey
 			String privateKey = keyPairDoc.get(DominoNSFConfiguration.ITEM_PRIVATEKEY, String.class, null);
 			if(StringUtil.isEmpty(privateKey)) {

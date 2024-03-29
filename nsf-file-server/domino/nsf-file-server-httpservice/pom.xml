@@ -22,23 +22,23 @@
 			<artifactId>nsf-file-server-ssh</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>com.ibm.xsp.bootstrap.shim</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>com.ibm.domino.xsp.adapter.shim</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
 		
 		<dependency>
-			<groupId>com.hcl.xsp.p2</groupId>
-			<artifactId>com.ibm.domino.xsp.adapter</artifactId>
-			<version>[9.0.1,)</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.hcl.xsp.p2</groupId>
-			<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
-			<classifier>Notes</classifier>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.hcl.xsp.p2</groupId>
-			<artifactId>com.ibm.domino.napi.impl</artifactId>
-			<classifier>lwpd.domino.napi</classifier>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
 			<scope>provided</scope>
 		</dependency>
 		
@@ -51,6 +51,10 @@
 			<groupId>jakarta.mail</groupId>
 			<artifactId>jakarta.mail-api</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>jakarta.activation</groupId>
+			<artifactId>jakarta.activation-api</artifactId>
+		</dependency>
 		
 		<dependency>
 			<groupId>com.ibm.sbt</groupId>
@@ -58,6 +62,7 @@
 			<scope>provided</scope>
 		</dependency>
 		
+		<!-- slf4j implementation for use by Apache SSHD -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-jdk14</artifactId>
@@ -77,14 +82,12 @@
 						<Export-Package/>
 						<Require-Bundle>
 							com.ibm.domino.xsp.adapter,
-							com.ibm.domino.napi,
 							com.ibm.commons,
 							com.ibm.commons.xml
 						</Require-Bundle>
 						<Import-Package>
 							javax.servlet,
-							javax.servlet.http,
-							lotus.domino
+							javax.servlet.http
 						</Import-Package>
 						<Embed-Dependency>*;scope=compile</Embed-Dependency>
 						<Embed-Transitive>true</Embed-Transitive>

@@ -31,7 +31,9 @@ import static org.openntf.nsffile.fs.NSFFileSystemConstants.VIEW_FILESBYPATH;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,17 +47,26 @@ import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import com.hcl.domino.data.Attachment;
+import com.hcl.domino.data.Attachment.Compression;
+import com.hcl.domino.data.CollectionEntry;
+import com.hcl.domino.data.CollectionSearchQuery.CollectionEntryProcessor;
+import com.hcl.domino.data.Database;
+import com.hcl.domino.data.Database.Action;
+import com.hcl.domino.data.Document;
+import com.hcl.domino.data.Document.LockMode;
+import com.hcl.domino.data.DominoCollection;
+import com.hcl.domino.data.UserData;
+import com.hcl.domino.misc.NotesConstants;
+import com.hcl.domino.richtext.RichTextWriter;
 import com.ibm.commons.util.StringUtil;
-import com.ibm.designer.domino.napi.NotesConstants;
 
 import org.openntf.nsffile.core.NotesPrincipal;
 import org.openntf.nsffile.core.fs.attribute.NSFFileAttributes;
@@ -63,18 +74,6 @@ import org.openntf.nsffile.core.fs.attribute.NSFFileAttributes.Type;
 import org.openntf.nsffile.core.util.NSFFileUtil;
 import org.openntf.nsffile.fs.NSFPath;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
-
-import lotus.domino.Database;
-import lotus.domino.DateTime;
-import lotus.domino.Document;
-import lotus.domino.EmbeddedObject;
-import lotus.domino.Item;
-import lotus.domino.NotesException;
-import lotus.domino.RichTextItem;
-import lotus.domino.Session;
-import lotus.domino.View;
-import lotus.domino.ViewEntry;
-import lotus.domino.ViewNavigator;
 
 /**
  * Central class for NSF access methods.
@@ -95,36 +94,31 @@ public enum NSFAccessor {
 	public static List<String> getDirectoryEntries(NSFPath dir) {
 		String cacheId = "entries-" + dir; //$NON-NLS-1$
 		return NSFPathUtil.callWithDatabase(dir, cacheId, database -> {
-			View filesByParent = database.getView(VIEW_FILESBYPARENT);
-			try {
-				filesByParent.setAutoUpdate(false);
-				filesByParent.refresh();
-				
-				String category = dir.toAbsolutePath().toString();
-				ViewNavigator nav = filesByParent.createViewNavFromCategory(category);
-				try {
-					nav.setBufferMaxEntries(400);
-					List<String> result = new ArrayList<>(nav.getCount());
-					ViewEntry entry = nav.getFirst();
-					while(entry != null) {
-						entry.setPreferJavaDates(true);
-						String name = String.valueOf(entry.getColumnValues().get(VIEW_FILESBYPARENT_INDEX_NAME));
-						result.add(name);
-						
-						ViewEntry tempEntry = entry;
-						entry = nav.getNext();
-						tempEntry.recycle();
+			DominoCollection filesByParent = database.openCollection(VIEW_FILESBYPARENT)
+				.orElseThrow(() -> new IllegalStateException(MessageFormat.format("Unable to open view \"{0}\" in database \"{1}\"", VIEW_FILESBYPARENT, database.getRelativeFilePath())));;
+			filesByParent.refresh();
+			
+			String category = dir.toAbsolutePath().toString();
+			return filesByParent.query()
+				.startAtCategory(category)
+				.readColumnValues()
+				.build(0, Integer.MAX_VALUE, new CollectionEntryProcessor<List<String>>() {
+
+					@Override
+					public List<String> start() {
+						return new ArrayList<>();
 					}
-					
-					return result;
-				} finally {
-					nav.recycle();
-				}
-			} finally {
-				if(filesByParent != null) {
-					filesByParent.recycle();
-				}
-			}
+
+					@Override
+					public Action entryRead(List<String> result, CollectionEntry entry) {
+						result.add(entry.get(VIEW_FILESBYPARENT_INDEX_NAME, String.class, "")); //$NON-NLS-1$
+						return Action.Continue;
+					}
+					@Override
+					public List<String> end(List<String> result) {
+						return result;
+					}
+				});
 		});
 	}
 	
@@ -144,17 +138,14 @@ public enum NSFAccessor {
 			Path result = resultParent.resolve(path.getFileName().toString());
 			if(doc.hasItem(ITEM_FILE)) {
 				// TODO add sanity checks
-				RichTextItem rtitem = (RichTextItem)doc.getFirstItem(ITEM_FILE);
-				try {
-					EmbeddedObject eo = (EmbeddedObject) rtitem.getEmbeddedObjects().get(0);
-					try(InputStream is = eo.getInputStream()) {
+				doc.forEachAttachment((attachment, loop) -> {
+					try(InputStream is = attachment.getInputStream()) {
 						Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
-					} finally {
-						eo.recycle();
+					} catch (IOException e) {
+						throw new UncheckedIOException("Encountered exception extracting attachment data", e);
 					}
-				} finally {
-					rtitem.recycle();
-				}
+					loop.stop();
+				});
 			} else {
 				Files.createFile(result);
 			}
@@ -173,19 +164,17 @@ public enum NSFAccessor {
 	public static void storeAttachment(NSFPath path, Path attachmentData) throws IOException {
 		try {
 			NSFPathUtil.runWithDocument(path, doc -> {
-				if(doc.isNewNote()) {
+				if(doc.isNew()) {
 					doc.replaceItemValue(NotesConstants.FIELD_FORM, ITEM_FILE);
 				}
 				if(doc.hasItem(ITEM_FILE)) {
 					doc.removeItem(ITEM_FILE);
 				}
-				RichTextItem item = doc.createRichTextItem(ITEM_FILE);
-				try {
-					item.embedObject(EmbeddedObject.EMBED_ATTACHMENT, "", attachmentData.toAbsolutePath().toString(), null); //$NON-NLS-1$
-				} finally {
-					item.recycle();
+				Attachment att = doc.attachFile(attachmentData.toAbsolutePath().toString(), attachmentData.getFileName().toString(), Compression.NONE);
+				try(RichTextWriter w = doc.createRichTextItem(ITEM_FILE)) {
+					w.addAttachmentIcon(att, attachmentData.getFileName().toString());
 				}
-				doc.computeWithForm(false, false);
+				doc.computeWithForm(true, null);
 				doc.save();
 				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
@@ -208,9 +197,9 @@ public enum NSFAccessor {
 		// TODO support attrs
 		try {
 			NSFPathUtil.runWithDocument(dir, doc -> {
-				if(doc.isNewNote()) {
+				if(doc.isNew()) {
 					doc.replaceItemValue(NotesConstants.FIELD_FORM, FORM_FOLDER);
-					doc.computeWithForm(false, false);
+					doc.computeWithForm(true, null);
 					doc.save();
 					NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 				}
@@ -233,12 +222,12 @@ public enum NSFAccessor {
 		// TODO throw exception if it is a non-empty directory
 		try {
 			NSFPathUtil.runWithDocument((NSFPath)path, doc -> {
-				if(!doc.isNewNote()) {
+				if(!doc.isNew()) {
 					if(doc.getParentDatabase().isDocumentLockingEnabled()) {
-						doc.lock();
+						doc.lock(doc.getParentDatabase().getParentDominoClient().getEffectiveUserName(), LockMode.HardOrProvisional);
 					}
 					Database db = doc.getParentDatabase();
-					doc.remove(false);
+					doc.delete();
 					NSFPathUtil.invalidateDatabaseCache(db);
 				}
 			});
@@ -263,28 +252,19 @@ public enum NSFAccessor {
 		try {
 			NSFPathUtil.runWithDatabase(source, database -> {
 				Document targetDoc = NSFAccessor.getDocument(target, database);
-				if(!targetDoc.isNewNote()) {
+				if(!targetDoc.isNew()) {
 					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
-						targetDoc.lock();
+						targetDoc.lock(targetDoc.getParentDatabase().getParentDominoClient().getEffectiveUserName(), LockMode.HardOrProvisional);
 					}
-					targetDoc.remove(false);
-					targetDoc.recycle();
+					targetDoc.delete();
 				}
 				
 				Document doc = NSFAccessor.getDocument(source, database);
-				try {
-					targetDoc = doc.copyToDatabase(database);
-					try {
-						targetDoc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
-						targetDoc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
-						targetDoc.computeWithForm(false, false);
-						targetDoc.save();
-					} finally {
-						targetDoc.recycle();
-					}
-				} finally {
-					doc.recycle();
-				}
+				targetDoc = doc.copyToDatabase(database);
+				targetDoc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
+				targetDoc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
+				targetDoc.computeWithForm(true, null);
+				targetDoc.save();
 				NSFPathUtil.invalidateDatabaseCache(database);
 			});
 		} catch (RuntimeException e) {
@@ -307,23 +287,18 @@ public enum NSFAccessor {
 		try {
 			NSFPathUtil.runWithDatabase(source, database -> {
 				Document targetDoc = NSFAccessor.getDocument(target, database);
-				if(!targetDoc.isNewNote()) {
+				if(!targetDoc.isNew()) {
 					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
-						targetDoc.lock();
+						targetDoc.lock(targetDoc.getParentDatabase().getParentDominoClient().getEffectiveUserName(), LockMode.HardOrProvisional);
 					}
-					targetDoc.remove(false);
-					targetDoc.recycle();
+					targetDoc.delete();
 				}
 				
 				Document doc = NSFAccessor.getDocument((NSFPath)source, database);
-				try {
-					doc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
-					doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
-					doc.computeWithForm(false, false);
-					doc.save();
-				} finally {
-					doc.recycle();
-				}
+				doc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
+				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
+				doc.computeWithForm(true, null);
+				doc.save();
 				NSFPathUtil.invalidateDatabaseCache(database);
 			});
 		} catch (RuntimeException e) {
@@ -346,23 +321,13 @@ public enum NSFAccessor {
 		}
 		String cacheId = "exists-" + path; //$NON-NLS-1$
 		return NSFPathUtil.callWithDatabase(path, cacheId, database -> {
-			View view = database.getView(VIEW_FILESBYPATH);
-			try {
-				view.setAutoUpdate(false);
-				view.refresh();
-				ViewEntry entry = view.getEntryByKey(path.toAbsolutePath().toString(), true);
-				try {
-					return entry != null;
-				} finally {
-					if(entry != null) {
-						entry.recycle();
-					}
-				}
-			} finally {
-				if(view != null) {
-					view.recycle();
-				}
-			}
+			DominoCollection view = database.openCollection(VIEW_FILESBYPATH)
+				.orElseThrow(() -> new IllegalStateException(MessageFormat.format("Unable to open view \"{0}\" in database \"{1}\"", VIEW_FILESBYPATH, database.getRelativeFilePath())));;
+			view.refresh();
+			return view.query()
+				.selectByKey(path.toAbsolutePath().toString(), true)
+				.firstId()
+				.isPresent();
 		});
 	}
 	
@@ -378,71 +343,33 @@ public enum NSFAccessor {
 			long size;
 			Set<PosixFilePermission> permissions;
 			
-			if(!doc.isNewNote()) {
-				owner = new NotesPrincipal(doc.getItemValueString(ITEM_OWNER));
-				group = new NotesPrincipal(doc.getItemValueString(ITEM_GROUP));
+			if(!doc.isNew()) {
+				owner = new NotesPrincipal(doc.get(ITEM_OWNER, String.class, "")); //$NON-NLS-1$
+				group = new NotesPrincipal(doc.get(ITEM_GROUP, String.class, "")); //$NON-NLS-1$
 				
-				String form = doc.getItemValueString(NotesConstants.FIELD_FORM);
+				String form = doc.get(NotesConstants.FIELD_FORM, String.class, null);
 				if(StringUtil.isNotEmpty(form)) {
 					type = Type.valueOf(form);
 				} else {
 					type = null;
 				}
-				if(doc.hasItem(ITEM_MODIFIED)) {
-					@SuppressWarnings("unchecked")
-					Vector<DateTime> mod = (Vector<DateTime>)doc.getItemValueDateTimeArray(ITEM_MODIFIED);
-					try {
-						lastModified = FileTime.fromMillis(mod.get(0).toJavaDate().getTime());
-					} finally {
-						doc.recycle(mod);;
-					}
-				} else {
-					lastModified = FileTime.from(Instant.now());
-				}
-				DateTime acc = doc.getLastAccessed();
-				if(acc != null) {
-					try {
-						lastAccessed = FileTime.fromMillis(acc.toJavaDate().getTime());
-					} finally {
-						acc.recycle();
-					}
-				} else {
-					lastAccessed = FileTime.from(Instant.now());
-				}
-				if(doc.hasItem(ITEM_CREATED)) {
-					@SuppressWarnings("unchecked")
-					Vector<DateTime> c = (Vector<DateTime>)doc.getItemValueDateTimeArray(ITEM_CREATED);
-					try {
-						created = FileTime.fromMillis(c.get(0).toJavaDate().getTime());
-					} finally {
-						doc.recycle(c);
-					}
-				} else {
-					created = FileTime.from(Instant.now());
-				}
+				Instant mod = doc.get(ITEM_MODIFIED, Instant.class, Instant.now());
+				lastModified = FileTime.from(mod);
 				
-				if(doc.hasItem(ITEM_FILE)) {
-					RichTextItem item = (RichTextItem)doc.getFirstItem(ITEM_FILE);
-					try {
-						@SuppressWarnings("unchecked")
-						Vector<EmbeddedObject> eos = item.getEmbeddedObjects();
-						try {
-							if(!eos.isEmpty()) {
-								size = eos.get(0).getFileSize();
-							} else {
-								size = 0;
-							}
-						} finally {
-							item.recycle(eos);
-						}
-					} finally {
-						item.recycle();
-					}
-				} else {
-					size = 0;
-				}
+				// TODO check for minimum
+				lastAccessed = FileTime.from(Instant.from(doc.getLastAccessed()));
 				
-				permissions = PosixFilePermissions.fromString(doc.getItemValueString(ITEM_PERMISSIONS));
+				Instant docCreated = doc.get(ITEM_CREATED, Instant.class, Instant.from(doc.getCreated()));
+				created = FileTime.from(docCreated);
+
+				size = doc.getAttachmentNames()
+					.stream()
+					.findFirst()
+					.flatMap(name -> doc.getAttachment(name))
+					.map(Attachment::getFileSize)
+					.orElse(0l);
+				
+				permissions = PosixFilePermissions.fromString(doc.get(ITEM_PERMISSIONS, String.class, "")); //$NON-NLS-1$
 			} else {
 				owner = new NotesPrincipal("CN=root"); //$NON-NLS-1$
 				group = new NotesPrincipal("CN=wheel"); //$NON-NLS-1$
@@ -535,22 +462,11 @@ public enum NSFAccessor {
 	public static void setTimes(NSFPath path, FileTime lastModifiedTime, FileTime createTime) throws IOException {
 		try {
 			NSFPathUtil.runWithDocument(path, doc -> {
-				Session session = doc.getParentDatabase().getParent();
 				if(lastModifiedTime != null) {
-					DateTime mod = session.createDateTime(new Date(lastModifiedTime.toMillis()));
-					try {
-						doc.replaceItemValue(ITEM_MODIFIED, mod);
-					} finally {
-						mod.recycle();
-					}
+					doc.replaceItemValue(ITEM_MODIFIED, lastModifiedTime.toInstant());
 				}
 				if(createTime != null) {
-					DateTime created = session.createDateTime(new Date(createTime.toMillis()));
-					try {
-						doc.replaceItemValue(ITEM_CREATED, created);
-					} finally {
-						created.recycle();
-					}
+					doc.replaceItemValue(ITEM_CREATED, createTime.toInstant());
 				}
 				
 				doc.save();
@@ -571,19 +487,11 @@ public enum NSFAccessor {
 	 * @return a {@link List} of attribute names
 	 * @throws IOException if there is a DB problem reading the names
 	 */
-	@SuppressWarnings("unchecked")
 	public static List<String> listUserDefinedAttributes(NSFPath path) throws IOException {
 		try {
 			String cacheId = "userAttrs-" + path; //$NON-NLS-1$
 			return NSFPathUtil.callWithDocument(path, cacheId, doc ->
-				((List<Item>)doc.getItems()).stream()
-					.map(item -> {
-						try {
-							return item.getName();
-						} catch (NotesException e) {
-							throw new RuntimeException(e);
-						}
-					})
+				doc.getItemNames().stream()
 					.filter(name -> name.startsWith(PREFIX_USERITEM) && name.length() > PREFIX_USERITEM.length())
 					.map(name -> name.substring(PREFIX_USERITEM.length()))
 					.collect(Collectors.toList())
@@ -610,8 +518,9 @@ public enum NSFAccessor {
 			return NSFPathUtil.callWithDocument(path, null, doc -> {
 				String itemName = PREFIX_USERITEM + name;
 				byte[] data = src.array();
-				doc.replaceItemValueCustomDataBytes(itemName, DATATYPE_NAME, data);
-				doc.computeWithForm(false, false);
+				UserData userData = doc.getParentDatabase().getParentDominoClient().createUserData(DATATYPE_NAME, data);
+				doc.replaceItemValue(itemName, userData);
+				doc.computeWithForm(true, null);
 				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 				return data.length;
 			});
@@ -636,7 +545,7 @@ public enum NSFAccessor {
 				String itemName = PREFIX_USERITEM + name;
 				if(doc.hasItem(itemName)) {
 					doc.removeItem(itemName);
-					doc.computeWithForm(false, false);
+					doc.computeWithForm(true, null);
 					doc.save();
 					NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 				}
@@ -662,19 +571,20 @@ public enum NSFAccessor {
 			String cacheId = "userAttrVal-" + path + name; //$NON-NLS-1$
 			return NSFPathUtil.callWithDocument(path, cacheId, doc -> {
 				String itemName = PREFIX_USERITEM + name;
-				Item item = doc.getFirstItem(itemName);
-				if(item == null) {
-					return new byte[0];
-				} else {
-					switch(item.getType()) {
-					case Item.TEXT:
-						return item.getValueString().getBytes();
-					case Item.USERDATA:
-						return item.getValueCustomDataBytes(DATATYPE_NAME);
-					default:
-						return new byte[0];
-					}
-				}
+				return doc.getFirstItem(itemName)
+					.map(item -> {
+						switch(item.getType()) {
+						case TYPE_TEXT:
+						case TYPE_TEXT_LIST:
+							return item.get(String.class, "").getBytes(StandardCharsets.UTF_8);
+						case TYPE_USERDATA:
+							UserData userData = item.get(UserData.class, null);
+							return userData.getData();
+						default:
+							return new byte[0];
+						}
+					})
+					.orElseGet(() -> new byte[0]);
 			});
 		} catch(RuntimeException e) {
 			if(log.isLoggable(Level.SEVERE)) {
@@ -691,24 +601,20 @@ public enum NSFAccessor {
 	 * @param path the path to find the document for
 	 * @param database the database housing the document
 	 * @return a document representing the note
-	 * @throws NotesException 
 	 */
-	public static Document getDocument(NSFPath path, Database database) throws NotesException {
-		View view = database.getView(VIEW_FILESBYPATH);
-		try {
-			view.setAutoUpdate(false);
-			view.refresh();
-			Document doc = view.getDocumentByKey(path.toAbsolutePath().toString(), true);
-			if(doc == null) {
-				doc = database.createDocument();
+	public static Document getDocument(NSFPath path, Database database) {
+		DominoCollection view = database.openCollection(VIEW_FILESBYPATH)
+			.orElseThrow(() -> new IllegalStateException(MessageFormat.format("Unable to open view \"{0}\" in database \"{1}\"", VIEW_FILESBYPATH, database.getRelativeFilePath())));
+		view.refresh();
+		return view.query()
+			.selectByKey(path.toAbsolutePath().toString(), true)
+			.firstId()
+			.flatMap(database::getDocumentById)
+			.orElseGet(() -> {
+				Document doc = database.createDocument();
 				doc.replaceItemValue(ITEM_PARENT, path.getParent().toAbsolutePath().toString());
 				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, path.getFileName().toString());
-			}
-			return doc;
-		} finally {
-			if(view != null) {
-				view.recycle();
-			}
-		}
+				return doc;
+			});
 	}
 }

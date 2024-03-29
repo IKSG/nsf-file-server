@@ -49,6 +49,9 @@
 		
 		<module>domino/nsf-file-server-db-config</module>
 		<module>domino/nsf-file-server-db-nsffilestore</module>
+		
+		<module>domino/com.ibm.xsp.bootstrap.shim</module>
+		<module>domino/com.ibm.domino.xsp.adapter.shim</module>
 		<module>domino/nsf-file-server-httpservice</module>
 		
 		<module>dist/nsf-file-server-dist</module>
@@ -61,14 +64,6 @@
 			<url>https://artifactory.openntf.org/openntf</url>
 		</pluginRepository>
 	</pluginRepositories>
-	
-	<repositories>
-		<repository>
-			<id>com.hcl.xsp.p2</id>
-			<url>${notes-platform}</url>
-			<layout>p2</layout>
-		</repository>
-	</repositories>
 	
 	<dependencyManagement>
 		<dependencies>
@@ -113,45 +108,23 @@
 			</dependency>
 			
 			<dependency>
-				<groupId>com.hcl.xsp.p2</groupId>
-				<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
-				<version>[9.0.1,)</version>
-				<classifier>Notes</classifier>
-			</dependency>
-			<dependency>
-				<groupId>com.hcl.xsp.p2</groupId>
-				<artifactId>com.ibm.domino.napi.impl</artifactId>
-				<version>[12.0.2,)</version>
-				<classifier>lwpd.domino.napi</classifier>
-				<exclusions>
-					<exclusion>
-						<groupId>com.hcl.xsp.p2</groupId>
-						<artifactId>com.ibm.commons</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>com.hcl.xsp.p2</groupId>
-						<artifactId>org.eclipse.core.runtime</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>com.hcl.xsp.p2</groupId>
-						<artifactId>com.ibm.notes.java.api</artifactId>
-					</exclusion>
-				</exclusions>
-			</dependency>
-			
-			<dependency>
 				<groupId>com.hcl.domino</groupId>
 				<artifactId>domino-jnx-api</artifactId>
-				<version>1.37.0</version>
+				<version>1.39.0-SNAPSHOT</version>
 			</dependency>
 			<dependency>
 				<groupId>com.hcl.domino</groupId>
 				<artifactId>domino-jnx-jna</artifactId>
-				<version>1.37.0</version>
+				<version>1.39.0-SNAPSHOT</version>
 			</dependency>
 			<dependency>
 				<groupId>jakarta.mail</groupId>
 				<artifactId>jakarta.mail-api</artifactId>
+				<version>2.0.1</version>
+			</dependency>
+			<dependency>
+				<groupId>jakarta.activation</groupId>
+				<artifactId>jakarta.activation-api</artifactId>
 				<version>2.0.1</version>
 			</dependency>
 		</dependencies>
@@ -167,15 +140,6 @@
 	</dependencies>
 	
 	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.openntf.maven</groupId>
-				<artifactId>p2-layout-resolver</artifactId>
-				<version>1.7.0</version>
-				<extensions>true</extensions>
-			</plugin>
-		</plugins>
-		
 		<pluginManagement>
 			<plugins>
 				<plugin>

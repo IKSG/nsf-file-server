@@ -39,6 +39,7 @@ import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.text.MessageFormat;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -57,8 +58,8 @@ import org.openntf.nsffile.fs.attribute.RootFileAttributes;
 import org.openntf.nsffile.fs.db.NSFAccessor;
 import org.openntf.nsffile.fs.util.NSFPathUtil;
 
-import lotus.domino.DateTime;
-
+import com.hcl.domino.data.DominoDateTime;
+import com.hcl.domino.misc.Ref;
 import com.ibm.commons.util.StringUtil;
 
 /**
@@ -213,14 +214,11 @@ public class NSFFileSystemProvider extends FileSystemProvider {
 			throws IOException {
 		if("/".equals(path.toAbsolutePath().toString())) { //$NON-NLS-1$
 			return NSFPathUtil.callWithDatabase((NSFPath)path, "rootAttribues", database -> { //$NON-NLS-1$
-				DateTime mod = database.getLastModified();
-				DateTime created = database.getCreated();
-				try {
-					return type.cast(new RootFileAttributes(mod.toJavaDate().toInstant(), created.toJavaDate().toInstant()));
-				} finally {
-					mod.recycle();
-					created.recycle();
-				}
+				Ref<DominoDateTime> mod = new Ref<>();
+				database.getModifiedTime(mod, null);
+				DominoDateTime created = database.getCreated();
+				
+				return type.cast(new RootFileAttributes(Instant.from(mod.get()), Instant.from(created)));
 			});
 		}
 		if (type.isAssignableFrom(PosixFileAttributes.class)) {

@@ -17,6 +17,8 @@ package org.openntf.nsffile.fs.util;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.MessageFormat;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,8 +26,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.openntf.nsffile.core.util.NSFFileUtil;
+import org.openntf.nsffile.core.util.NotesThreadFactory;
 import org.openntf.nsffile.core.util.TimedCacheHolder;
 import org.openntf.nsffile.fs.NSFFileSystem;
 import org.openntf.nsffile.fs.NSFFileSystemProvider;
@@ -36,13 +41,12 @@ import org.openntf.nsffile.fs.function.NotesDatabaseFunction;
 import org.openntf.nsffile.fs.function.NotesDocumentConsumer;
 import org.openntf.nsffile.fs.function.NotesDocumentFunction;
 
+import com.hcl.domino.DominoClient;
+import com.hcl.domino.data.Database;
+import com.hcl.domino.data.Document;
+import com.hcl.domino.data.DominoDateTime;
+import com.hcl.domino.misc.Ref;
 import com.ibm.commons.util.StringUtil;
-
-import lotus.domino.Database;
-import lotus.domino.Document;
-import lotus.domino.NotesException;
-import lotus.domino.Session;
-import lotus.domino.DateTime;
 
 /**
  * 
@@ -52,6 +56,8 @@ import lotus.domino.DateTime;
 @SuppressWarnings("nls")
 public enum NSFPathUtil {
 	;
+	
+	private static final Logger log = Logger.getLogger(NSFPathUtil.class.getPackage().getName());
 	
 	public static final String LOCAL_SERVER = "LOCALSERVER"; //$NON-NLS-1$
 	
@@ -201,13 +207,9 @@ public enum NSFPathUtil {
 	 * @throws RuntimeException wrapping any exception thrown by the main body
 	 */
 	public static <T> T callWithDocument(NSFPath path, String cacheId, NotesDocumentFunction<T> func) {
-		return callWithDatabase(path, cacheId, database-> {
+		return callWithDatabase(path, cacheId, database -> {
 			Document doc = NSFAccessor.getDocument(path, database);
-			try {
-				return func.apply(doc);
-			} finally {
-				doc.recycle();
-			}
+			return func.apply(doc);
 		});
 	}
 	
@@ -221,11 +223,7 @@ public enum NSFPathUtil {
 	public static void runWithDocument(NSFPath path, NotesDocumentConsumer consumer) {
 		runWithDatabase(path, database -> {
 			Document doc = NSFAccessor.getDocument(path, database);
-			try {
-				consumer.accept(doc);
-			} finally {
-				doc.recycle();
-			}
+			consumer.accept(doc);
 		});
 	}
 	
@@ -244,24 +242,23 @@ public enum NSFPathUtil {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T callWithDatabase(NSFPath path, String cacheId, NotesDatabaseFunction<T> func) {
-		return LSXBEThreadFactory.callAs(NSFFileUtil.dn(path.getFileSystem().getUserName()), session -> {
-			Database database = getDatabase(session, path.getFileSystem());
+		return NotesThreadFactory.callAs(NSFFileUtil.dn(path.getFileSystem().getUserName()), client -> {
+			Database database = getDatabase(client, path.getFileSystem());
 			if(StringUtil.isEmpty(cacheId)) {
 				return func.apply(database);
 			} else {
-				long modTime;
-				DateTime mod = database.getLastModified();
-				try {
-					modTime = mod.toJavaDate().getTime();
-				} finally {
-					mod.recycle();
-				}
-				String dbKey = database.getFilePath() + "//" + session.getEffectiveUserName(); //$NON-NLS-1$
+				Ref<DominoDateTime> mod = new Ref<>();
+				database.getModifiedTime(mod, null);
+				long modTime = Instant.from(mod.get()).toEpochMilli();
+				String dbKey = database.getRelativeFilePath() + "//" + client.getEffectiveUserName(); //$NON-NLS-1$
 				TimedCacheHolder cacheHolder = PER_DATABASE_CACHE.computeIfAbsent(dbKey, key -> new TimedCacheHolder());
 				return (T)cacheHolder.get(modTime).computeIfAbsent(cacheId, key -> {
 					try {
 						return func.apply(database);
 					} catch (Exception e) {
+						if(log.isLoggable(Level.SEVERE)) {
+							log.log(Level.SEVERE, MessageFormat.format("Encountered exception accessing database for path {0}", path), e);
+						}
 						throw new RuntimeException(e);
 					}
 				});
@@ -274,8 +271,8 @@ public enum NSFPathUtil {
 	 * 
 	 * @param database 
 	 */
-	public static synchronized void invalidateDatabaseCache(Database database) throws NotesException {
-		String dbKeyPrefix = database.getFilePath();
+	public static synchronized void invalidateDatabaseCache(Database database) {
+		String dbKeyPrefix = database.getRelativeFilePath();
 		Iterator<String> iter = PER_DATABASE_CACHE.keySet().iterator();
 		while(iter.hasNext()) {
 			String key = iter.next();
@@ -284,8 +281,6 @@ public enum NSFPathUtil {
 			}
 		}
 	}
-	
-	private static final ThreadLocal<Map<String, Database>> THREAD_DATABASES = ThreadLocal.withInitial(HashMap::new);
 
 	/**
 	 * Executes the provided function with the database for the provided path.
@@ -295,30 +290,10 @@ public enum NSFPathUtil {
 	 * @throws RuntimeException wrapping any exception thrown by the main body
 	 */
 	public static void runWithDatabase(NSFPath path, NotesDatabaseConsumer consumer) {
-		LSXBEThreadFactory.runAs(NSFFileUtil.dn(path.getFileSystem().getUserName()), session -> {
+		NotesThreadFactory.runAs(NSFFileUtil.dn(path.getFileSystem().getUserName()), session -> {
 			Database database = getDatabase(session, path.getFileSystem());
 			consumer.accept(database);
 		});
-	}
-
-	public static Database openDatabase(final Session session, final String nsfPath) throws NotesException {
-		int bangIndex = nsfPath.indexOf("!!"); //$NON-NLS-1$
-		String server;
-		String dbPath;
-		if(bangIndex < 0) {
-			server = ""; //$NON-NLS-1$
-			dbPath = nsfPath;
-		} else {
-			server = nsfPath.substring(0, bangIndex);
-			dbPath = nsfPath.substring(bangIndex+2);
-		}
-		if(NSFFileUtil.isReplicaID(dbPath)) {
-			Database database = session.getDatabase(null, null);
-			database.openByReplicaID(server, NSFFileUtil.normalizeReplicaID(dbPath));
-			return database;
-		} else {
-			return session.getDatabase(server, dbPath);
-		}
 	}
 	
 	
@@ -326,15 +301,8 @@ public enum NSFPathUtil {
 	// * Internal utilities
 	// *******************************************************************************
 	
-	private static Database getDatabase(Session session, NSFFileSystem fileSystem) throws NotesException {
+	private static Database getDatabase(DominoClient client, NSFFileSystem fileSystem) {
 		String nsfPath = fileSystem.getNsfPath();
-		String key = session.getEffectiveUserName() + nsfPath;
-		return THREAD_DATABASES.get().computeIfAbsent(key, k -> {
-			try {
-				return openDatabase(session, nsfPath);
-			} catch(NotesException e) {
-				throw new RuntimeException(e);
-			}
-		});
+		return client.openDatabase(nsfPath);
 	}
 }

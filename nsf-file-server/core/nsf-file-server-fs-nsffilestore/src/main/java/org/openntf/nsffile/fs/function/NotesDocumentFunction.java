@@ -15,7 +15,7 @@
  */
 package org.openntf.nsffile.fs.function;
 
-import lotus.domino.Document;
+import com.hcl.domino.data.Document;
 
 @FunctionalInterface
 public interface NotesDocumentFunction<T> {

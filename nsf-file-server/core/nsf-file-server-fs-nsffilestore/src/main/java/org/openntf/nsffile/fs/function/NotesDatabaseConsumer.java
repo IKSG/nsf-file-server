@@ -15,7 +15,7 @@
  */
 package org.openntf.nsffile.fs.function;
 
-import lotus.domino.Database;
+import com.hcl.domino.data.Database;
 
 @FunctionalInterface
 public interface NotesDatabaseConsumer {

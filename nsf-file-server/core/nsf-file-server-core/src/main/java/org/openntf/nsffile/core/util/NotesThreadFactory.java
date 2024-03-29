@@ -15,12 +15,15 @@
  */
 package org.openntf.nsffile.core.util;
 
+import java.text.MessageFormat;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.hcl.domino.DominoClient;
 import com.hcl.domino.DominoClientBuilder;
@@ -32,6 +35,8 @@ import com.hcl.domino.misc.JNXThread;
  * @since 1.0.0
  */
 public class NotesThreadFactory implements ThreadFactory {
+	private static final Logger log = Logger.getLogger(NotesThreadFactory.class.getPackage().getName());
+	
 	public static final NotesThreadFactory instance = new NotesThreadFactory();
 	public static final ExecutorService executor = Executors.newCachedThreadPool(instance);
 	public static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5, instance);
@@ -61,7 +66,9 @@ public class NotesThreadFactory implements ThreadFactory {
 				try(DominoClient client = DominoClientBuilder.newDominoClient().asIDUser().build()) {
 					return func.apply(client);
 				} catch(Throwable t) {
-					t.printStackTrace();
+					if(log.isLoggable(Level.SEVERE)) {
+						log.log(Level.SEVERE, "Encountered exception calling a NotesFunction", t);
+					}
 					throw t;
 				}
 			}).get();
@@ -99,9 +106,14 @@ public class NotesThreadFactory implements ThreadFactory {
 			return NotesThreadFactory.executor.submit(() -> {
 				try(DominoClient client = DominoClientBuilder.newDominoClient().asUser(userName).build()) {
 					return func.apply(client);
+				} catch(Throwable t) {
+					if(log.isLoggable(Level.SEVERE)) {
+						log.log(Level.SEVERE, MessageFormat.format("Encountered exception calling a NotesFunction as {0}", userName), t);
+					}
+					throw t;
 				}
 			}).get();
-		} catch (InterruptedException | ExecutionException e) {
+		} catch (ExecutionException | InterruptedException e) {
 			throw new RuntimeException(e);
 		}
 	}
