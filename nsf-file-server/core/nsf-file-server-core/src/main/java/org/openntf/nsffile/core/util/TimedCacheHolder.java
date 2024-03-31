@@ -15,8 +15,8 @@
  */
 package org.openntf.nsffile.core.util;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Utility class to hold a cache map that expires based on a last-modification date.
@@ -30,7 +30,7 @@ public class TimedCacheHolder {
 	
 	public synchronized Map<String, Object> get(long modTime) {
 		if(this.cache == null || this.lastModified == -1 || modTime > this.lastModified) {
-			this.cache = new HashMap<>();
+			this.cache = new ConcurrentHashMap<>();
 			this.lastModified = modTime;
 		}
 		return this.cache;
