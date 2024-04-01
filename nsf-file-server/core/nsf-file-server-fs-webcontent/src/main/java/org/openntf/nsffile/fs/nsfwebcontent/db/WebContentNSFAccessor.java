@@ -203,8 +203,8 @@ public enum WebContentNSFAccessor implements NSFAccessor {
 		}
 		
 		// Could be a virtual directory created earlier
-		Collection<String> virtualDirs = virtualDirsPerNsf.get(path.getFileSystem().getNsfPath());
-		if(virtualDirs != null && virtualDirs.contains(WebContentPathUtil.toFileName(path))) {
+		Collection<String> virtualDirs = virtualDirsPerNsf.computeIfAbsent(path.getFileSystem().getNsfPath(), key -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER));
+		if(virtualDirs.contains(WebContentPathUtil.toFileName(path))) {
 			return true;
 		}
 		
@@ -216,9 +216,15 @@ public enum WebContentNSFAccessor implements NSFAccessor {
 				return true;
 			} else {
 				// Could be an implicit directory
-				return streamWebContent(database)
-					.map(DesignEntry::getTitle)
-					.anyMatch(p2 -> isInDir(p, p2));
+				if(streamWebContent(database).map(DesignEntry::getTitle).anyMatch(p2 -> isInDir(p, p2))) {
+					// Stash in the "virtualDirs", since this may be part of a "list and delete folders"
+					//   operation
+					virtualDirs.add(p);
+					
+					return true;
+				} else {
+					return false;
+				}
 			}
 		});
 	}
