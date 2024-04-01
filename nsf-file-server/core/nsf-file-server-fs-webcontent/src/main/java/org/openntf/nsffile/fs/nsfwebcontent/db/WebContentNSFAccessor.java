@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -178,9 +179,18 @@ public enum WebContentNSFAccessor implements NSFAccessor {
 	public void delete(NSFPath path) throws IOException {
 		WebContentPathUtil.runWithDatabase(path, database -> {
 			String p = WebContentPathUtil.toFileName(path);
-			database.getDesign().getFileResource(p, true)
-				.map(FileResource::getUNID)
-				.ifPresent(database::deleteDocument);
+			Optional<String> unid = database.getDesign().getFileResource(p, true)
+				.map(FileResource::getUNID);
+			if(unid.isPresent()) {
+				database.deleteDocument(unid.get());
+			} else {
+				// Otherwise, it's likely a directory
+				String nsfPath = path.getFileSystem().getNsfPath();
+				Collection<String> virtualDirs = virtualDirsPerNsf.get(nsfPath);
+				if(virtualDirs != null) {
+					virtualDirs.remove(p);
+				}
+			}
 		});
 	}
 	
