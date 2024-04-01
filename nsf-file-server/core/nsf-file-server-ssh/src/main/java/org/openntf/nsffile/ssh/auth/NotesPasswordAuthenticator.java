@@ -28,8 +28,6 @@ import org.apache.sshd.server.auth.password.PasswordChangeRequiredException;
 import org.apache.sshd.server.session.ServerSession;
 import org.openntf.nsffile.core.util.NotesThreadFactory;
 
-import lombok.SneakyThrows;
-
 /**
  * @author Jesse Gallagher
  * @since 1.0.0
@@ -38,7 +36,6 @@ public class NotesPasswordAuthenticator implements PasswordAuthenticator {
 	private static final Logger log = Logger.getLogger(NotesPasswordAuthenticator.class.getPackage().getName());
 
 	@Override
-	@SneakyThrows
 	public boolean authenticate(String username, String password, ServerSession sshSession)
 			throws PasswordChangeRequiredException, AsyncAuthException {
 		return NotesThreadFactory.call(client -> {
