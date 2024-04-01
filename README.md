@@ -8,13 +8,17 @@ The server is configured by creating a database using the included "fileserverco
 
 Inside the config NSF, you can specify per-server configuration for whether to enable the service and which port to use, as well as the sub directory "mounts" that will appear as the root of the SFTP server and a JSON-formatted configuration for the "env" property of the call to create the filesystem in Java.
 
-There are currently three types supported:
+There are currently four types supported:
 
 ##### NSF Document Layout
 
 This is an NSF database created using the included "filestore.ntf". This stores files as individual documents with the file data as attachments, presenting a POSIX-like view of these documents in a hierarchy. The Data Source value for these should be the path to the NSF, such as "store/docs.nsf".
 
 These NSFs are accessed as the connecting user, and so ACLs are enforced.
+
+##### NSF WebContent
+
+This represents the "WebContent" pseudo-directory in an NSF's design, useful for manipulating and deploying file resources meant for web use, such as built JavaScript applications or other resources.
 
 ##### Server Filesystem
 

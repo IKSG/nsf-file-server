@@ -46,6 +46,7 @@
 		<module>core/nsf-file-server-core</module>
 		<module>core/nsf-file-server-fs-abstractnsf</module>
 		<module>core/nsf-file-server-fs-nsffilestore</module>
+		<module>core/nsf-file-server-fs-webcontent</module>
 		<module>core/nsf-file-server-ssh</module>
 		
 		<module>domino/nsf-file-server-db-config</module>

@@ -31,4 +31,7 @@
 	<extension point="com.ibm.commons.Extension">
 		<service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.fs.nsffilestore.provider.NSFStoreMountProvider"/>
 	</extension>
+	<extension point="com.ibm.commons.Extension">
+		<service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.fs.nsfwebcontent.provider.WebContentMountProvider"/>
+	</extension>
 </plugin>
