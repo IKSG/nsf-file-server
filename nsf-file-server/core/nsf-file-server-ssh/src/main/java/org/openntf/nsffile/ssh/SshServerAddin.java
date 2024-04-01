@@ -17,13 +17,16 @@ package org.openntf.nsffile.ssh;
 
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.hcl.domino.DominoClient;
+import com.hcl.domino.admin.ServerStatistics;
 import com.hcl.domino.mq.MessageQueue;
 import com.hcl.domino.server.RunJavaAddin;
 import com.hcl.domino.server.ServerStatusLine;
@@ -36,6 +39,7 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.openntf.nsffile.core.config.DominoNSFConfiguration;
+import org.openntf.nsffile.core.util.NotesThreadFactory;
 import org.openntf.nsffile.ssh.auth.NotesPasswordAuthenticator;
 import org.openntf.nsffile.ssh.auth.NotesPublicKeyAuthenticator;
 
@@ -48,77 +52,121 @@ import org.openntf.nsffile.ssh.auth.NotesPublicKeyAuthenticator;
 @SuppressWarnings("nls")
 public class SshServerAddin extends RunJavaAddin {
 	public static final Logger log = Logger.getLogger(SshServerAddin.class.getPackage().getName());
-	
+
 	public static final String ADDIN_NAME = "SFTP Server";
 	public static final String QUEUE_NAME = "sftp";
-	
+
+	public static final String STAT_FACILITY = "SFTP";
+	public static final String STAT_SESSIONS = "CurrentSessions";
+	private static final String[] STAT_NAMES = { STAT_SESSIONS };
+
 	private final int port;
 	private final KeyPairProvider keyPairProvider;
 	private final FileSystemFactory fileSystemFactory;
 	private final ScpCommandFactory scpCommandFactory;
+	private DominoClient client;
 
-	public SshServerAddin(int port, KeyPairProvider keyPairProvider, FileSystemFactory fileSystemFactory, ScpCommandFactory scpCommandFactory) {
+	public SshServerAddin(int port, KeyPairProvider keyPairProvider, FileSystemFactory fileSystemFactory,
+			ScpCommandFactory scpCommandFactory) {
 		super(ADDIN_NAME, QUEUE_NAME);
-		
+
 		this.port = port;
 		this.keyPairProvider = keyPairProvider;
 		this.fileSystemFactory = fileSystemFactory;
 		this.scpCommandFactory = scpCommandFactory;
 	}
-	
+
 	@Override
 	protected void runAddin(DominoClient client, ServerStatusLine statusLine, MessageQueue mq) {
-		if(log.isLoggable(Level.INFO)) {
+		if (log.isLoggable(Level.INFO)) {
 			log.info(getClass().getSimpleName() + ": Startup");
 			log.info(getClass().getSimpleName() + ": Using port " + port);
 			log.info(getClass().getSimpleName() + ": Using key provider " + keyPairProvider);
 		}
-		
+		this.client = client;
+		ServerStatistics stats = client.getServerStatistics();
+
 		ServerBuilder builder = ServerBuilder.builder()
 			.fileSystemFactory(fileSystemFactory)
 			.publickeyAuthenticator(new NotesPublicKeyAuthenticator());
-		try(SshServer server = builder.build()) {
+		try (SshServer server = builder.build()) {
 			server.setPort(port);
 			server.setKeyPairProvider(keyPairProvider);
-			
-			if(DominoNSFConfiguration.instance.isAllowPasswordAuth()) {
+
+			if (DominoNSFConfiguration.instance.isAllowPasswordAuth()) {
 				server.setPasswordAuthenticator(new NotesPasswordAuthenticator());
 			} else {
 				server.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
 			}
-			
+
 			SftpSubsystemFactory sftp = new SftpSubsystemFactory.Builder()
-				.build();
+					.build();
 			server.setSubsystemFactories(Collections.singletonList(sftp));
-			
+
 			server.setCommandFactory(scpCommandFactory);
-			
+
 			server.start();
-			
+
 			statusLine.setLine(MessageFormat.format("Listen for connect requests on TCP Port:{0}", Integer.toString(port)));
 
-			if(log.isLoggable(Level.INFO)) {
+			if (log.isLoggable(Level.INFO)) {
 				log.info(MessageFormat.format("Initialized SFTP server on port {0}", Integer.toString(port)));
 			}
-			System.out.println(MessageFormat.format("Initialized SFTP server on port {0}", Integer.toString(port)));
-			
+			log("Started");
+
+			NotesThreadFactory.scheduler.scheduleWithFixedDelay(() -> {
+				stats.updateStatistic(STAT_FACILITY, STAT_SESSIONS, EnumSet.of(ServerStatistics.Flag.UNIQUE),
+						server.getActiveSessions().size());
+			}, 0, 10, TimeUnit.SECONDS);
+
 			while (!mq.isQuitPending()) {
-	          Optional<String> message;
-	          while ((message = mq.get(5, TimeUnit.SECONDS)) != null) {
-	            message.ifPresent(msg -> {
-	              // if we got a message in the queue, process it
-	              // TODO actually implement some messages
-	            });
-	          }
-	        }
-		} catch(IOException e) {
-			if(log.isLoggable(Level.SEVERE)) {
+				Optional<String> message;
+				while ((message = mq.get(5, TimeUnit.SECONDS)) != null) {
+					message.ifPresent(msg -> {
+						// if we got a message in the queue, process it
+						// TODO actually implement some messages
+					});
+				}
+			}
+		} catch (IOException e) {
+			if (log.isLoggable(Level.SEVERE)) {
 				log.log(Level.SEVERE, "Encountered exception running SFTP server", e);
 			}
 		} catch (InterruptedException e) {
 			// Fine - meant to quit
+		} finally {
+			Arrays.stream(STAT_NAMES).forEach(stat -> stats.deleteStatistic(STAT_FACILITY, stat));
 		}
-		
-		System.out.println("SFTP Server: Shutdown");
+
+		log("Shutdown");
+	}
+
+	private void log(String s) {
+		if (s == null) {
+			return;
+		}
+		String msg = format(s);
+		if (msg.isEmpty()) {
+			return;
+		}
+
+		if(this.client == null) {
+			System.out.println(String.format("%s: %s", ADDIN_NAME, msg));
+		} else {
+			this.client.getServerAdmin().logMessage(String.format("%s: %s", ADDIN_NAME, msg));
+		}
+	}
+
+	private static String format(String s) {
+		if (s.isEmpty()) {
+			return s;
+		}
+		int lastGood = s.length();
+		for (lastGood = s.length() - 1; lastGood >= 0; lastGood--) {
+			if (!Character.isWhitespace(s.charAt(lastGood))) {
+				return s.substring(0, lastGood + 1);
+			}
+		}
+		return "";
 	}
 }
