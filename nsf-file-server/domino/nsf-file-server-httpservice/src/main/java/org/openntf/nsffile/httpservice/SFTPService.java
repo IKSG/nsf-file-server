@@ -16,7 +16,6 @@
 package org.openntf.nsffile.httpservice;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,7 +36,7 @@ import org.openntf.nsffile.core.config.DominoNSFConfiguration;
 import org.openntf.nsffile.core.util.NotesThreadFactory;
 import org.openntf.nsffile.ssh.CompositeNSFFileSystemFactory;
 import org.openntf.nsffile.ssh.NSFHostKeyProvider;
-import org.openntf.nsffile.ssh.SshServerDelegate;
+import org.openntf.nsffile.ssh.SshServerAddin;
 import org.openntf.nsffile.ssh.scp.CompositeScpFileOpener;
 
 /**
@@ -49,7 +48,7 @@ public class SFTPService extends HttpService {
 	
 	public static final int DEFAULT_PORT = 9022;
 	
-	private SshServerDelegate server;
+	private SshServerAddin server;
 	private boolean enabled = true;
 
 	public SFTPService(LCDEnvironment env) {
@@ -71,14 +70,11 @@ public class SFTPService extends HttpService {
 					ScpCommandFactory scp = new ScpCommandFactory.Builder()
 						.withFileOpener(new CompositeScpFileOpener(fileSystemFactory))
 						.build();
-					this.server = new SshServerDelegate(port, new NSFHostKeyProvider(), fileSystemFactory, scp);
+					this.server = new SshServerAddin(port, new NSFHostKeyProvider(), fileSystemFactory, scp);
 					
 					server.start();
+					server.join();
 					
-					if(log.isLoggable(Level.INFO)) {
-						log.info(MessageFormat.format("Initialized SFTP server on port {0}", Integer.toString(port)));
-					}
-					System.out.println(MessageFormat.format("Initialized SFTP server on port {0}", Integer.toString(port)));
 				} catch(Throwable t) {
 					if(log.isLoggable(Level.SEVERE)) {
 						log.log(Level.SEVERE, "Encountered exception initializing SFTP server", t);
@@ -93,21 +89,7 @@ public class SFTPService extends HttpService {
 	public void destroyService() {
 		super.destroyService();
 		
-		if(enabled) {
-			if(server != null) {
-				NotesThreadFactory.run(client -> {
-					try {
-						server.close();
-					} catch (IOException e) {
-						if(log.isLoggable(Level.WARNING)) {
-							log.log(Level.WARNING, "Encountered exception closing SFTP server", e);
-						}
-					}
-				});
-			}
-			
-			NotesThreadFactory.term();
-		}
+		NotesThreadFactory.term();
 	}
 	
 	// *******************************************************************************
