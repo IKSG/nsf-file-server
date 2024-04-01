@@ -41,7 +41,7 @@ The spawned SSH server uses the current server's Domino directories for authenti
 
 ## Building
 
-Compilation requires the availability of Mavenized Domino artifacts as done via [`generate-domino-update-site`](https://github.com/OpenNTF/generate-domino-update-site/) with the group ID `com.ibm.xsp`.
+Compilation requires the availability of an [NSF ODP Tooling](https://www.openntf.org/main.nsf/project.xsp?r=project/NSF%20ODP%20Tooling) environment.
 
 ### Extending
 
