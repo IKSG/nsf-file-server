@@ -104,6 +104,7 @@ public class SshServerAddin extends RunJavaAddin {
 			server.setSubsystemFactories(Collections.singletonList(sftp));
 
 			server.setCommandFactory(scpCommandFactory);
+			server.setScheduledExecutorService(NotesThreadFactory.scheduler);
 
 			server.start();
 
