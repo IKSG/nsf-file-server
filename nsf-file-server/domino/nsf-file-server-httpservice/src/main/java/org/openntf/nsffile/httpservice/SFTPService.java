@@ -42,7 +42,6 @@ import org.openntf.nsffile.core.config.DominoNSFConfiguration;
 import org.openntf.nsffile.core.util.NSFFileUtil;
 import org.openntf.nsffile.core.util.NotesThreadFactory;
 import org.openntf.nsffile.ssh.CompositeNSFFileSystemFactory;
-import org.openntf.nsffile.ssh.FallbackCommandFactory;
 import org.openntf.nsffile.ssh.NSFHostKeyProvider;
 import org.openntf.nsffile.ssh.SshServerAddin;
 import org.openntf.nsffile.ssh.scp.CompositeScpFileOpener;
