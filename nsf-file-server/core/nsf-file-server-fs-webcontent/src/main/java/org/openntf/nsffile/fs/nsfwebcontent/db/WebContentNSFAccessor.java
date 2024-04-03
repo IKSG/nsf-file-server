@@ -179,10 +179,9 @@ public enum WebContentNSFAccessor implements NSFAccessor {
 	public void delete(NSFPath path) throws IOException {
 		WebContentPathUtil.runWithDatabase(path, database -> {
 			String p = WebContentPathUtil.toFileName(path);
-			Optional<String> unid = database.getDesign().getFileResource(p, true)
-				.map(FileResource::getUNID);
-			if(unid.isPresent()) {
-				database.deleteDocument(unid.get());
+			Optional<FileResource> res = database.getDesign().getFileResource(p, true);
+			if(res.isPresent()) {
+				res.get().delete();
 			} else {
 				// Otherwise, it's likely a directory
 				String nsfPath = path.getFileSystem().getNsfPath();
