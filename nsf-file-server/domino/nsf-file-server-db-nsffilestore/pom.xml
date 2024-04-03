@@ -18,6 +18,10 @@
 			<plugin>
 				<groupId>org.openntf.maven</groupId>
 				<artifactId>nsfodp-maven-plugin</artifactId>
+				
+				<configuration>
+					<templateName>NSFFileStore</templateName>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
