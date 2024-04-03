@@ -16,6 +16,10 @@
 package org.openntf.nsffile.httpservice;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -31,8 +35,10 @@ import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpServletRequestAdapt
 import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpServletResponseAdapter;
 import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpSessionAdapter;
 
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.openntf.nsffile.core.config.DominoNSFConfiguration;
+import org.openntf.nsffile.core.util.NSFFileUtil;
 import org.openntf.nsffile.core.util.NotesThreadFactory;
 import org.openntf.nsffile.ssh.CompositeNSFFileSystemFactory;
 import org.openntf.nsffile.ssh.NSFHostKeyProvider;
@@ -64,6 +70,20 @@ public class SFTPService extends HttpService {
 		if(enabled) {
 			// Kick off initialization on a separate thread to not block HTTP startup
 			NotesThreadFactory.executor.submit(() -> {
+				Path tempDir = null;
+				if(OsUtils.isUNIX()) {
+					try {
+						tempDir = Files.createTempDirectory(Paths.get("/tmp"), getClass().getName()); //$NON-NLS-1$
+						NSFFileUtil.setTempDirectory(tempDir);
+
+					} catch(IOException e) {
+						if(log.isLoggable(Level.SEVERE)) {
+							log.log(Level.SEVERE, "Encountered unexpected IOException launching the SFTP server", e);
+						}
+						throw new UncheckedIOException(e);
+					}
+				}
+				
 				try {
 					int port = DominoNSFConfiguration.instance.getPort();
 					CompositeNSFFileSystemFactory fileSystemFactory = new CompositeNSFFileSystemFactory();
@@ -80,6 +100,16 @@ public class SFTPService extends HttpService {
 						log.log(Level.SEVERE, "Encountered exception initializing SFTP server", t);
 					}
 					server = null;
+				} finally {
+					if(tempDir != null) {
+						try {
+							NSFFileUtil.deltree(tempDir);
+						} catch (IOException e) {
+							if(log.isLoggable(Level.SEVERE)) {
+								log.log(Level.SEVERE, "Encountered exception cleaning up temporary files", e);
+							}
+						}
+					}
 				}
 			});
 		}

@@ -56,7 +56,6 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import com.hcl.domino.data.Attachment;
-import com.hcl.domino.data.Attachment.Compression;
 import com.hcl.domino.data.CollectionEntry;
 import com.hcl.domino.data.CollectionSearchQuery.CollectionEntryProcessor;
 import com.hcl.domino.data.Database;
