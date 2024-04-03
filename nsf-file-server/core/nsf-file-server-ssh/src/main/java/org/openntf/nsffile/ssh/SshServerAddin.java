@@ -33,10 +33,10 @@ import com.hcl.domino.server.ServerStatusLine;
 
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.apache.sshd.server.ServerBuilder;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
+import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.openntf.nsffile.core.config.DominoNSFConfiguration;
 import org.openntf.nsffile.core.util.NotesThreadFactory;
@@ -63,17 +63,17 @@ public class SshServerAddin extends RunJavaAddin {
 	private final int port;
 	private final KeyPairProvider keyPairProvider;
 	private final FileSystemFactory fileSystemFactory;
-	private final ScpCommandFactory scpCommandFactory;
+	private final CommandFactory commandFactory;
 	private DominoClient client;
 
 	public SshServerAddin(int port, KeyPairProvider keyPairProvider, FileSystemFactory fileSystemFactory,
-			ScpCommandFactory scpCommandFactory) {
+			CommandFactory commandFactory) {
 		super(ADDIN_NAME, QUEUE_NAME);
 
 		this.port = port;
 		this.keyPairProvider = keyPairProvider;
 		this.fileSystemFactory = fileSystemFactory;
-		this.scpCommandFactory = scpCommandFactory;
+		this.commandFactory = commandFactory;
 	}
 
 	@Override
@@ -103,7 +103,7 @@ public class SshServerAddin extends RunJavaAddin {
 					.build();
 			server.setSubsystemFactories(Collections.singletonList(sftp));
 
-			server.setCommandFactory(scpCommandFactory);
+			server.setCommandFactory(commandFactory);
 			server.setScheduledExecutorService(NotesThreadFactory.scheduler);
 
 			server.start();
