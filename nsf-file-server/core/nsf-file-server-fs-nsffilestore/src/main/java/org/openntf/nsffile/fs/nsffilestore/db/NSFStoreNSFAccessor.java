@@ -138,6 +138,7 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 					loop.stop();
 				});
 			} else {
+				Files.deleteIfExists(result);
 				Files.createFile(result);
 			}
 			
@@ -155,6 +156,9 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 				if(doc.hasItem(ITEM_FILE)) {
 					doc.removeItem(ITEM_FILE);
 				}
+				// TODO consider only deleting attachments referenced in ITEM_FILE
+				doc.forEachAttachment((att, loop) -> att.deleteFromDocument());
+				
 				Attachment att;
 				try(InputStream is = Files.newInputStream(attachmentData)) {
 					long size = Files.size(attachmentData);

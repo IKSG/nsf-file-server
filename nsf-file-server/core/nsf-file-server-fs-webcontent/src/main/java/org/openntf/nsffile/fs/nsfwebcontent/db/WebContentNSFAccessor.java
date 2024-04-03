@@ -136,13 +136,17 @@ public enum WebContentNSFAccessor implements NSFAccessor {
 		return WebContentPathUtil.callWithDatabase(path, null, database -> {
 			String p = WebContentPathUtil.toFileName(path);
 			Path result = NSFFileUtil.createTempFile();
-			database.getDesign().getResourceAsStream(p).ifPresent(stream -> {
-				try(InputStream is = stream) {
+			Optional<InputStream> optStream = database.getDesign().getResourceAsStream(p);
+			if(optStream.isPresent()) {
+				try(InputStream is = optStream.get()) {
 					Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
-			});
+			} else {
+				Files.deleteIfExists(result);
+				Files.createFile(result);
+			}
 			
 			return result;
 		});
