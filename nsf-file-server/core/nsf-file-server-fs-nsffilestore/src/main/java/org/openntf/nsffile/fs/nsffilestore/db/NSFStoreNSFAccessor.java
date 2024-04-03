@@ -31,6 +31,7 @@ import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.VIEW_FI
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -61,6 +62,7 @@ import com.hcl.domino.data.CollectionSearchQuery.CollectionEntryProcessor;
 import com.hcl.domino.data.Database;
 import com.hcl.domino.data.Database.Action;
 import com.hcl.domino.data.Document;
+import com.hcl.domino.data.Document.IAttachmentProducer;
 import com.hcl.domino.data.Document.LockMode;
 import com.hcl.domino.data.DominoCollection;
 import com.hcl.domino.data.DominoDateTime;
@@ -69,6 +71,7 @@ import com.hcl.domino.misc.NotesConstants;
 import com.hcl.domino.misc.Ref;
 import com.hcl.domino.richtext.RichTextWriter;
 import com.ibm.commons.util.StringUtil;
+import com.ibm.commons.util.io.StreamUtil;
 
 import org.openntf.nsffile.core.NotesPrincipal;
 import org.openntf.nsffile.core.fs.attribute.NSFFileAttributes;
@@ -124,8 +127,7 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	@Override
 	public Path extractAttachment(NSFPath path) {
 		return NSFPathUtil.callWithDocument(path, null, doc -> {
-			Path resultParent = NSFFileUtil.createTempDirectory(path.getFileName().toString());
-			Path result = resultParent.resolve(path.getFileName().toString());
+			Path result = NSFFileUtil.createTempFile();
 			if(doc.hasItem(ITEM_FILE)) {
 				// TODO add sanity checks
 				doc.forEachAttachment((attachment, loop) -> {
@@ -154,9 +156,23 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 				if(doc.hasItem(ITEM_FILE)) {
 					doc.removeItem(ITEM_FILE);
 				}
-				Attachment att = doc.attachFile(attachmentData.toAbsolutePath().toString(), attachmentData.getFileName().toString(), Compression.NONE);
+				Attachment att;
+				try(InputStream is = Files.newInputStream(attachmentData)) {
+					long size = Files.size(attachmentData);
+					att = doc.attachFile(path.getFileName().toString(), Instant.now(), Instant.now(), new IAttachmentProducer() {
+						@Override
+						public long getSizeEstimation() {
+							return size;
+						}
+
+						@Override
+						public void produceAttachment(OutputStream os) throws IOException {
+							StreamUtil.copyStream(is, os);
+						}
+					});	
+				}
 				try(RichTextWriter w = doc.createRichTextItem(ITEM_FILE)) {
-					w.addAttachmentIcon(att, attachmentData.getFileName().toString());
+					w.addAttachmentIcon(att, path.getFileName().toString());
 				}
 				doc.computeWithForm(true, null);
 				doc.save();

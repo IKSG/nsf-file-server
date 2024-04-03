@@ -135,8 +135,7 @@ public enum WebContentNSFAccessor implements NSFAccessor {
 	public Path extractAttachment(NSFPath path) {
 		return WebContentPathUtil.callWithDatabase(path, null, database -> {
 			String p = WebContentPathUtil.toFileName(path);
-			Path resultParent = NSFFileUtil.createTempDirectory(path.getFileName().toString());
-			Path result = resultParent.resolve(path.getFileName().toString());
+			Path result = NSFFileUtil.createTempFile();
 			database.getDesign().getResourceAsStream(p).ifPresent(stream -> {
 				try(InputStream is = stream) {
 					Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);

@@ -63,7 +63,7 @@ public class NSFFileChannel extends FileChannel {
 		
 		if(options.contains(StandardOpenOption.TRUNCATE_EXISTING)) {
 			try {
-				this.tempFile = NSFFileUtil.createTempFile(getClass().getSimpleName(), path.getFileName().toString());
+				this.tempFile = NSFFileUtil.createTempFile();
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}

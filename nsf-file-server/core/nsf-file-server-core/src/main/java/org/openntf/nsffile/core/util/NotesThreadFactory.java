@@ -150,6 +150,8 @@ public class NotesThreadFactory implements ThreadFactory {
 		} catch(InterruptedException e) {
 		}
 		
+		NSFFileUtil.deleteTempFiles();
+		
 		DominoProcess.get().terminateProcess();
 	}
 }
