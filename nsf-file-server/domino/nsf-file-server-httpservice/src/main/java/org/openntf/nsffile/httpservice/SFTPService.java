@@ -36,15 +36,10 @@ import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpServletResponseAdap
 import com.ibm.designer.runtime.domino.bootstrap.adapter.HttpSessionAdapter;
 
 import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.scp.server.ScpCommandFactory;
-import org.apache.sshd.server.shell.UnknownCommandFactory;
 import org.openntf.nsffile.core.config.DominoNSFConfiguration;
 import org.openntf.nsffile.core.util.NSFFileUtil;
 import org.openntf.nsffile.core.util.NotesThreadFactory;
-import org.openntf.nsffile.ssh.CompositeNSFFileSystemFactory;
-import org.openntf.nsffile.ssh.NSFHostKeyProvider;
 import org.openntf.nsffile.ssh.SshServerAddin;
-import org.openntf.nsffile.ssh.scp.CompositeScpFileOpener;
 
 /**
  * @author Jesse Gallagher
@@ -87,13 +82,7 @@ public class SFTPService extends HttpService {
 				
 				try {
 					int port = DominoNSFConfiguration.instance.getPort();
-					CompositeNSFFileSystemFactory fileSystemFactory = new CompositeNSFFileSystemFactory();
-					ScpCommandFactory scp = new ScpCommandFactory.Builder()
-						.withFileOpener(new CompositeScpFileOpener(fileSystemFactory))
-						.withDelegate(new UnknownCommandFactory())
-						.build();
-					
-					this.server = new SshServerAddin(port, new NSFHostKeyProvider(), fileSystemFactory, scp);
+					this.server = new SshServerAddin(port);
 					
 					server.start();
 					server.join();

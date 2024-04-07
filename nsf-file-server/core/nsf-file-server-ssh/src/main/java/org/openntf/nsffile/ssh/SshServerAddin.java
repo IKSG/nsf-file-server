@@ -31,17 +31,18 @@ import com.hcl.domino.mq.MessageQueue;
 import com.hcl.domino.server.RunJavaAddin;
 import com.hcl.domino.server.ServerStatusLine;
 
-import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.apache.sshd.server.ServerBuilder;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
-import org.apache.sshd.server.command.CommandFactory;
+import org.apache.sshd.server.shell.UnknownCommandFactory;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.openntf.nsffile.core.config.DominoNSFConfiguration;
 import org.openntf.nsffile.core.util.NotesThreadFactory;
 import org.openntf.nsffile.ssh.auth.NotesPasswordAuthenticator;
 import org.openntf.nsffile.ssh.auth.NotesPublicKeyAuthenticator;
+import org.openntf.nsffile.ssh.scp.CompositeScpFileOpener;
+import org.openntf.nsffile.ssh.scp.DummyShellFactory;
 
 /**
  * Frontend-independent manager for running the SSH/SFTP server.
@@ -61,19 +62,12 @@ public class SshServerAddin extends RunJavaAddin {
 	private static final String[] STAT_NAMES = { STAT_SESSIONS };
 
 	private final int port;
-	private final KeyPairProvider keyPairProvider;
-	private final FileSystemFactory fileSystemFactory;
-	private final CommandFactory commandFactory;
 	private DominoClient client;
 
-	public SshServerAddin(int port, KeyPairProvider keyPairProvider, FileSystemFactory fileSystemFactory,
-			CommandFactory commandFactory) {
+	public SshServerAddin(int port) {
 		super(ADDIN_NAME, QUEUE_NAME);
 
 		this.port = port;
-		this.keyPairProvider = keyPairProvider;
-		this.fileSystemFactory = fileSystemFactory;
-		this.commandFactory = commandFactory;
 	}
 
 	@Override
@@ -81,17 +75,23 @@ public class SshServerAddin extends RunJavaAddin {
 		if (log.isLoggable(Level.INFO)) {
 			log.info(getClass().getSimpleName() + ": Startup");
 			log.info(getClass().getSimpleName() + ": Using port " + port);
-			log.info(getClass().getSimpleName() + ": Using key provider " + keyPairProvider);
 		}
 		this.client = client;
 		ServerStatistics stats = client.getServerStatistics();
+		
+		CompositeNSFFileSystemFactory fileSystemFactory = new CompositeNSFFileSystemFactory();
+		ScpCommandFactory commandFactory = new ScpCommandFactory.Builder()
+			.withFileOpener(new CompositeScpFileOpener(fileSystemFactory))
+			.withDelegate(new UnknownCommandFactory())
+			.withDelegateShellFactory(new DummyShellFactory())
+			.build();
 
 		ServerBuilder builder = ServerBuilder.builder()
 			.fileSystemFactory(fileSystemFactory)
 			.publickeyAuthenticator(new NotesPublicKeyAuthenticator());
 		try (SshServer server = builder.build()) {
 			server.setPort(port);
-			server.setKeyPairProvider(keyPairProvider);
+			server.setKeyPairProvider(new NSFHostKeyProvider());
 
 			if (DominoNSFConfiguration.instance.isAllowPasswordAuth()) {
 				server.setPasswordAuthenticator(new NotesPasswordAuthenticator());
@@ -105,6 +105,7 @@ public class SshServerAddin extends RunJavaAddin {
 
 			server.setCommandFactory(commandFactory);
 			server.setScheduledExecutorService(NotesThreadFactory.scheduler);
+			
 
 			server.start();
 
