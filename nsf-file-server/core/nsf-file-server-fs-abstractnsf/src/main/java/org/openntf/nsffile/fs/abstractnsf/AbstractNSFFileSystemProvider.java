@@ -96,7 +96,11 @@ public abstract class AbstractNSFFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
-		accessor.createDirectory((NSFPath)dir, attrs);
+		if("".equals(dir.toString()) || "/".equals(dir.toString())) { //$NON-NLS-1$ //$NON-NLS-2$
+			// Passively ignore
+		} else {
+			accessor.createDirectory((NSFPath)dir, attrs);
+		}
 	}
 
 	@Override
