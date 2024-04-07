@@ -2,9 +2,9 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.openntf.webapps</groupId>
+	<groupId>org.openntf.nsffile</groupId>
 	<artifactId>nsf-file-server</artifactId>
-	<version>1.0.0</version>
+	<version>2.0.0</version>
 	<packaging>pom</packaging>
 	
 	<inceptionYear>2019</inceptionYear>
@@ -39,17 +39,24 @@
 		<maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
 		<osgi.qualifier>${maven.build.timestamp}</osgi.qualifier>
 		
-		<apache.sshd.version>2.3.0</apache.sshd.version>
+		<apache.sshd.version>2.12.1</apache.sshd.version>
+		<domino.jnx.version>1.40.0-SNAPSHOT</domino.jnx.version>
+		<slf4j.version>1.7.32</slf4j.version>
 	</properties>
 	
 	<modules>
-		<module>core/nsf-file-server-filesystem</module>
+		<module>core/nsf-file-server-core</module>
+		<module>core/nsf-file-server-fs-abstractnsf</module>
+		<module>core/nsf-file-server-fs-nsffilestore</module>
+		<module>core/nsf-file-server-fs-webcontent</module>
 		<module>core/nsf-file-server-ssh</module>
 		
-		<module>domino/nsf-file-server-db</module>
-		<module>domino/nsf-file-server-domino</module>
+		<module>domino/nsf-file-server-db-config</module>
+		<module>domino/nsf-file-server-db-nsffilestore</module>
 		
-		<module>web/nsf-file-server-webapp</module>
+		<module>domino/com.ibm.xsp.bootstrap.shim</module>
+		<module>domino/com.ibm.domino.xsp.adapter.shim</module>
+		<module>domino/nsf-file-server-httpservice</module>
 		
 		<module>dist/nsf-file-server-dist</module>
 	</modules>
@@ -65,32 +72,11 @@
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>jakarta.platform</groupId>
-				<artifactId>jakarta.jakartaee-bom</artifactId>
-				<version>8.0.0</version>
-				<scope>import</scope>
-				<type>pom</type>
-			</dependency>
-			<dependency>
-				<groupId>org.eclipse.microprofile</groupId>
-				<artifactId>microprofile</artifactId>
-				<version>3.1</version>
-				<scope>import</scope>
-				<type>pom</type>
-			</dependency>
-			
-			<dependency>
 				<groupId>com.ibm.sbt</groupId>
 				<artifactId>com.ibm.commons</artifactId>
 				<version>9.0.0</version>
 			</dependency>
 			
-			<dependency>
-				<groupId>org.projectlombok</groupId>
-				<artifactId>lombok</artifactId>
-				<version>1.18.10</version>
-				<scope>provided</scope>
-			</dependency>
 			<dependency>
 				<groupId>org.apache.sshd</groupId>
 				<artifactId>sshd-sftp</artifactId>
@@ -105,18 +91,39 @@
 			<dependency>
 				<groupId>org.slf4j</groupId>
 				<artifactId>slf4j-api</artifactId>
-				<version>1.7.26</version>
+				<version>${slf4j.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.slf4j</groupId>
 				<artifactId>slf4j-jdk14</artifactId>
-				<version>1.7.26</version>
+				<version>${slf4j.version}</version>
 			</dependency>
 			
 			<dependency>
 				<groupId>org.junit.jupiter</groupId>
 				<artifactId>junit-jupiter-engine</artifactId>
-				<version>5.5.1</version>
+				<version>5.10.2</version>
+			</dependency>
+			
+			<dependency>
+				<groupId>com.hcl.domino</groupId>
+				<artifactId>domino-jnx-api</artifactId>
+				<version>${domino.jnx.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.hcl.domino</groupId>
+				<artifactId>domino-jnx-jna</artifactId>
+				<version>${domino.jnx.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>jakarta.mail</groupId>
+				<artifactId>jakarta.mail-api</artifactId>
+				<version>2.0.1</version>
+			</dependency>
+			<dependency>
+				<groupId>jakarta.activation</groupId>
+				<artifactId>jakarta.activation-api</artifactId>
+				<version>2.0.1</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -126,25 +133,30 @@
 			<plugins>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.13.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-assembly-plugin</artifactId>
-					<version>3.1.0</version>
+					<version>3.7.1</version>
 				</plugin>
 				<plugin>
 					<groupId>org.openntf.maven</groupId>
 					<artifactId>nsfodp-maven-plugin</artifactId>
-					<version>3.3.0</version>
+					<version>3.10.0</version>
 					<extensions>true</extensions>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-jar-plugin</artifactId>
-					<version>3.1.2</version>
+					<version>3.3.0</version>
 				</plugin>
 				
 				<plugin>
 					<groupId>org.apache.felix</groupId>
 					<artifactId>maven-bundle-plugin</artifactId>
-					<version>4.2.1</version>
+					<version>5.1.9</version>
 					<extensions>true</extensions>
 					<configuration>
 						<supportedProjectTypes>
@@ -176,7 +188,7 @@
 						</excludes>
 						<properties>
 							<owner>Jesse Gallagher</owner>
-							<copyrightYear>2020</copyrightYear>
+							<copyrightYear>2024</copyrightYear>
 						</properties>
 						<mapping>
 							<tag>DYNASCRIPT_STYLE</tag>
@@ -186,73 +198,4 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	
-	<profiles>
-		<profile>
-			<id>notes-platform-repository</id>
-			<activation>
-				<property>
-					<name>notes-platform</name>
-				</property>
-			</activation>
-
-			<pluginRepositories>
-				<pluginRepository>
-					<id>artifactory.openntf.org</id>
-					<name>artifactory.openntf.org</name>
-					<url>https://artifactory.openntf.org/openntf</url>
-				</pluginRepository>
-			</pluginRepositories>
-	
-			<repositories>
-				<repository>
-					<id>com.hcl.xsp.p2</id>
-					<url>${notes-platform}</url>
-					<layout>p2</layout>
-				</repository>
-			</repositories>
-			
-			<dependencyManagement>
-				<dependencies>
-					<dependency>
-						<groupId>com.hcl.xsp.p2</groupId>
-						<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
-						<version>[9.0.1,)</version>
-						<classifier>Notes</classifier>
-					</dependency>
-					<dependency>
-						<groupId>com.hcl.xsp.p2</groupId>
-						<artifactId>com.ibm.domino.napi</artifactId>
-						<version>[9.0.1,)</version>
-						<classifier>lwpd.domino.napi</classifier>
-						<exclusions>
-							<exclusion>
-								<groupId>com.hcl.xsp.p2</groupId>
-								<artifactId>com.ibm.commons</artifactId>
-							</exclusion>
-							<exclusion>
-								<groupId>com.hcl.xsp.p2</groupId>
-								<artifactId>org.eclipse.core.runtime</artifactId>
-							</exclusion>
-							<exclusion>
-								<groupId>com.hcl.xsp.p2</groupId>
-								<artifactId>com.ibm.notes.java.api</artifactId>
-							</exclusion>
-						</exclusions>
-					</dependency>
-				</dependencies>
-			</dependencyManagement>
-			
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.openntf.maven</groupId>
-						<artifactId>p2-layout-resolver</artifactId>
-						<version>1.2.0</version>
-						<extensions>true</extensions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 </project>

@@ -1,6 +1,6 @@
 <!--
 
-    Copyright © 2019-2020 Jesse Gallagher
+    Copyright (c) 2019-2024 Jesse Gallagher
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@
 				<include>README.md</include>
 				<include>LICENSE</include>
 				<include>NOTICE</include>
+				<include>legal/**</include>
 			</includes>
 			<outputDirectory>.</outputDirectory>
 			<lineEnding>windows</lineEnding>
@@ -49,15 +50,15 @@
 	</fileSets>
 	
 	<moduleSets>
-		<!-- The File Store Webapp -->
+		<!-- The Config NSF-->
 		<moduleSet>
 			<useAllReactorProjects>true</useAllReactorProjects>
 			<includes>
-				<include>org.openntf.webapps:nsf-file-server-webapp</include>
+				<include>${project.groupId}:nsf-file-server-db-config</include>
 			</includes>
 			
 			<binaries>
-				<outputFileNameMapping>nsffileserver.war</outputFileNameMapping>
+				<outputFileNameMapping>fileserverconfig.ntf</outputFileNameMapping>
 				<includeDependencies>false</includeDependencies>
 				<unpack>false</unpack>
 			</binaries>
@@ -66,11 +67,11 @@
 		<moduleSet>
 			<useAllReactorProjects>true</useAllReactorProjects>
 			<includes>
-				<include>org.openntf.webapps:nsf-file-server-db</include>
+				<include>${project.groupId}:nsf-file-server-db-config</include>
 			</includes>
 			
 			<binaries>
-				<outputFileNameMapping>${module.artifactId}.ntf</outputFileNameMapping>
+				<outputFileNameMapping>filestore.ntf</outputFileNameMapping>
 				<includeDependencies>false</includeDependencies>
 				<unpack>false</unpack>
 			</binaries>
