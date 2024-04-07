@@ -54,7 +54,7 @@
 		<moduleSet>
 			<useAllReactorProjects>true</useAllReactorProjects>
 			<includes>
-				<include>org.openntf.webapps:nsf-file-server-db-config</include>
+				<include>${project.groupId}:nsf-file-server-db-config</include>
 			</includes>
 			
 			<binaries>
@@ -67,7 +67,7 @@
 		<moduleSet>
 			<useAllReactorProjects>true</useAllReactorProjects>
 			<includes>
-				<include>org.openntf.webapps:nsf-file-server-db-config</include>
+				<include>${project.groupId}:nsf-file-server-db-config</include>
 			</includes>
 			
 			<binaries>
