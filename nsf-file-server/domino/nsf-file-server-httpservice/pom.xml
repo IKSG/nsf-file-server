@@ -28,15 +28,15 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>com.ibm.xsp.bootstrap.shim</artifactId>
-			<version>${project.version}</version>
+			<groupId>org.openntf.xsp.stubs</groupId>
+			<artifactId>com.ibm.xsp.bootstrap</artifactId>
+			<version>1.0.0</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>com.ibm.domino.xsp.adapter.shim</artifactId>
-			<version>${project.version}</version>
+			<groupId>org.openntf.xsp.stubs</groupId>
+			<artifactId>com.ibm.domino.xsp.adapter</artifactId>
+			<version>1.0.0</version>
 			<scope>provided</scope>
 		</dependency>
 		
