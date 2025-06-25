@@ -54,8 +54,6 @@
 		<module>domino/nsf-file-server-db-config</module>
 		<module>domino/nsf-file-server-db-nsffilestore</module>
 		
-		<module>domino/com.ibm.xsp.bootstrap.shim</module>
-		<module>domino/com.ibm.domino.xsp.adapter.shim</module>
 		<module>domino/nsf-file-server-httpservice</module>
 		
 		<module>dist/nsf-file-server-dist</module>
