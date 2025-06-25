@@ -38,17 +38,26 @@ public class NotesPasswordAuthenticator extends AbstractNotesAuthenticator imple
 	public boolean authenticate(String username, String password, ServerSession sshSession)
 			throws PasswordChangeRequiredException, AsyncAuthException {
 		return NotesThreadFactory.call(session -> {
-			String hashPassword = getHashPasswordForUser(session, username);
-			if(StringUtil.isEmpty(hashPassword)) {
-				return false;
-			} else {
-				String verifyFormula = StringUtil.format(" @VerifyPassword(\"{0}\"; \"{1}\") ", escapeForFormulaString(password), hashPassword); //$NON-NLS-1$
-				Object result = session.evaluate(verifyFormula).get(0);
-				if(Double.valueOf(1).equals(result)) {
-					return true;
+			try {
+				System.out.println("Performing password auth for user " + username);
+				String hashPassword = getHashPasswordForUser(session, username);
+				if(StringUtil.isEmpty(hashPassword)) {
+					System.out.println("HTTPPassword value was empty - failing auth");
+					return false;
+				} else {
+					String verifyFormula = StringUtil.format(" @VerifyPassword(\"{0}\"; \"{1}\") ", escapeForFormulaString(password), hashPassword); //$NON-NLS-1$
+					Object result = session.evaluate(verifyFormula).get(0);
+					if(Double.valueOf(1).equals(result)) {
+						System.out.println("Auth successful");
+						return true;
+					}
 				}
+				System.out.println("Passwords did not match - failing auth");
+				return false;
+			} catch(Exception e) {
+				e.printStackTrace();
+				throw e;
 			}
-			return false;
 		});
 	}
 	

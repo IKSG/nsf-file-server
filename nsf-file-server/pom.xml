@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.openntf.webapps</groupId>
 	<artifactId>nsf-file-server</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	
 	<inceptionYear>2019</inceptionYear>
@@ -49,8 +49,6 @@
 		<module>domino/nsf-file-server-db</module>
 		<module>domino/nsf-file-server-domino</module>
 		
-		<module>web/nsf-file-server-webapp</module>
-		
 		<module>dist/nsf-file-server-dist</module>
 	</modules>
 	
@@ -61,6 +59,15 @@
 			<url>https://artifactory.openntf.org/openntf</url>
 		</pluginRepository>
 	</pluginRepositories>
+	
+	<dependencies>
+		<dependency>
+		    <groupId>org.glassfish.corba</groupId>
+		    <artifactId>glassfish-corba-omgapi</artifactId>
+		    <version>4.2.5</version>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
 	
 	<dependencyManagement>
 		<dependencies>
@@ -88,7 +95,7 @@
 			<dependency>
 				<groupId>org.projectlombok</groupId>
 				<artifactId>lombok</artifactId>
-				<version>1.18.10</version>
+				<version>1.18.36</version>
 				<scope>provided</scope>
 			</dependency>
 			<dependency>
@@ -118,6 +125,31 @@
 				<artifactId>junit-jupiter-engine</artifactId>
 				<version>5.5.1</version>
 			</dependency>
+
+			<dependency>
+				<groupId>com.hcl.xsp.flat</groupId>
+				<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
+				<version>12.0.2.20221103-1500</version>
+			</dependency>
+			<dependency>
+				<groupId>com.hcl.xsp.flat</groupId>
+				<artifactId>com.ibm.domino.napi.impl</artifactId>
+				<version>12.0.2.20221103-1500</version>
+				<exclusions>
+					<exclusion>
+						<groupId>com.hcl.xsp.flat</groupId>
+						<artifactId>com.ibm.commons</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>com.hcl.xsp.flat</groupId>
+						<artifactId>org.eclipse.core.runtime</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>com.hcl.xsp.flat</groupId>
+						<artifactId>com.ibm.notes.java.api</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 	
@@ -132,7 +164,7 @@
 				<plugin>
 					<groupId>org.openntf.maven</groupId>
 					<artifactId>nsfodp-maven-plugin</artifactId>
-					<version>3.3.0</version>
+					<version>4.0.1</version>
 					<extensions>true</extensions>
 				</plugin>
 				<plugin>
@@ -144,7 +176,7 @@
 				<plugin>
 					<groupId>org.apache.felix</groupId>
 					<artifactId>maven-bundle-plugin</artifactId>
-					<version>4.2.1</version>
+					<version>6.0.0</version>
 					<extensions>true</extensions>
 					<configuration>
 						<supportedProjectTypes>
@@ -186,73 +218,4 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	
-	<profiles>
-		<profile>
-			<id>notes-platform-repository</id>
-			<activation>
-				<property>
-					<name>notes-platform</name>
-				</property>
-			</activation>
-
-			<pluginRepositories>
-				<pluginRepository>
-					<id>artifactory.openntf.org</id>
-					<name>artifactory.openntf.org</name>
-					<url>https://artifactory.openntf.org/openntf</url>
-				</pluginRepository>
-			</pluginRepositories>
-	
-			<repositories>
-				<repository>
-					<id>com.hcl.xsp.p2</id>
-					<url>${notes-platform}</url>
-					<layout>p2</layout>
-				</repository>
-			</repositories>
-			
-			<dependencyManagement>
-				<dependencies>
-					<dependency>
-						<groupId>com.hcl.xsp.p2</groupId>
-						<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
-						<version>[9.0.1,)</version>
-						<classifier>Notes</classifier>
-					</dependency>
-					<dependency>
-						<groupId>com.hcl.xsp.p2</groupId>
-						<artifactId>com.ibm.domino.napi</artifactId>
-						<version>[9.0.1,)</version>
-						<classifier>lwpd.domino.napi</classifier>
-						<exclusions>
-							<exclusion>
-								<groupId>com.hcl.xsp.p2</groupId>
-								<artifactId>com.ibm.commons</artifactId>
-							</exclusion>
-							<exclusion>
-								<groupId>com.hcl.xsp.p2</groupId>
-								<artifactId>org.eclipse.core.runtime</artifactId>
-							</exclusion>
-							<exclusion>
-								<groupId>com.hcl.xsp.p2</groupId>
-								<artifactId>com.ibm.notes.java.api</artifactId>
-							</exclusion>
-						</exclusions>
-					</dependency>
-				</dependencies>
-			</dependencyManagement>
-			
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.openntf.maven</groupId>
-						<artifactId>p2-layout-resolver</artifactId>
-						<version>1.2.0</version>
-						<extensions>true</extensions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 </project>

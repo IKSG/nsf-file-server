@@ -52,28 +52,30 @@ public class SFTPService extends HttpService {
 		
 		try {
 			String envEnable = Os.OSGetEnvironmentString(ENV_ENABLE);
+			
+			System.out.println("SFTP: read " + ENV_ENABLE + " " + envEnable);
 			enabled = !"0".equals(envEnable); //$NON-NLS-1$
 		} catch (NException e) {
 			e.printStackTrace();
-		}
+		};
 		
 		if(enabled) {
-			// Kick off initialization on a separate thread to not block HTTP startup
-			NotesThreadFactory.executor.submit(() -> {
-				try {
-					String dataDir = Os.OSGetEnvironmentString("Directory"); //$NON-NLS-1$
-					Path keyPath = Paths.get(dataDir, getClass().getPackage().getName() + ".keys"); //$NON-NLS-1$
-			
-					String nsfPath = DominoNSFConfiguration.instance.getNsfPath();
-					int port = DominoNSFConfiguration.instance.getPort();
-					this.server = new SshServerDelegate(nsfPath, port, keyPath, session -> DominoNSFConfiguration.instance.getFileSystem(session.getUsername()));
-					
-					server.start();
-				} catch(Throwable t) {
-					t.printStackTrace();
-					server = null;
-				}
-			});
+			System.out.println("SFTP: starting");
+			try {
+				String dataDir = Os.OSGetEnvironmentString("Directory"); //$NON-NLS-1$
+				Path keyPath = Paths.get(dataDir, getClass().getPackage().getName() + ".keys"); //$NON-NLS-1$
+		
+				String nsfPath = DominoNSFConfiguration.instance.getNsfPath();
+				int port = DominoNSFConfiguration.instance.getPort();
+				System.out.println("SFTP: starting with NSF " + nsfPath + ", port " + port + ", and keys " + keyPath);
+				this.server = new SshServerDelegate(nsfPath, port, keyPath, session -> DominoNSFConfiguration.instance.getFileSystem(session.getUsername()));
+				
+				server.start();
+				System.out.println("SFTP: started");
+			} catch(Throwable t) {
+				t.printStackTrace();
+				server = null;
+			}
 		}
 	}
 	

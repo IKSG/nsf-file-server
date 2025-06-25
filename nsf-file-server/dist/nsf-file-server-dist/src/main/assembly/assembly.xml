@@ -49,19 +49,6 @@
 	</fileSets>
 	
 	<moduleSets>
-		<!-- The File Store Webapp -->
-		<moduleSet>
-			<useAllReactorProjects>true</useAllReactorProjects>
-			<includes>
-				<include>org.openntf.webapps:nsf-file-server-webapp</include>
-			</includes>
-			
-			<binaries>
-				<outputFileNameMapping>nsffileserver.war</outputFileNameMapping>
-				<includeDependencies>false</includeDependencies>
-				<unpack>false</unpack>
-			</binaries>
-		</moduleSet>
 		<!-- The File Store NSF -->
 		<moduleSet>
 			<useAllReactorProjects>true</useAllReactorProjects>

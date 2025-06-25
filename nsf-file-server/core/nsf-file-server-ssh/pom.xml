@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.openntf.webapps</groupId>
 		<artifactId>nsf-file-server</artifactId>
-		<version>1.0.0</version>
+		<version>1.0.1-SNAPSHOT</version>
 		<relativePath>../..</relativePath>
 	</parent>
 	<artifactId>nsf-file-server-ssh</artifactId>
@@ -37,9 +37,8 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.hcl.xsp.p2</groupId>
+			<groupId>com.hcl.xsp.flat</groupId>
 			<artifactId>com.ibm.notes.java.api.win32.linux</artifactId>
-			<classifier>Notes</classifier>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>

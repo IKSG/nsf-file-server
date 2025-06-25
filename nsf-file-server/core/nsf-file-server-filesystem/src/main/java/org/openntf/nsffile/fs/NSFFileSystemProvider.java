@@ -67,6 +67,9 @@ import com.ibm.commons.util.StringUtil;
 public class NSFFileSystemProvider extends FileSystemProvider {
 	public static final String SCHEME = "nsffilestore"; //$NON-NLS-1$
 	public static final Logger log = Logger.getLogger(NSFFileSystemProvider.class.getPackage().getName());
+	static {
+		log.setLevel(Level.ALL);
+	}
 	
 	public static final NSFFileSystemProvider instance = new NSFFileSystemProvider();
 	

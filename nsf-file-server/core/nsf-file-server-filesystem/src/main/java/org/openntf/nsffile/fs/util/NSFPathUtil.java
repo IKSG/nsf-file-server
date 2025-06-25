@@ -353,30 +353,27 @@ public enum NSFPathUtil {
 	
 	private static Database getDatabase(Session session, NSFFileSystem fileSystem) throws NotesException {
 		String nsfPath = fileSystem.getNsfPath();
-		String key = session.getEffectiveUserName() + nsfPath;
-		return THREAD_DATABASES.get().computeIfAbsent(key, k -> {
-			try {
-				int bangIndex = nsfPath.indexOf("!!"); //$NON-NLS-1$
-				String server;
-				String dbPath;
-				if(bangIndex < 0) {
-					server = ""; //$NON-NLS-1$
-					dbPath = nsfPath;
-				} else {
-					server = nsfPath.substring(0, bangIndex);
-					dbPath = nsfPath.substring(bangIndex+2);
-				}
-				if(isReplicaID(dbPath)) {
-					Database database = session.getDatabase(null, null);
-					database.openByReplicaID(server, normalizeReplicaID(dbPath));
-					return database;
-				} else {
-					return session.getDatabase(server, dbPath);
-				}
-			} catch(NotesException e) {
-				throw new RuntimeException(e);
+		try {
+			int bangIndex = nsfPath.indexOf("!!"); //$NON-NLS-1$
+			String server;
+			String dbPath;
+			if(bangIndex < 0) {
+				server = ""; //$NON-NLS-1$
+				dbPath = nsfPath;
+			} else {
+				server = nsfPath.substring(0, bangIndex);
+				dbPath = nsfPath.substring(bangIndex+2);
 			}
-		});
+			if(isReplicaID(dbPath)) {
+				Database database = session.getDatabase(null, null);
+				database.openByReplicaID(server, normalizeReplicaID(dbPath));
+				return database;
+			} else {
+				return session.getDatabase(server, dbPath);
+			}
+		} catch(NotesException e) {
+			throw new RuntimeException(e);
+		}
 	}
 	
 	private static boolean isReplicaID(String dbPath) {
