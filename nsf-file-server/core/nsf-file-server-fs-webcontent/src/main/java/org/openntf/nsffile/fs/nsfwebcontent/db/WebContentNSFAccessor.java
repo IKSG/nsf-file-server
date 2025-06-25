@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
@@ -58,6 +59,7 @@ import com.hcl.domino.design.DesignEntry;
 import com.hcl.domino.design.FileResource;
 import com.hcl.domino.misc.NotesConstants;
 import com.hcl.domino.misc.Ref;
+import com.ibm.commons.util.StringUtil;
 
 import org.openntf.nsffile.core.NotesPrincipal;
 import org.openntf.nsffile.core.fs.attribute.NSFFileAttributes;
@@ -161,6 +163,7 @@ public enum WebContentNSFAccessor implements NSFAccessor {
 				res.setWebContentFile(true);
 				res.setHideFromDesignList(true);
 				res.setHideFromNotesVersion(4, true);
+				res.setMimeType(guessContentType(p));
 				res.sign();
 				res.save();
 			};
@@ -436,5 +439,14 @@ public enum WebContentNSFAccessor implements NSFAccessor {
 		return database.getDesign()
 			.getDesignEntries(EnumSet.of(DocumentClass.FORM), Collections.singleton(NotesConstants.DFLAGPAT_FILE_WEB))
 			.filter(entry -> entry.getFlagsExt().contains(NotesConstants.DESIGN_FLAGEXT_WEBCONTENTFILE));
+	}
+	
+	private static String guessContentType(final String fileName) {
+		String contentType = URLConnection.guessContentTypeFromName(fileName);
+		if(StringUtil.isNotEmpty(contentType)) {
+			return contentType;
+		}
+
+		return "application/octet-stream"; //$NON-NLS-1$
 	}
 }
