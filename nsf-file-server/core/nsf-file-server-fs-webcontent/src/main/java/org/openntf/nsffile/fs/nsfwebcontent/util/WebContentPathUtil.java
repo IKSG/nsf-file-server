@@ -312,6 +312,9 @@ public enum WebContentPathUtil {
 		if(p.startsWith("/")) { //$NON-NLS-1$
 			p = p.substring(1);
 		}
+		if(p.endsWith("/.") && p.length() > 3) {
+			p = p.substring(0, p.length()-2);
+		}
 		return p;
 	}
 }

@@ -213,7 +213,7 @@ public enum WebContentNSFAccessor implements NSFAccessor {
 	
 	@Override
 	public boolean exists(NSFPath path) {
-		if("/".equals(path.toString())) { //$NON-NLS-1$
+		if("/".equals(path.toString()) || "/.".equals(path.toString())) { //$NON-NLS-1$ //$NON-NLS-2$
 			return true;
 		}
 		

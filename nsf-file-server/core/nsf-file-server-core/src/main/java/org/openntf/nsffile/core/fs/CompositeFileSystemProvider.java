@@ -89,7 +89,7 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void checkAccess(Path path, AccessMode... modes) throws IOException, AccessDeniedException {
-		if("/".equals(path.toString())) { //$NON-NLS-1$
+		if("/".equals(path.toString()) || "/.".equals(path.toString())) { //$NON-NLS-1$ //$NON-NLS-2$
 			if(modes != null && Arrays.asList(modes).contains(AccessMode.WRITE)) {
 				throw new AccessDeniedException("Cannot write to the composite root");
 			}
