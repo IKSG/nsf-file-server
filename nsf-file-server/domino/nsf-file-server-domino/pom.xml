@@ -22,6 +22,11 @@
 			<artifactId>nsf-file-server-ssh</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+
+		<dependency>
+			<groupId>com.hcl.domino</groupId>
+			<artifactId>domino-jnx-jna-r12</artifactId>
+		</dependency>
 		
 		<dependency>
 			<groupId>com.hcl.xsp.flat</groupId>

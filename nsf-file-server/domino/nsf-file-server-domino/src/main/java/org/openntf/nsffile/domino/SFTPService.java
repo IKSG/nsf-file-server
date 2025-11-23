@@ -26,6 +26,8 @@ import org.openntf.nsffile.domino.config.DominoNSFConfiguration;
 import org.openntf.nsffile.ssh.SshServerDelegate;
 import org.openntf.nsffile.util.NotesThreadFactory;
 
+import com.hcl.domino.DominoProcess;
+import com.hcl.domino.commons.util.DominoUtils;
 import com.ibm.designer.runtime.domino.adapter.ComponentModule;
 import com.ibm.designer.runtime.domino.adapter.HttpService;
 import com.ibm.designer.runtime.domino.adapter.LCDEnvironment;
@@ -42,6 +44,7 @@ import com.ibm.domino.napi.c.Os;
 public class SFTPService extends HttpService {
 	public static final String ENV_ENABLE = "SFTPNSFEnable"; //$NON-NLS-1$
 	public static final String ENV_PORT = "SFTPNSFPort"; //$NON-NLS-1$
+	public static final String ENV_HOST = "SFTPNSFHost";
 	public static final int DEFAULT_PORT = 9022;
 	
 	private SshServerDelegate server;
@@ -49,6 +52,12 @@ public class SFTPService extends HttpService {
 
 	public SFTPService(LCDEnvironment env) {
 		super(env);
+
+
+		DominoUtils.setJavaProperty("jnx.noinit", "true"); //$NON-NLS-1$ //$NON-NLS-2$
+		DominoUtils.setJavaProperty("jnx.noterm", "true"); //$NON-NLS-1$ //$NON-NLS-2$
+		DominoUtils.setJavaProperty("jnx.skipthreadwarning", "true"); //$NON-NLS-1$ //$NON-NLS-2$
+		DominoProcess.get().initializeProcess(new String[0]);
 		
 		try {
 			String envEnable = Os.OSGetEnvironmentString(ENV_ENABLE);
@@ -67,8 +76,9 @@ public class SFTPService extends HttpService {
 		
 				String nsfPath = DominoNSFConfiguration.instance.getNsfPath();
 				int port = DominoNSFConfiguration.instance.getPort();
-				System.out.println("SFTP: starting with NSF " + nsfPath + ", port " + port + ", and keys " + keyPath);
-				this.server = new SshServerDelegate(nsfPath, port, keyPath, session -> DominoNSFConfiguration.instance.getFileSystem(session.getUsername()));
+				String host = Os.OSGetEnvironmentString(ENV_HOST);
+				System.out.println("SFTP: starting with NSF " + nsfPath + ", port " + port + ", host " + host + ", and keys " + keyPath);
+				this.server = new SshServerDelegate(nsfPath, port, host, keyPath, session -> DominoNSFConfiguration.instance.getFileSystem(session.getUsername()));
 				
 				server.start();
 				System.out.println("SFTP: started");

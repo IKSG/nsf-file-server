@@ -30,6 +30,8 @@ import org.openntf.nsffile.ssh.auth.NotesPasswordAuthenticator;
 import org.openntf.nsffile.ssh.auth.NotesPublicKeyAuthenticator;
 import org.openntf.nsffile.ssh.scp.NSFScpFileOpener;
 
+import com.ibm.commons.util.StringUtil;
+
 /**
  * Frontend-independent manager for running the SSH/SFTP server.
  * 
@@ -44,14 +46,16 @@ public class SshServerDelegate implements AutoCloseable {
 	
 	private final String nsfPath;
 	private final int port;
+	private final String host;
 	private final Path keyPath;
 	private final FileSystemFactory fileSystemFactory;
 	
 	private SshServer server;
 
-	public SshServerDelegate(String nsfPath, int port, Path keyPath, FileSystemFactory fileSystemFactory) {
+	public SshServerDelegate(String nsfPath, int port, String host, Path keyPath, FileSystemFactory fileSystemFactory) {
 		this.nsfPath = nsfPath;
 		this.port = port;
+		this.host = host;
 		this.keyPath = keyPath;
 		this.fileSystemFactory = fileSystemFactory;
 	}
@@ -61,26 +65,36 @@ public class SshServerDelegate implements AutoCloseable {
 			log.info(getClass().getSimpleName() + ": Startup");
 			log.info(getClass().getSimpleName() + ": Using NSF path " + nsfPath);
 			log.info(getClass().getSimpleName() + ": Using port " + port);
+			log.info(getClass().getSimpleName() + ": Using host " + host);
 			log.info(getClass().getSimpleName() + ": Using key path " + keyPath);
 		}
 		
-		server = SshServer.setUpDefaultServer();
-		server.setPort(port);
-		server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(keyPath));
-		server.setPasswordAuthenticator(new NotesPasswordAuthenticator());
-		server.setPublickeyAuthenticator(new NotesPublicKeyAuthenticator());
-		server.setFileSystemFactory(fileSystemFactory);
-		
-		SftpSubsystemFactory sftp = new SftpSubsystemFactory.Builder()
-			.build();
-		server.setSubsystemFactories(Collections.singletonList(sftp));
-		
-		ScpCommandFactory scp = new ScpCommandFactory.Builder()
-			.withFileOpener(new NSFScpFileOpener(nsfPath))
-			.build();
-		server.setCommandFactory(scp);
-		
-		server.start();
+		try {
+			server = SshServer.setUpDefaultServer();
+			server.setPort(port);
+			if(StringUtil.isNotEmpty(host)) {
+				server.setHost(host);
+			}
+			server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(keyPath));
+			server.setPasswordAuthenticator(new NotesPasswordAuthenticator());
+			server.setPublickeyAuthenticator(new NotesPublicKeyAuthenticator());
+			server.setFileSystemFactory(fileSystemFactory);
+			
+			SftpSubsystemFactory sftp = new SftpSubsystemFactory.Builder()
+				.build();
+			server.setSubsystemFactories(Collections.singletonList(sftp));
+			
+			ScpCommandFactory scp = new ScpCommandFactory.Builder()
+				.withFileOpener(new NSFScpFileOpener(nsfPath))
+				.build();
+			server.setCommandFactory(scp);
+			
+			server.start();
+		} catch(Exception e) {
+			if(log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, "Encountered exception initializing SFTP server", e);
+			}
+		}
 	}
 	
 	@Override

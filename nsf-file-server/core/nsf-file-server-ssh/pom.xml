@@ -17,6 +17,11 @@
 			<artifactId>nsf-file-server-filesystem</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+
+		<dependency>
+			<groupId>com.hcl.domino</groupId>
+			<artifactId>domino-jnx-jna-r12</artifactId>
+		</dependency>
 		
 		<dependency>
 			<groupId>org.projectlombok</groupId>
