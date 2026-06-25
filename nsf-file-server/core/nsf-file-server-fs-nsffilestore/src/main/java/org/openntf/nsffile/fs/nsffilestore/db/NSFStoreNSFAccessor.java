@@ -127,17 +127,18 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	public Path extractAttachment(NSFPath path) {
 		return NSFPathUtil.callWithDocument(path, null, doc -> {
 			Path result = NSFFileUtil.createTempFile();
-			if(doc.hasItem(ITEM_FILE)) {
-				// TODO add sanity checks
-				doc.forEachAttachment((attachment, loop) -> {
-					try(InputStream is = attachment.getInputStream()) {
-						Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
-					} catch (IOException e) {
-						throw new UncheckedIOException("Encountered exception extracting attachment data", e);
-					}
-					loop.stop();
-				});
-			} else {
+			boolean[] extracted = new boolean[1];
+			// TODO add sanity checks
+			doc.forEachAttachment((attachment, loop) -> {
+				try(InputStream is = attachment.getInputStream()) {
+					Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
+				} catch (IOException e) {
+					throw new UncheckedIOException("Encountered exception extracting attachment data", e);
+				}
+				extracted[0] = true;
+				loop.stop();
+			});
+			if(!extracted[0]) {
 				Files.deleteIfExists(result);
 				Files.createFile(result);
 			}
