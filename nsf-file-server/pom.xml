@@ -41,7 +41,7 @@
 		<osgi.qualifier>${maven.build.timestamp}</osgi.qualifier>
 		
 		<apache.sshd.version>3.0.0-M4</apache.sshd.version>
-		<domino.jnx.version>1.40.0</domino.jnx.version>
+		<domino.jnx.version>1.54.1</domino.jnx.version>
 		<slf4j.version>1.7.36</slf4j.version>
 	</properties>
 	
@@ -106,12 +106,12 @@
 			
 			<dependency>
 				<groupId>com.hcl.domino</groupId>
-				<artifactId>domino-jnx-api</artifactId>
+				<artifactId>domino-jnx-api-r12</artifactId>
 				<version>${domino.jnx.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.hcl.domino</groupId>
-				<artifactId>domino-jnx-jna</artifactId>
+				<artifactId>domino-jnx-jna-r12</artifactId>
 				<version>${domino.jnx.version}</version>
 			</dependency>
 			<dependency>

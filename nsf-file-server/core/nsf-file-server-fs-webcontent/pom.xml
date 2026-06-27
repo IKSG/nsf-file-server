@@ -24,7 +24,7 @@
 		</dependency>
 		<dependency>
 			<groupId>com.hcl.domino</groupId>
-			<artifactId>domino-jnx-api</artifactId>
+			<artifactId>domino-jnx-api-r12</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.ibm.sbt</groupId>

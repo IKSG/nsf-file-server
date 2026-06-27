@@ -50,7 +50,7 @@
 		<!-- Include the JNA implementation of JNX -->
 		<dependency>
 			<groupId>com.hcl.domino</groupId>
-			<artifactId>domino-jnx-jna</artifactId>
+			<artifactId>domino-jnx-jna-r12</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>jakarta.mail</groupId>
