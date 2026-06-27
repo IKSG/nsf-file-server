@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019-2024 Jesse Gallagher
+ * Copyright (c) 2019-2026 Jesse Gallagher
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,17 +127,18 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	public Path extractAttachment(NSFPath path) {
 		return NSFPathUtil.callWithDocument(path, null, doc -> {
 			Path result = NSFFileUtil.createTempFile();
-			if(doc.hasItem(ITEM_FILE)) {
-				// TODO add sanity checks
-				doc.forEachAttachment((attachment, loop) -> {
-					try(InputStream is = attachment.getInputStream()) {
-						Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
-					} catch (IOException e) {
-						throw new UncheckedIOException("Encountered exception extracting attachment data", e);
-					}
-					loop.stop();
-				});
-			} else {
+			boolean[] extracted = new boolean[1];
+			// TODO add sanity checks
+			doc.forEachAttachment((attachment, loop) -> {
+				try(InputStream is = attachment.getInputStream()) {
+					Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
+				} catch (IOException e) {
+					throw new UncheckedIOException("Encountered exception extracting attachment data", e);
+				}
+				extracted[0] = true;
+				loop.stop();
+			});
+			if(!extracted[0]) {
 				Files.deleteIfExists(result);
 				Files.createFile(result);
 			}
@@ -289,7 +290,7 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	
 	@Override
 	public boolean exists(NSFPath path) {
-		if("/".equals(path.toString())) { //$NON-NLS-1$
+		if("/".equals(NSFFileUtil.toFileName(path))) { //$NON-NLS-1$
 			return true;
 		}
 		String cacheId = "exists-" + path; //$NON-NLS-1$

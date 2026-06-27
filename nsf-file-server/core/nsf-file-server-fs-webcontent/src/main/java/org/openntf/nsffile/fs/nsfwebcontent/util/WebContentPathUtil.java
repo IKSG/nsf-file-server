@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019-2024 Jesse Gallagher
+ * Copyright (c) 2019-2026 Jesse Gallagher
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -311,6 +311,9 @@ public enum WebContentPathUtil {
 		String p = path.toAbsolutePath().toString();
 		if(p.startsWith("/")) { //$NON-NLS-1$
 			p = p.substring(1);
+		}
+		if(p.endsWith("/.") && p.length() > 3) {
+			p = p.substring(0, p.length()-2);
 		}
 		return p;
 	}

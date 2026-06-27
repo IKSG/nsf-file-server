@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019-2024 Jesse Gallagher
+ * Copyright (c) 2019-2026 Jesse Gallagher
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -251,5 +251,13 @@ public enum NSFFileUtil {
 				}
 			}
 		}
+	}
+	
+	public static String toFileName(Path path) {
+		String p = path.toString();
+		if(p.endsWith("/.") && p.length() > 3) { //$NON-NLS-1$
+			p = p.substring(0, p.length()-2);
+		}
+		return p;
 	}
 }
