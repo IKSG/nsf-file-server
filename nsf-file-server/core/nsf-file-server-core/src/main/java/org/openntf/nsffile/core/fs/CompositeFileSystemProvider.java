@@ -16,6 +16,7 @@
 package org.openntf.nsffile.core.fs;
 
 import static java.text.MessageFormat.format;
+import static org.openntf.nsffile.core.util.NSFFileUtil.toFileName;
 
 import java.io.IOException;
 import java.net.URI;
@@ -89,7 +90,7 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void checkAccess(Path path, AccessMode... modes) throws IOException, AccessDeniedException {
-		if("/".equals(path.toString()) || "/.".equals(path.toString())) { //$NON-NLS-1$ //$NON-NLS-2$
+		if("/".equals(toFileName(path))) { //$NON-NLS-1$
 			if(modes != null && Arrays.asList(modes).contains(AccessMode.WRITE)) {
 				throw new AccessDeniedException("Cannot write to the composite root");
 			}
@@ -174,7 +175,7 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 		if(log.isLoggable(Level.FINEST)) {
 			log.finest(format("Opening directory stream for {0}", dir));
 		}
-		if("/".equals(dir.toString())) { //$NON-NLS-1$
+		if("/".equals(toFileName(dir))) { //$NON-NLS-1$
 			// Special case for the root
 			CompositeFileSystem fileSystem = (CompositeFileSystem)dir.getFileSystem();
 			return new CompositeDirectoryStream(fileSystem);
@@ -189,7 +190,7 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 	@Override
 	public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
 			throws IOException {
-		if("/".equals(path.toString())) { //$NON-NLS-1$
+		if("/".equals(toFileName(path))) { //$NON-NLS-1$
 			throw new UnsupportedOperationException();
 		}
 		Path delegate = getDelegate(path);
@@ -202,7 +203,7 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 	@Override
 	public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options)
 			throws IOException {
-		if("/".equals(path.toString())) { //$NON-NLS-1$
+		if("/".equals(toFileName(path))) { //$NON-NLS-1$
 			if(BasicFileAttributes.class.isAssignableFrom(type)) {
 				return type.cast(RootFileAttributes.instance);
 			} else if(PosixFileAttributes.class.isAssignableFrom(type)) {
@@ -227,7 +228,7 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
-		if("/".equals(path.toString())) { //$NON-NLS-1$
+		if("/".equals(toFileName(path))) { //$NON-NLS-1$
 			return Collections.emptyMap();
 		}
 		Path delegate = getDelegate(path);
@@ -244,7 +245,7 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public void setAttribute(Path path, String attribute, Object value, LinkOption... options) throws IOException {
-		if("/".equals(path.toString())) { //$NON-NLS-1$
+		if("/".equals(toFileName(path))) { //$NON-NLS-1$
 			return;
 		}
 		Path delegate = getDelegate(path);
@@ -272,6 +273,7 @@ public class CompositeFileSystemProvider extends FileSystemProvider {
 			
 			String[] parts = StreamSupport.stream(path.spliterator(), false)
 				.filter(p -> !p.toString().isEmpty())
+				.filter(p -> !".".equals(p.toString())) //$NON-NLS-1$
 				.skip(1)
 				.map(Path::getFileName)
 				.map(Object::toString)
