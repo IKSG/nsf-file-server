@@ -290,7 +290,7 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	
 	@Override
 	public boolean exists(NSFPath path) {
-		if("/".equals(path.toString())) { //$NON-NLS-1$
+		if("/".equals(NSFFileUtil.toFileName(path))) { //$NON-NLS-1$
 			return true;
 		}
 		String cacheId = "exists-" + path; //$NON-NLS-1$
