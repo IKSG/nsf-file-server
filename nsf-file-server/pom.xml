@@ -155,16 +155,12 @@
 				<plugin>
 					<groupId>org.apache.felix</groupId>
 					<artifactId>maven-bundle-plugin</artifactId>
-					<version>5.1.9</version>
+					<version>6.0.2</version>
 					<extensions>true</extensions>
 					<configuration>
-						<supportedProjectTypes>
-							<supportedProjectType>jar</supportedProjectType>
-							<supportedProjectType>bundle</supportedProjectType>
-						</supportedProjectTypes>
 						<supportIncrementalBuild>true</supportIncrementalBuild>
 						<instructions>
-							<Bundle-RequiredExecutionEnvironment>JavaSE-1.8</Bundle-RequiredExecutionEnvironment>
+							<Bundle-RequiredExecutionEnvironment>JavaSE-${maven.compiler.target}</Bundle-RequiredExecutionEnvironment>
 							<Automatic-Module-Name>${project.artifactId}</Automatic-Module-Name>
 							<_snapshot>${osgi.qualifier}</_snapshot>
 						</instructions>
