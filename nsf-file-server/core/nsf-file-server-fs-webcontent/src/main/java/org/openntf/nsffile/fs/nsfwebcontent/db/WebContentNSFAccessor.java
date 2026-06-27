@@ -57,6 +57,7 @@ import com.hcl.domino.data.UserData;
 import com.hcl.domino.design.DesignElement;
 import com.hcl.domino.design.DesignEntry;
 import com.hcl.domino.design.FileResource;
+import com.hcl.domino.exception.ItemNotFoundException;
 import com.hcl.domino.misc.NotesConstants;
 import com.hcl.domino.misc.Ref;
 import com.ibm.commons.util.StringUtil;
@@ -268,8 +269,15 @@ public enum WebContentNSFAccessor implements NSFAccessor {
 				size = 0;
 				permissions = EnumSet.allOf(PosixFilePermission.class);
 			} else if(!doc.isNew()) {
-				owner = new NotesPrincipal(doc.getSigner());
-				group = new NotesPrincipal(doc.getSigner());
+				String user;
+				try {
+					user = doc.getSigner();
+				} catch(ItemNotFoundException e) {
+					// Seen when signatures are a mess - move to n to avoid trouble
+					user = "unknown"; //$NON-NLS-1$
+				}
+				owner = new NotesPrincipal(user);
+				group = new NotesPrincipal(user);
 				type = Type.File;
 				
 				lastModified = FileTime.from(Instant.from(doc.getModifiedInThisFile()));
