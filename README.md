@@ -1,10 +1,14 @@
 # NSF File Server
 
-This project is a Domino HTTP OSGi application that that launches an SFTP server backed by one or more NSFs, storing the files and directories as user-side documents.
+This project is a Domino HTTP OSGi application that that launches an SFTP server backed by one or more NSFs, storing the files and directories as user-side documents or design elements.
+
+### Installation
+
+To install this file server, install the contents of the "DominoUpdateSite" on Domino either by placing the contents in "(data)/domino/workspace/applications/eclipse" or via an [NSF-based update site](https://ds-infolib.hcltechsw.com/ldd/ddwiki.nsf/xpAPIViewer.xsp?lookupName=XPages+Extensibility+API#action=openDocument&res_title=XPages_Extension_Library_Deployment&content=apicontent).
+
+Then, create a database using the included "fileserverconfig.ntf" template and place it in the root of the server's data directory as "fileserverconfig.nsf". The path to the config NSF can be overridden using the `SFTPConfigPath` notes.ini parameter. 
 
 ### Configuration
-
-The server is configured by creating a database using the included "fileserverconfig.ntf" template and placing it in the root of the server's data directory as "fileserverconfig.nsf". The path to the config NSF can be overridden using the `SFTPConfigPath` notes.ini parameter.
 
 Inside the config NSF, you can specify per-server configuration for whether to enable the service and which port to use, as well as the sub directory "mounts" that will appear as the root of the SFTP server and a JSON-formatted configuration for the "env" property of the call to create the filesystem in Java.
 
@@ -36,7 +40,7 @@ To open a ZIP or JAR file, specify a URL like "jar:file:///C:/somefile.zip!/" an
 
 The spawned SSH server uses the current server's Domino directories for authentication. It supports two methods:
 
-- RSA public key authentication using a public key stored in the "sshPublicKey" item in the user's person document. This should be a text item containing the same contents as a "id_rsa.pub" file from OpenSSH, and it can be multi-value via line breaks
+- RSA public key authentication using a public key stored in the "sshPublicKey" item in the user's person document. This should be a text item containing the same contents as a "id_rsa.pub" file from OpenSSH. This can be multi-value, in which case all listed keys will be checked against an incoming connection
 - Password authentication using the same mechanism as HTTP password auth. This method is off by default
 
 ## Building
