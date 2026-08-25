@@ -23,6 +23,7 @@ import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
 import java.nio.file.DirectoryStream.Filter;
 import java.nio.file.FileStore;
+import java.nio.file.FileSystem;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
@@ -64,18 +65,32 @@ public abstract class AbstractNSFFileSystemProvider extends FileSystemProvider {
 	public static final Logger log = Logger.getLogger(AbstractNSFFileSystemProvider.class.getPackage().getName());
 	
 	private final NSFAccessor accessor;
+	private final String scheme;
 	
-	public AbstractNSFFileSystemProvider(NSFAccessor accessor) {
+	protected final Map<String, FileSystem> fileSystems = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+	
+	public AbstractNSFFileSystemProvider(NSFAccessor accessor, String scheme) {
 		this.accessor = accessor;
+		this.scheme = scheme;
 	}
 	
 	public NSFAccessor getAccessor() {
 		return accessor;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s [fileSystems=%s]", getClass().getSimpleName(), fileSystems); //$NON-NLS-1$
+	}
 	
 	// *******************************************************************************
 	// * File Operations
 	// *******************************************************************************
+	
+	@Override
+	public String getScheme() {
+		return this.scheme;
+	}
 
 	@Override
 	public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)

@@ -21,7 +21,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
 import java.util.logging.Logger;
 
 import com.ibm.commons.util.StringUtil;
@@ -43,20 +42,13 @@ public class WebContentFileSystemProvider extends AbstractNSFFileSystemProvider 
 	
 	public static final WebContentFileSystemProvider instance = new WebContentFileSystemProvider();
 	
-	private Map<String, FileSystem> fileSystems = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-	
 	public WebContentFileSystemProvider() {
-		super(WebContentNSFAccessor.instance);
+		super(WebContentNSFAccessor.instance, SCHEME);
 	}
 
 	// *******************************************************************************
 	// * Filesystem Operations
 	// *******************************************************************************
-	
-	@Override
-	public String getScheme() {
-		return SCHEME;
-	}
 	
 	public FileSystem getOrCreateFileSystem(URI uri, Map<String, ?> env) throws IOException {
 		Objects.requireNonNull(uri, "uri cannot be null"); //$NON-NLS-1$
@@ -103,10 +95,5 @@ public class WebContentFileSystemProvider extends AbstractNSFFileSystemProvider 
 	@Override
 	public Path getPath(URI uri) {
 		return getFileSystem(uri).getPath(WebContentPathUtil.extractPathInfo(uri));
-	}
-
-	@Override
-	public String toString() {
-		return String.format("NSFFileSystemProvider [fileSystems=%s]", fileSystems); //$NON-NLS-1$
 	}
 }
