@@ -40,7 +40,7 @@
 		<maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
 		<osgi.qualifier>${maven.build.timestamp}</osgi.qualifier>
 		
-		<apache.sshd.version>3.0.0-M4</apache.sshd.version>
+		<apache.sshd.version>3.0.0-M5</apache.sshd.version>
 		<domino.jnx.version>1.54.1</domino.jnx.version>
 		<slf4j.version>1.7.36</slf4j.version>
 		<bouncycastle.version>1.84</bouncycastle.version>
