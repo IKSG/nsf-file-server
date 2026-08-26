@@ -39,7 +39,7 @@ public enum FileSiloConstants {
 	/** The name of the view containing all files and folders by their full path */
 	public static final String VIEW_FILESBYPATH = "files"; //$NON-NLS-1$
 	/** The index in the column values in {@link #VIEW_FILESBYPARENT} holding the file name */
-	public static final int VIEW_FILESBYPARENT_INDEX_NAME = 1;
+	public static final int VIEW_FILESBYPARENT_INDEX_NAME = 0;
 	
 	/** The item used to store the file owner */
 	public static final String ITEM_OWNER = "fileCreator"; //$NON-NLS-1$

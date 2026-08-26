@@ -97,9 +97,7 @@ public enum FileSiloNSFAccessor implements NSFAccessor {
 					.orElseThrow(() -> new IllegalStateException(MessageFormat.format("Unable to open view \"{0}\" in database \"{1}\"", VIEW_FILESBYPATH, database.getRelativeFilePath())));;
 				filesByParent.refresh();
 				
-				String category = dir.toAbsolutePath().toString();
 				return filesByParent.query()
-					.startAtCategory(category)
 					.readColumnValues()
 					.build(0, Integer.MAX_VALUE, new ReadColumnValues<String>(VIEW_FILESBYPARENT_INDEX_NAME, String.class, "")); //$NON-NLS-1$
 			});
@@ -266,15 +264,32 @@ public enum FileSiloNSFAccessor implements NSFAccessor {
 			return true;
 		}
 		String cacheId = "exists-" + path; //$NON-NLS-1$
-		return FileSiloPathUtil.callWithDatabase(path, cacheId, database -> {
-			DominoCollection view = database.openCollection(VIEW_FILESBYPATH)
-				.orElseThrow(() -> new IllegalStateException(MessageFormat.format("Unable to open view \"{0}\" in database \"{1}\"", VIEW_FILESBYPATH, database.getRelativeFilePath())));;
-			view.refresh();
-			return view.query()
-				.selectByKey(path.toAbsolutePath().toString(), true)
-				.firstId()
-				.isPresent();
-		});
+		if("/".equals(path.getParent().toString())) { //$NON-NLS-1$
+			// Then check if the "folder" exists as a file
+			return FileSiloPathUtil.callWithDatabase(path, cacheId, database -> {
+				DominoCollection view = database.openCollection(VIEW_FILESBYPATH)
+					.orElseThrow(() -> new IllegalStateException(MessageFormat.format("Unable to open view \"{0}\" in database \"{1}\"", VIEW_FILESBYPATH, database.getRelativeFilePath())));;
+				view.refresh();
+				return view.query()
+					.selectByKey(path.getFileName().toString(), true)
+					.firstId()
+					.isPresent();
+			});
+		} else {
+			// Then it's an attachment in a doc
+			return FileSiloPathUtil.callWithDocument(path, cacheId, doc -> {
+				boolean[] exists = new boolean[1];
+				String fileName = path.getFileName().toString();
+				doc.forEachAttachment((att, loop) -> {
+					if(fileName.equals(att.getFileName())) {
+						exists[0] = true;
+						loop.stop();
+					}
+				});
+				return exists[0];
+			});
+		}
+		
 	}
 
 	@Override
@@ -291,15 +306,9 @@ public enum FileSiloNSFAccessor implements NSFAccessor {
 			Set<PosixFilePermission> permissions;
 			
 			if(!doc.isNew()) {
-				owner = new NotesPrincipal(doc.get(ITEM_OWNER, String.class, "")); //$NON-NLS-1$
-				group = new NotesPrincipal(doc.get(ITEM_GROUP, String.class, "")); //$NON-NLS-1$
+				owner = new NotesPrincipal(doc.get(NotesConstants.FIELD_UPDATED_BY, String.class, "")); //$NON-NLS-1$
+				group = new NotesPrincipal(doc.get("CN=wheel", String.class, "")); //$NON-NLS-1$ //$NON-NLS-2$
 				
-				String form = doc.get(NotesConstants.FIELD_FORM, String.class, null);
-				if(StringUtil.isNotEmpty(form)) {
-					type = Type.valueOf(form);
-				} else {
-					type = null;
-				}
 				Instant mod = Instant.from(doc.getLastModified().toTemporal().orElseGet(Instant::now));
 				lastModified = FileTime.from(mod);
 				
@@ -308,22 +317,28 @@ public enum FileSiloNSFAccessor implements NSFAccessor {
 				
 				Instant docCreated = Instant.from(doc.getCreated().toTemporal().orElseGet(Instant::now));
 				created = FileTime.from(docCreated);
-
-				size = doc.getAttachmentNames()
-					.stream()
-					.findFirst()
-					.flatMap(name -> doc.getAttachment(name))
-					.map(Attachment::getFileSize)
-					.orElse(0l);
 				
-				permissions = PosixFilePermissions.fromString(doc.get(ITEM_PERMISSIONS, String.class, "")); //$NON-NLS-1$
+				type = "/".equals(path.getParent().toString()) ? Type.Folder : Type.File;
+
+				long sizeHolder[] = new long[1];
+				String fileName = path.getFileName().toString();
+				doc.forEachAttachment((att, loop) -> {
+					if(fileName.equals(att.getFileName())) {
+						sizeHolder[0] = att.getFileSize();
+						loop.stop();
+					}
+				});
+				size = sizeHolder[0];
+				
+				// TODO see if anything useful can be done here
+				permissions = EnumSet.allOf(PosixFilePermission.class);
 			} else {
 				owner = new NotesPrincipal("CN=root"); //$NON-NLS-1$
 				group = new NotesPrincipal("CN=wheel"); //$NON-NLS-1$
-				type = Type.File;
 				lastModified = FileTime.from(Instant.EPOCH);
 				lastAccessed = FileTime.from(Instant.EPOCH);
 				created = FileTime.from(Instant.EPOCH);
+				type = Type.File;
 				size = 0;
 				permissions = EnumSet.allOf(PosixFilePermission.class);
 			}
@@ -509,7 +524,13 @@ public enum FileSiloNSFAccessor implements NSFAccessor {
 		DominoCollection view = database.openCollection(VIEW_FILESBYPATH)
 			.orElseThrow(() -> new IllegalStateException(MessageFormat.format("Unable to open view \"{0}\" in database \"{1}\"", VIEW_FILESBYPATH, database.getRelativeFilePath())));
 		view.refresh();
-		String dir = path.getParent().getFileName().toString();
+		String dir;
+		String parent = path.getParent().getFileName().toString();
+		if(parent.isEmpty()) {
+			dir = path.getFileName().toString();
+		} else {
+			dir = parent;
+		}
 		return view.query()
 			.selectByKey(dir, true)
 			.firstId()
