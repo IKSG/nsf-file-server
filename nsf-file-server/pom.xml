@@ -43,7 +43,7 @@
 		<apache.sshd.version>3.0.0-M5</apache.sshd.version>
 		<domino.jnx.version>1.54.1</domino.jnx.version>
 		<slf4j.version>1.7.36</slf4j.version>
-		<bouncycastle.version>1.84</bouncycastle.version>
+		<bouncycastle.version>1.85</bouncycastle.version>
 	</properties>
 	
 	<modules>
@@ -102,17 +102,17 @@
 			<dependency>
 				<groupId>org.bouncycastle</groupId>
 				<artifactId>bcpkix-jdk18on</artifactId>
-				<version>1.84</version>
+				<version>${bouncycastle.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.bouncycastle</groupId>
 				<artifactId>bcpg-jdk18on</artifactId>
-				<version>1.84</version>
+				<version>${bouncycastle.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.bouncycastle</groupId>
 				<artifactId>bcprov-jdk18on</artifactId>
-				<version>1.84</version>
+				<version>${bouncycastle.version}</version>
 			</dependency>
 			
 			<dependency>
