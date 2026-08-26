@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs.nsffilestore;
+package org.openntf.nsffile.fs.filesilo;
 
 import java.io.IOException;
 import java.net.URI;
@@ -28,7 +28,8 @@ import com.ibm.commons.util.StringUtil;
 import org.openntf.nsffile.core.util.NSFFileUtil;
 import org.openntf.nsffile.fs.abstractnsf.AbstractNSFFileSystemProvider;
 import org.openntf.nsffile.fs.abstractnsf.NSFFileSystem;
-import org.openntf.nsffile.fs.nsffilestore.db.NSFStoreNSFAccessor;
+import org.openntf.nsffile.fs.filesilo.db.FileSiloNSFAccessor;
+import org.openntf.nsffile.fs.filesilo.util.FileSiloPathUtil;
 
 /**
  * Java NIO Filesystem implementation for NSF file storage.
@@ -36,14 +37,14 @@ import org.openntf.nsffile.fs.nsffilestore.db.NSFStoreNSFAccessor;
  * @author Jesse Gallagher
  * @since 1.0.0
  */
-public class NSFStoreFileSystemProvider extends AbstractNSFFileSystemProvider {
-	public static final String SCHEME = "nsffilestore"; //$NON-NLS-1$
-	public static final Logger log = Logger.getLogger(NSFStoreFileSystemProvider.class.getPackage().getName());
+public class FileSiloFileSystemProvider extends AbstractNSFFileSystemProvider {
+	public static final String SCHEME = "filesilo"; //$NON-NLS-1$
+	public static final Logger log = Logger.getLogger(FileSiloFileSystemProvider.class.getPackage().getName());
 	
-	public static final NSFStoreFileSystemProvider instance = new NSFStoreFileSystemProvider();
+	public static final FileSiloFileSystemProvider instance = new FileSiloFileSystemProvider();
 	
-	public NSFStoreFileSystemProvider() {
-		super(NSFStoreNSFAccessor.instance, SCHEME);
+	public FileSiloFileSystemProvider() {
+		super(FileSiloNSFAccessor.instance, SCHEME);
 	}
 
 	// *******************************************************************************
@@ -95,6 +96,6 @@ public class NSFStoreFileSystemProvider extends AbstractNSFFileSystemProvider {
 
 	@Override
 	public Path getPath(URI uri) {
-		return getFileSystem(uri).getPath(NSFFileUtil.extractPathInfo(uri));
+		return getFileSystem(uri).getPath(FileSiloPathUtil.extractPathInfo(uri));
 	}
 }

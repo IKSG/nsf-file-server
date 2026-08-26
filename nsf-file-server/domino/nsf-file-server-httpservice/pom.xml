@@ -22,6 +22,11 @@
 			<artifactId>nsf-file-server-fs-webcontent</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>nsf-file-server-fs-filesilo</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>nsf-file-server-ssh</artifactId>

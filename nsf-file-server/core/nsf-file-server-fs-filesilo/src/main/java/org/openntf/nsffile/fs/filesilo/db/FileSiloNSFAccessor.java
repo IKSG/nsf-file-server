@@ -13,21 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs.nsffilestore.db;
+package org.openntf.nsffile.fs.filesilo.db;
 
-import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.DATATYPE_NAME;
-import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.FORM_FOLDER;
-import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_CREATED;
-import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_FILE;
-import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_GROUP;
-import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_MODIFIED;
-import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_OWNER;
-import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_PARENT;
-import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.ITEM_PERMISSIONS;
-import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.PREFIX_USERITEM;
-import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.VIEW_FILESBYPARENT;
-import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.VIEW_FILESBYPARENT_INDEX_NAME;
-import static org.openntf.nsffile.fs.nsffilestore.NSFFileSystemConstants.VIEW_FILESBYPATH;
+import static org.openntf.nsffile.fs.filesilo.FileSiloConstants.DATATYPE_NAME;
+import static org.openntf.nsffile.fs.filesilo.FileSiloConstants.FORM_FILE;
+import static org.openntf.nsffile.fs.filesilo.FileSiloConstants.ITEM_FILE;
+import static org.openntf.nsffile.fs.filesilo.FileSiloConstants.ITEM_GROUP;
+import static org.openntf.nsffile.fs.filesilo.FileSiloConstants.ITEM_ID;
+import static org.openntf.nsffile.fs.filesilo.FileSiloConstants.ITEM_KEY;
+import static org.openntf.nsffile.fs.filesilo.FileSiloConstants.ITEM_OWNER;
+import static org.openntf.nsffile.fs.filesilo.FileSiloConstants.ITEM_PERMISSIONS;
+import static org.openntf.nsffile.fs.filesilo.FileSiloConstants.PREFIX_USERITEM;
+import static org.openntf.nsffile.fs.filesilo.FileSiloConstants.VIEW_FILESBYPARENT_INDEX_NAME;
+import static org.openntf.nsffile.fs.filesilo.FileSiloConstants.VIEW_FILESBYPATH;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,6 +43,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.text.MessageFormat;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -62,7 +61,8 @@ import org.openntf.nsffile.fs.abstractnsf.attribute.RootFileAttributes;
 import org.openntf.nsffile.fs.abstractnsf.db.NSFAccessor;
 import org.openntf.nsffile.fs.abstractnsf.util.PathAttachmentProducer;
 import org.openntf.nsffile.fs.abstractnsf.util.ReadColumnValues;
-import org.openntf.nsffile.fs.nsffilestore.util.NSFPathUtil;
+import org.openntf.nsffile.fs.filesilo.FileSiloConstants;
+import org.openntf.nsffile.fs.filesilo.util.FileSiloPathUtil;
 
 import com.hcl.domino.data.Attachment;
 import com.hcl.domino.data.Database;
@@ -74,6 +74,7 @@ import com.hcl.domino.data.UserData;
 import com.hcl.domino.misc.NotesConstants;
 import com.hcl.domino.misc.Ref;
 import com.hcl.domino.richtext.RichTextWriter;
+import com.ibm.commons.util.NotImplementedException;
 import com.ibm.commons.util.StringUtil;
 
 /**
@@ -82,40 +83,55 @@ import com.ibm.commons.util.StringUtil;
  * @author Jesse Gallagher
  * @since 1.0.0
  */
-public enum NSFStoreNSFAccessor implements NSFAccessor {
+public enum FileSiloNSFAccessor implements NSFAccessor {
 	instance;
-	private static final Logger log = Logger.getLogger(NSFStoreNSFAccessor.class.getPackage().getName());
+	private static final Logger log = Logger.getLogger(FileSiloNSFAccessor.class.getPackage().getName());
 	
 	@Override
 	public List<String> getDirectoryEntries(NSFPath dir) {
 		String cacheId = "entries-" + dir; //$NON-NLS-1$
-		return NSFPathUtil.callWithDatabase(dir, cacheId, database -> {
-			DominoCollection filesByParent = database.openCollection(VIEW_FILESBYPARENT)
-				.orElseThrow(() -> new IllegalStateException(MessageFormat.format("Unable to open view \"{0}\" in database \"{1}\"", VIEW_FILESBYPARENT, database.getRelativeFilePath())));;
-			filesByParent.refresh();
-			
-			String category = dir.toAbsolutePath().toString();
-			return filesByParent.query()
-				.startAtCategory(category)
-				.readColumnValues()
-				.build(0, Integer.MAX_VALUE, new ReadColumnValues<String>(VIEW_FILESBYPARENT_INDEX_NAME, String.class, ""));
-		});
+		if("/".equals(NSFFileUtil.toFileName(dir))) { //$NON-NLS-1$
+			// Then list file entries
+			return FileSiloPathUtil.callWithDatabase(dir, cacheId, database -> {
+				DominoCollection filesByParent = database.openCollection(VIEW_FILESBYPATH)
+					.orElseThrow(() -> new IllegalStateException(MessageFormat.format("Unable to open view \"{0}\" in database \"{1}\"", VIEW_FILESBYPATH, database.getRelativeFilePath())));;
+				filesByParent.refresh();
+				
+				String category = dir.toAbsolutePath().toString();
+				return filesByParent.query()
+					.startAtCategory(category)
+					.readColumnValues()
+					.build(0, Integer.MAX_VALUE, new ReadColumnValues<String>(VIEW_FILESBYPARENT_INDEX_NAME, String.class, "")); //$NON-NLS-1$
+			});
+		} else {
+			// Then it's a doc - list its attachments
+			return FileSiloPathUtil.callWithDocument(dir, cacheId, doc -> {
+				List<String> result = new ArrayList<>();
+				doc.forEachAttachment((att, loop) -> {
+					result.add(att.getFileName());
+				});
+				return result;
+			});
+		}
 	}
 	
 	@Override
 	public Path extractAttachment(NSFPath path) {
-		return NSFPathUtil.callWithDocument(path, null, doc -> {
+		return FileSiloPathUtil.callWithDocument(path, null, doc -> {
 			Path result = NSFFileUtil.createTempFile();
 			boolean[] extracted = new boolean[1];
+			String fileName = path.getFileName().toString();
 			// TODO add sanity checks
 			doc.forEachAttachment((attachment, loop) -> {
-				try(InputStream is = attachment.getInputStream()) {
-					Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
-				} catch (IOException e) {
-					throw new UncheckedIOException("Encountered exception extracting attachment data", e);
+				if(fileName.equals(attachment.getFileName())) {
+					try(InputStream is = attachment.getInputStream()) {
+						Files.copy(is, result, StandardCopyOption.REPLACE_EXISTING);
+					} catch (IOException e) {
+						throw new UncheckedIOException("Encountered exception extracting attachment data", e);
+					}
+					extracted[0] = true;
+					loop.stop();
 				}
-				extracted[0] = true;
-				loop.stop();
 			});
 			if(!extracted[0]) {
 				Files.deleteIfExists(result);
@@ -129,23 +145,26 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	@Override
 	public void storeAttachment(NSFPath path, Path attachmentData) throws IOException {
 		try {
-			NSFPathUtil.runWithDocument(path, doc -> {
-				if(doc.isNew()) {
-					doc.replaceItemValue(NotesConstants.FIELD_FORM, ITEM_FILE);
-				}
-				if(doc.hasItem(ITEM_FILE)) {
-					doc.removeItem(ITEM_FILE);
-				}
-				// TODO consider only deleting attachments referenced in ITEM_FILE
-				doc.forEachAttachment((att, loop) -> att.deleteFromDocument());
-				
+			FileSiloPathUtil.runWithDocument(path, doc -> {
+				String fileName = path.getFileName().toString();
+				List<Attachment> remaining = new ArrayList<>();
+				doc.forEachAttachment((att, loop) -> {
+					if(fileName.equals(att.getFileName())) {
+						att.deleteFromDocument();
+					} else {
+						remaining.add(att);
+					}
+				});
+
 				Attachment att = doc.attachFile(path.getFileName().toString(), Instant.now(), Instant.now(), new PathAttachmentProducer(attachmentData));
+				doc.removeItem(ITEM_FILE);
 				try(RichTextWriter w = doc.createRichTextItem(ITEM_FILE)) {
+					remaining.forEach(otherAtt -> w.addAttachmentIcon(otherAtt, otherAtt.getFileName()));
 					w.addAttachmentIcon(att, path.getFileName().toString());
 				}
 				doc.computeWithForm(true, null);
 				doc.save();
-				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
+				FileSiloPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch (RuntimeException e) {
 			if(log.isLoggable(Level.SEVERE)) {
@@ -157,14 +176,18 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	
 	@Override
 	public void createDirectory(NSFPath dir, FileAttribute<?>... attrs) throws IOException {
+		validateLegalDirectory(dir);
+		
 		// TODO support attrs
 		try {
-			NSFPathUtil.runWithDocument(dir, doc -> {
+			FileSiloPathUtil.runWithDocument(dir, doc -> {
 				if(doc.isNew()) {
-					doc.replaceItemValue(NotesConstants.FIELD_FORM, FORM_FOLDER);
+					doc.replaceItemValue(NotesConstants.FIELD_FORM, FileSiloConstants.FORM_FILE);
+					doc.replaceItemValue(FileSiloConstants.ITEM_ID, dir.getFileName().toString());
+					doc.replaceItemValue(FileSiloConstants.ITEM_KEY, FileSiloPathUtil.generateRandomKey());
 					doc.computeWithForm(true, null);
 					doc.save();
-					NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
+					FileSiloPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 				}
 			});
 		} catch (RuntimeException e) {
@@ -177,16 +200,25 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 
 	@Override
 	public void delete(NSFPath path) throws IOException {
+		validateLegalDirectory(path.getParent());
 		// TODO throw exception if it is a non-empty directory
 		try {
-			NSFPathUtil.runWithDocument((NSFPath)path, doc -> {
+			FileSiloPathUtil.runWithDocument((NSFPath)path, doc -> {
 				if(!doc.isNew()) {
-					if(doc.getParentDatabase().isDocumentLockingEnabled()) {
+					boolean lockEnabled = doc.getParentDatabase().isDocumentLockingEnabled();
+					if(lockEnabled) {
 						doc.lock(doc.getParentDatabase().getParentDominoClient().getEffectiveUserName(), LockMode.HardOrProvisional);
 					}
+					String fileName = path.getFileName().toString();
+					doc.forEachAttachment((att, loop) -> {
+						if(StringUtil.equals(att.getFileName(), fileName)) {
+							att.deleteFromDocument();
+							loop.stop();
+						}
+					});
+					
 					Database db = doc.getParentDatabase();
-					doc.delete();
-					NSFPathUtil.invalidateDatabaseCache(db);
+					FileSiloPathUtil.invalidateDatabaseCache(db);
 				}
 			});
 		} catch (RuntimeException e) {
@@ -201,22 +233,9 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	public void copy(NSFPath source, NSFPath target, CopyOption... options) throws IOException {
 		// TODO respect options
 		try {
-			NSFPathUtil.runWithDatabase(source, database -> {
-				Document targetDoc = NSFStoreNSFAccessor.getDocument(target, database);
-				if(!targetDoc.isNew()) {
-					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
-						targetDoc.lock(targetDoc.getParentDatabase().getParentDominoClient().getEffectiveUserName(), LockMode.HardOrProvisional);
-					}
-					targetDoc.delete();
-				}
-				
-				Document doc = NSFStoreNSFAccessor.getDocument(source, database);
-				targetDoc = doc.copyToDatabase(database);
-				targetDoc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
-				targetDoc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
-				targetDoc.computeWithForm(true, null);
-				targetDoc.save();
-				NSFPathUtil.invalidateDatabaseCache(database);
+			FileSiloPathUtil.runWithDatabase(source, database -> {
+				throw new NotImplementedException();
+//				FileSiloPathUtil.invalidateDatabaseCache(database);
 			});
 		} catch (RuntimeException e) {
 			if(log.isLoggable(Level.SEVERE)) {
@@ -229,21 +248,9 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	@Override
 	public void move(NSFPath source, NSFPath target, CopyOption... options) throws IOException {
 		try {
-			NSFPathUtil.runWithDatabase(source, database -> {
-				Document targetDoc = NSFStoreNSFAccessor.getDocument(target, database);
-				if(!targetDoc.isNew()) {
-					if(targetDoc.getParentDatabase().isDocumentLockingEnabled()) {
-						targetDoc.lock(targetDoc.getParentDatabase().getParentDominoClient().getEffectiveUserName(), LockMode.HardOrProvisional);
-					}
-					targetDoc.delete();
-				}
-				
-				Document doc = NSFStoreNSFAccessor.getDocument((NSFPath)source, database);
-				doc.replaceItemValue(ITEM_PARENT, target.getParent().toAbsolutePath().toString());
-				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, target.getFileName().toString());
-				doc.computeWithForm(true, null);
-				doc.save();
-				NSFPathUtil.invalidateDatabaseCache(database);
+			FileSiloPathUtil.runWithDatabase(source, database -> {
+				throw new NotImplementedException();
+//				FileSiloPathUtil.invalidateDatabaseCache(database);
 			});
 		} catch (RuntimeException e) {
 			if(log.isLoggable(Level.SEVERE)) {
@@ -259,7 +266,7 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 			return true;
 		}
 		String cacheId = "exists-" + path; //$NON-NLS-1$
-		return NSFPathUtil.callWithDatabase(path, cacheId, database -> {
+		return FileSiloPathUtil.callWithDatabase(path, cacheId, database -> {
 			DominoCollection view = database.openCollection(VIEW_FILESBYPATH)
 				.orElseThrow(() -> new IllegalStateException(MessageFormat.format("Unable to open view \"{0}\" in database \"{1}\"", VIEW_FILESBYPATH, database.getRelativeFilePath())));;
 			view.refresh();
@@ -273,7 +280,7 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	@Override
 	public NSFFileAttributes readAttributes(NSFPath path) {
 		String cacheId = "attrs-" + path; //$NON-NLS-1$
-		return NSFPathUtil.callWithDocument(path, cacheId, doc -> {
+		return FileSiloPathUtil.callWithDocument(path, cacheId, doc -> {
 			NotesPrincipal owner;
 			NotesPrincipal group;
 			Type type;
@@ -293,13 +300,13 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 				} else {
 					type = null;
 				}
-				Instant mod = doc.get(ITEM_MODIFIED, Instant.class, Instant.now());
+				Instant mod = Instant.from(doc.getLastModified().toTemporal().orElseGet(Instant::now));
 				lastModified = FileTime.from(mod);
 				
 				// TODO check for minimum
 				lastAccessed = FileTime.from(Instant.from(doc.getLastAccessed()));
 				
-				Instant docCreated = doc.get(ITEM_CREATED, Instant.class, Instant.from(doc.getCreated()));
+				Instant docCreated = Instant.from(doc.getCreated().toTemporal().orElseGet(Instant::now));
 				created = FileTime.from(docCreated);
 
 				size = doc.getAttachmentNames()
@@ -328,10 +335,10 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	@Override
 	public void setOwner(NSFPath path, UserPrincipal owner) throws IOException {
 		try {
-			NSFPathUtil.runWithDocument(path, doc -> {
+			FileSiloPathUtil.runWithDocument(path, doc -> {
 				doc.replaceItemValue(ITEM_OWNER, owner.getName());
 				doc.save();
-				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
+				FileSiloPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch(RuntimeException e) {
 			if(log.isLoggable(Level.SEVERE)) {
@@ -344,10 +351,10 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	@Override
 	public void setGroup(NSFPath path, UserPrincipal group) throws IOException {
 		try {
-			NSFPathUtil.runWithDocument(path, doc -> {
+			FileSiloPathUtil.runWithDocument(path, doc -> {
 				doc.replaceItemValue(ITEM_GROUP, group.getName());
 				doc.save();
-				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
+				FileSiloPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch(RuntimeException e) {
 			if(log.isLoggable(Level.SEVERE)) {
@@ -360,10 +367,10 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	@Override
 	public void setPermissions(NSFPath path, Set<PosixFilePermission> perms) throws IOException {
 		try {
-			NSFPathUtil.runWithDocument(path, doc -> {
+			FileSiloPathUtil.runWithDocument(path, doc -> {
 				doc.replaceItemValue(ITEM_PERMISSIONS, PosixFilePermissions.toString(perms));
 				doc.save();
-				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
+				FileSiloPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch(RuntimeException e) {
 			if(log.isLoggable(Level.SEVERE)) {
@@ -376,16 +383,13 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	@Override
 	public void setTimes(NSFPath path, FileTime lastModifiedTime, FileTime createTime) throws IOException {
 		try {
-			NSFPathUtil.runWithDocument(path, doc -> {
-				if(lastModifiedTime != null) {
-					doc.replaceItemValue(ITEM_MODIFIED, lastModifiedTime.toInstant());
-				}
+			FileSiloPathUtil.runWithDocument(path, doc -> {
 				if(createTime != null) {
-					doc.replaceItemValue(ITEM_CREATED, createTime.toInstant());
+					doc.replaceItemValue("$Created", createTime.toInstant()); //$NON-NLS-1$
 				}
 				
 				doc.save();
-				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
+				FileSiloPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 			});
 		} catch(RuntimeException e) {
 			if(log.isLoggable(Level.SEVERE)) {
@@ -399,7 +403,7 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	public List<String> listUserDefinedAttributes(NSFPath path) throws IOException {
 		try {
 			String cacheId = "userAttrs-" + path; //$NON-NLS-1$
-			return NSFPathUtil.callWithDocument(path, cacheId, doc ->
+			return FileSiloPathUtil.callWithDocument(path, cacheId, doc ->
 				doc.getItemNames().stream()
 					.filter(name -> name.startsWith(PREFIX_USERITEM) && name.length() > PREFIX_USERITEM.length())
 					.map(name -> name.substring(PREFIX_USERITEM.length()))
@@ -416,13 +420,13 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	@Override
 	public int writeUserDefinedAttribute(NSFPath path, String name, ByteBuffer src) throws IOException {
 		try {
-			return NSFPathUtil.callWithDocument(path, null, doc -> {
+			return FileSiloPathUtil.callWithDocument(path, null, doc -> {
 				String itemName = PREFIX_USERITEM + name;
 				byte[] data = src.array();
 				UserData userData = doc.getParentDatabase().getParentDominoClient().createUserData(DATATYPE_NAME, data);
 				doc.replaceItemValue(itemName, userData);
 				doc.computeWithForm(true, null);
-				NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
+				FileSiloPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 				return data.length;
 			});
 		} catch(RuntimeException e) {
@@ -436,13 +440,13 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	@Override
 	public void deleteUserDefinedAttribute(NSFPath path, String name) throws IOException {
 		try {
-			NSFPathUtil.runWithDocument(path, doc -> {
+			FileSiloPathUtil.runWithDocument(path, doc -> {
 				String itemName = PREFIX_USERITEM + name;
 				if(doc.hasItem(itemName)) {
 					doc.removeItem(itemName);
 					doc.computeWithForm(true, null);
 					doc.save();
-					NSFPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
+					FileSiloPathUtil.invalidateDatabaseCache(doc.getParentDatabase());
 				}
 			});
 		} catch(RuntimeException e) {
@@ -457,7 +461,7 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 	public byte[] getUserDefinedAttribute(NSFPath path, String name) throws IOException {
 		try {
 			String cacheId = "userAttrVal-" + path + name; //$NON-NLS-1$
-			return NSFPathUtil.callWithDocument(path, cacheId, doc -> {
+			return FileSiloPathUtil.callWithDocument(path, cacheId, doc -> {
 				String itemName = PREFIX_USERITEM + name;
 				return doc.getFirstItem(itemName)
 					.map(item -> {
@@ -484,7 +488,7 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 
 	@Override
 	public RootFileAttributes getRootFileAttributes(Path path) {
-		return NSFPathUtil.callWithDatabase((NSFPath)path, "rootAttribues", database -> { //$NON-NLS-1$
+		return FileSiloPathUtil.callWithDatabase((NSFPath)path, "rootAttribues", database -> { //$NON-NLS-1$
 			Ref<DominoDateTime> mod = new Ref<>();
 			database.getModifiedTime(mod, null);
 			DominoDateTime created = database.getCreated();
@@ -505,15 +509,25 @@ public enum NSFStoreNSFAccessor implements NSFAccessor {
 		DominoCollection view = database.openCollection(VIEW_FILESBYPATH)
 			.orElseThrow(() -> new IllegalStateException(MessageFormat.format("Unable to open view \"{0}\" in database \"{1}\"", VIEW_FILESBYPATH, database.getRelativeFilePath())));
 		view.refresh();
+		String dir = path.getParent().getFileName().toString();
 		return view.query()
-			.selectByKey(path.toAbsolutePath().toString(), true)
+			.selectByKey(dir, true)
 			.firstId()
 			.flatMap(database::getDocumentById)
 			.orElseGet(() -> {
 				Document doc = database.createDocument();
-				doc.replaceItemValue(ITEM_PARENT, path.getParent().toAbsolutePath().toString());
-				doc.replaceItemValue(NotesConstants.ITEM_META_TITLE, path.getFileName().toString());
+				doc.replaceItemValue(NotesConstants.FIELD_FORM, FORM_FILE);
+				doc.replaceItemValue(ITEM_ID, dir);
+				doc.replaceItemValue(ITEM_KEY, FileSiloPathUtil.generateRandomKey());
+				doc.computeWithForm(true, null);
+				doc.save();
 				return doc;
 			});
+	}
+	
+	private static void validateLegalDirectory(Path dir) {
+		if(!dir.getRoot().equals(dir.getParent())) {
+			throw new IllegalArgumentException("File Silo supports only a single directory level: " + dir);
+		}
 	}
 }

@@ -16,7 +16,7 @@
 package org.openntf.nsffile.core.fs;
 
 import static java.text.MessageFormat.format;
-import static org.openntf.nsffile.core.util.NSFFileUtil.toFileName;
+import static org.openntf.nsffile.core.util.ServerPathUtil.toFileName;
 
 import java.io.IOException;
 import java.net.URI;

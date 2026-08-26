@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openntf.nsffile.fs.nsffilestore.util;
+package org.openntf.nsffile.fs.filesilo.util;
 
+import java.net.URI;
 import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,7 +35,7 @@ import org.openntf.nsffile.fs.abstractnsf.function.NotesDatabaseConsumer;
 import org.openntf.nsffile.fs.abstractnsf.function.NotesDatabaseFunction;
 import org.openntf.nsffile.fs.abstractnsf.function.NotesDocumentConsumer;
 import org.openntf.nsffile.fs.abstractnsf.function.NotesDocumentFunction;
-import org.openntf.nsffile.fs.nsffilestore.db.NSFStoreNSFAccessor;
+import org.openntf.nsffile.fs.filesilo.db.FileSiloNSFAccessor;
 
 import com.hcl.domino.DominoClient;
 import com.hcl.domino.data.Database;
@@ -48,10 +50,40 @@ import com.ibm.commons.util.StringUtil;
  * @since 1.0.0
  */
 @SuppressWarnings("nls")
-public enum NSFPathUtil {
+public enum FileSiloPathUtil {
 	;
 	
-	private static final Logger log = Logger.getLogger(NSFPathUtil.class.getPackage().getName());
+	private static final Logger log = Logger.getLogger(FileSiloPathUtil.class.getPackage().getName());
+	
+	/**
+	 * Extracts the in-NSF file path from the provided URI. For example:
+	 * 
+	 * <ul>
+	 *   <li>{@code "nsffile:///foo.nsf/bar} &rarr; {@code "/bar"}</li>
+	 *   <li>{@code "nsffile://someserver/foo.nsf/bar/baz} &rarr; {@code "/bar/baz"}
+	 * </ul> 
+	 * 
+	 * @param uri the URI from which to extract the file path
+	 * @return the relative file path
+	 * @throws IllegalArgumentException if {@code uri} is {@code null} or does not contain an NSF name
+	 * @since 1.0.0
+	 */
+	public static String extractPathInfo(URI uri) {
+		Objects.requireNonNull(uri, "uri cannot be null");
+		
+		String pathInfo = uri.getPath();
+		if(pathInfo == null || pathInfo.isEmpty() || "/".equals(pathInfo)) { //$NON-NLS-1$
+			throw new IllegalArgumentException("URI path info cannot be empty");
+		}
+		pathInfo = pathInfo.substring(1); // Chop off the initial /
+		
+		int nsfIndex = pathInfo.indexOf('/');
+		if(nsfIndex < 0) {
+			return ""; //$NON-NLS-1$
+		} else {
+			return pathInfo.substring(nsfIndex);
+		}
+	}
 	
 	/**
 	 * Executes the provided function with a document for the provided path.
@@ -66,7 +98,7 @@ public enum NSFPathUtil {
 	 */
 	public static <T> T callWithDocument(NSFPath path, String cacheId, NotesDocumentFunction<T> func) {
 		return callWithDatabase(path, cacheId, database -> {
-			Document doc = NSFStoreNSFAccessor.getDocument(path, database);
+			Document doc = FileSiloNSFAccessor.getDocument(path, database);
 			return func.apply(doc);
 		});
 	}
@@ -80,7 +112,7 @@ public enum NSFPathUtil {
 	 */
 	public static void runWithDocument(NSFPath path, NotesDocumentConsumer consumer) {
 		runWithDatabase(path, database -> {
-			Document doc = NSFStoreNSFAccessor.getDocument(path, database);
+			Document doc = FileSiloNSFAccessor.getDocument(path, database);
 			consumer.accept(doc);
 		});
 	}
@@ -154,6 +186,17 @@ public enum NSFPathUtil {
 		});
 	}
 	
+	/**
+	 * Generates a random-enough alphanumeric string key for use with new files.
+	 * 
+	 * @return a random-enough string
+	 */
+	public static String generateRandomKey() {
+		StringBuilder result = new StringBuilder();
+		result.append(Long.toHexString(System.nanoTime()));
+		result.append(Long.toHexString(System.nanoTime()));
+		return result.toString();
+	}
 	
 	// *******************************************************************************
 	// * Internal utilities

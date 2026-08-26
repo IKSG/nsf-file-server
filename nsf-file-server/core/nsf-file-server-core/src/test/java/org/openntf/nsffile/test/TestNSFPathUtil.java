@@ -21,99 +21,99 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.junit.jupiter.api.Test;
-import org.openntf.nsffile.fs.nsffilestore.util.NSFPathUtil;
+import org.openntf.nsffile.core.util.NSFFileUtil;
 
 @SuppressWarnings("nls")
 public class TestNSFPathUtil {
 	@Test
 	public void testUriRoundTrip() throws URISyntaxException {
 		String apiPath = "foo.nsf";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
-		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath);
+		assertEquals(apiPath, NSFFileUtil.extractApiPath(uri));
 	}
 	
 	@Test
 	public void testUriRoundTrip2() throws URISyntaxException {
 		String apiPath = "foo/bar.nsf";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
-		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath);
+		assertEquals(apiPath, NSFFileUtil.extractApiPath(uri));
 	}
 	
 	@Test
 	public void testUriRoundTrip3() throws URISyntaxException {
 		String apiPath = "852584A8:00507284";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
-		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath);
+		assertEquals(apiPath, NSFFileUtil.extractApiPath(uri));
 	}
 	
 	@Test
 	public void testUriRoundTrip4() throws URISyntaxException {
 		String apiPath = "852584A800507284";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
-		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath);
+		assertEquals(apiPath, NSFFileUtil.extractApiPath(uri));
 	}
 	
 	@Test
 	public void testUriRoundTripServer() throws URISyntaxException {
 		String apiPath = "someserver!!foo.nsf";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
-		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath);
+		assertEquals(apiPath, NSFFileUtil.extractApiPath(uri));
 	}
 	
 	@Test
 	public void testUriRoundTripServer2() throws URISyntaxException {
 		String apiPath = "someserver!!foo/bar.nsf";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
-		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath);
+		assertEquals(apiPath, NSFFileUtil.extractApiPath(uri));
 	}
 	
 	@Test
 	public void testUriRoundTripServer3() throws URISyntaxException {
 		String apiPath = "someserver!!852584A8:00507284";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
-		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath);
+		assertEquals(apiPath, NSFFileUtil.extractApiPath(uri));
 	}
 	
 	@Test
 	public void testUriRoundTripServer4() throws URISyntaxException {
 		String apiPath = "someserver!!852584A800507284";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
-		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath);
+		assertEquals(apiPath, NSFFileUtil.extractApiPath(uri));
 	}
 	
 	@Test
 	public void testUriRoundTripServerDn() throws URISyntaxException {
 		String apiPath = "CN=some.server/O=SomeOrg!!foo.nsf";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
-		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath);
+		assertEquals(apiPath, NSFFileUtil.extractApiPath(uri));
 	}
 	
 	@Test
 	public void testUriRoundTripServerDn2() throws URISyntaxException {
 		String apiPath = "CN=some.server/O=SomeOrg!!foo/bar.nsf";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
-		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath);
+		assertEquals(apiPath, NSFFileUtil.extractApiPath(uri));
 	}
 	
 	@Test
 	public void testUriRoundTripServerDn3() throws URISyntaxException {
 		String apiPath = "CN=some.server/O=SomeOrg!!852584A8:00507284";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
-		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath);
+		assertEquals(apiPath, NSFFileUtil.extractApiPath(uri));
 	}
 	
 	@Test
 	public void testUriRoundTripServerDn4() throws URISyntaxException {
 		String apiPath = "CN=some.server/O=SomeOrg!!852584A800507284";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
-		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath);
+		assertEquals(apiPath, NSFFileUtil.extractApiPath(uri));
 	}
 	
 	@Test
 	public void testUriRoundTripServerDn5() throws URISyntaxException {
 		String apiPath = "CN=some.server/O=SomeOrg!!foo\\bar.nsf";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath);
-		assertEquals(apiPath, NSFPathUtil.extractApiPath(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath);
+		assertEquals(apiPath, NSFFileUtil.extractApiPath(uri));
 	}
 	
 	
@@ -122,29 +122,29 @@ public class TestNSFPathUtil {
 	public void testUriRoundTripServerDnFilePath() throws URISyntaxException {
 		String apiPath = "CN=some.server/O=SomeOrg!!foo.nsf";
 		String filePath = "/foo/bar";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath, filePath);
-		assertEquals(filePath, NSFPathUtil.extractPathInfo(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath, filePath);
+		assertEquals(filePath, NSFFileUtil.extractPathInfo(uri));
 	}
 	
 	@Test
 	public void testUriRoundTripServerDnFilePath2() throws URISyntaxException {
 		String apiPath = "CN=some.server/O=SomeOrg!!foo/bar.nsf";
 		String filePath = "/foo/bar";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath, filePath);
-		assertEquals(filePath, NSFPathUtil.extractPathInfo(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath, filePath);
+		assertEquals(filePath, NSFFileUtil.extractPathInfo(uri));
 	}
 	
 	@Test
 	public void testUriRoundTripServerDnFilePath3() throws URISyntaxException {
 		String apiPath = "CN=some.server/O=SomeOrg!!852584A8:00507284";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath, "foo", "bar");
-		assertEquals("/foo/bar", NSFPathUtil.extractPathInfo(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath, "foo", "bar");
+		assertEquals("/foo/bar", NSFFileUtil.extractPathInfo(uri));
 	}
 	
 	@Test
 	public void testUriRoundTripServerDnFilePath4() throws URISyntaxException {
 		String apiPath = "CN=some.server/O=SomeOrg!!852584A800507284";
-		URI uri = NSFPathUtil.toFileSystemURI(null, apiPath, "foo", "bar");
-		assertEquals("/foo/bar", NSFPathUtil.extractPathInfo(uri));
+		URI uri = NSFFileUtil.toFileSystemURI("foo", null, apiPath, "foo", "bar");
+		assertEquals("/foo/bar", NSFFileUtil.extractPathInfo(uri));
 	}
 }

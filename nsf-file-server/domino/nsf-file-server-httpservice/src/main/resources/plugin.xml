@@ -22,16 +22,19 @@
 		<service type="com.ibm.xsp.adapter.serviceFactory" class="org.openntf.nsffile.httpservice.SFTPServiceFactory"/>
 	</extension>
 	
-	<extension point="com.ibm.commons.Extension">
-		<service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.core.provider.URIMountProvider"/>
-	</extension>
-	<extension point="com.ibm.commons.Extension">
-		<service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.core.provider.LocalFileSystemMountProvider"/>
-	</extension>
-	<extension point="com.ibm.commons.Extension">
-		<service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.fs.nsffilestore.provider.NSFStoreMountProvider"/>
-	</extension>
-	<extension point="com.ibm.commons.Extension">
-		<service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.fs.nsfwebcontent.provider.WebContentMountProvider"/>
-	</extension>
+<!--	<extension point="com.ibm.commons.Extension">-->
+<!--		<service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.core.provider.URIMountProvider"/>-->
+<!--	</extension>-->
+<!--	<extension point="com.ibm.commons.Extension">-->
+<!--		<service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.core.provider.LocalFileSystemMountProvider"/>-->
+<!--	</extension>-->
+<!--	<extension point="com.ibm.commons.Extension">-->
+<!--		<service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.fs.nsffilestore.provider.NSFStoreMountProvider"/>-->
+<!--	</extension>-->
+<!--	<extension point="com.ibm.commons.Extension">-->
+<!--		<service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.fs.nsfwebcontent.provider.WebContentMountProvider"/>-->
+<!--	</extension>-->
+<!--    <extension point="com.ibm.commons.Extension">-->
+<!--        <service type="org.openntf.nsffile.core.spi.FileSystemMountProvider" class="org.openntf.nsffile.fs.filesilo.provider.FileSiloMountProvider"/>-->
+<!--    </extension>-->
 </plugin>

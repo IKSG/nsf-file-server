@@ -17,16 +17,22 @@ package org.openntf.nsffile.core.util;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.text.MessageFormat;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -49,6 +55,148 @@ public enum NSFFileUtil {
 	
 	private static Path tempDir;
 	private static Collection<Path> tempFiles = new ConcurrentSkipListSet<>();
+	
+	public static final String LOCAL_SERVER = "LOCALSERVER"; //$NON-NLS-1$
+	
+	private static final Function<String, String> encoder = path -> StringUtil.isEmpty(path) ? "" : //$NON-NLS-1$
+		Base64.getUrlEncoder().encodeToString(path.getBytes()).replace('=', '-') + "END"; //$NON-NLS-1$
+	private static final Function<String, String> decoder = enc -> StringUtil.isEmpty(enc) ? "" : //$NON-NLS-1$
+		new String(Base64.getUrlDecoder().decode(enc.replace('-', '=').substring(0, enc.length()-"END".length()).getBytes()));; //$NON-NLS-1$
+	
+	/**
+	 * Extracts the NSF API path from the provided URI. For example:
+	 * 
+	 * <ul>
+	 *   <li>{@code "nsffile:///foo.nsf/bar} &rarr; {@code "foo.nsf"}</li>
+	 *   <li>{@code "nsffile://someserver/foo.nsf/bar} &rarr; {@code "someserver!!foo.nsf"}
+	 * </ul> 
+	 * 
+	 * @param uri the URI from which to extract the NSF path
+	 * @return the NSF path in API format
+	 * @throws IllegalArgumentException if {@code uri} is {@code null} or does not contain an NSF name
+	 * @since 1.0.0
+	 */
+	public static String extractApiPath(URI uri) {
+		Objects.requireNonNull(uri, "uri cannot be null"); //$NON-NLS-1$
+		
+		String host = decoder.apply(uri.getHost());
+		if(LOCAL_SERVER.equals(host)) {
+			host = null;
+		}
+		String pathInfo = uri.getPath().substring(1);
+		if(pathInfo == null || pathInfo.isEmpty()) {
+			throw new IllegalArgumentException("URI path info cannot be empty");
+		}
+		
+		String nsfPath;
+		int nsfIndex = pathInfo.indexOf('/');
+		if(nsfIndex < 0) {
+			nsfPath = decoder.apply(pathInfo);
+		} else {
+			nsfPath = decoder.apply(pathInfo.substring(0, nsfIndex));
+		}
+		if(host == null || host.isEmpty()) {
+			return nsfPath;
+		} else {
+			return host + "!!" + nsfPath; //$NON-NLS-1$
+		}
+	}
+	
+	/**
+	 * Extracts the in-NSF file path from the provided URI. For example:
+	 * 
+	 * <ul>
+	 *   <li>{@code "nsffile:///foo.nsf/bar} &rarr; {@code "/bar"}</li>
+	 *   <li>{@code "nsffile://someserver/foo.nsf/bar/baz} &rarr; {@code "/bar/baz"}
+	 * </ul> 
+	 * 
+	 * @param uri the URI from which to extract the file path
+	 * @return the relative file path
+	 * @throws IllegalArgumentException if {@code uri} is {@code null} or does not contain an NSF name
+	 * @since 1.0.0
+	 */
+	public static String extractPathInfo(URI uri) {
+		Objects.requireNonNull(uri, "uri cannot be null");
+		
+		String pathInfo = uri.getPath();
+		if(pathInfo == null || pathInfo.isEmpty() || "/".equals(pathInfo)) { //$NON-NLS-1$
+			throw new IllegalArgumentException("URI path info cannot be empty");
+		}
+		pathInfo = pathInfo.substring(1); // Chop off the initial /
+		
+		int nsfIndex = pathInfo.indexOf('/');
+		if(nsfIndex < 0) {
+			return ""; //$NON-NLS-1$
+		} else {
+			return pathInfo.substring(nsfIndex);
+		}
+	}
+	
+	/**
+	 * Converts a provided NSF API path to a {@link URI} object referencing the {@code scheme}
+	 * filesystem.
+	 * 
+	 * @param scheme the scheme for the result URI
+	 * @param userName the name of the user accessing the NSF
+	 * @param apiPath the API path to convert
+	 * @return the URI version of the API path
+	 * @throws URISyntaxException 
+	 * @since 1.0.0
+	 * @throws IllegalArgumentException if {@code apiPath} is empty
+	 */
+	public static URI toFileSystemURI(String scheme, String userName, String apiPath) throws URISyntaxException {
+		if(StringUtil.isEmpty(apiPath)) {
+			throw new IllegalArgumentException("apiPath cannot be empty");
+		}
+		
+		int bangIndex = apiPath.indexOf("!!"); //$NON-NLS-1$
+		String host;
+		String nsfPath;
+		if(bangIndex < 0) {
+			host = LOCAL_SERVER;
+			nsfPath = apiPath;
+		} else {
+			host = apiPath.substring(0, bangIndex);
+			nsfPath = apiPath.substring(bangIndex+2);
+		}
+		host = encoder.apply(host);
+		nsfPath = "/" + encoder.apply(nsfPath); //$NON-NLS-1$
+		return new URI(scheme, userName, host, -1, nsfPath, null, null);
+	}
+	
+	/**
+	 * Converts a provided NSF API path to a {@link URI} object referencing the {@code scheme}
+	 * filesystem.
+	 * 
+	 * @param scheme the scheme for the result URI
+	 * @param userName the name of the user accessing the NSF
+	 * @param apiPath the API path to convert
+	 * @param the first path bit within the NSF
+	 * @param morePathBits subsequent path bits to include
+	 * @return the URI version of the API path
+	 * @throws URISyntaxException 
+	 * @since 1.0.0
+	 * @throws IllegalArgumentException if {@code apiPath} is empty
+	 */
+	public static URI toFileSystemURI(String scheme, String userName, String apiPath, String pathBit, String... morePathBits) throws URISyntaxException {
+		if(StringUtil.isEmpty(apiPath)) {
+			throw new IllegalArgumentException("apiPath cannot be empty");
+		}
+		
+		URI base = NSFFileUtil.toFileSystemURI(scheme, userName, apiPath);
+		
+		String pathInfo = NSFFileUtil.concat("/", base.getPath()); //$NON-NLS-1$
+		if(StringUtil.isNotEmpty(pathBit)) {
+			pathInfo = NSFFileUtil.concat(pathInfo, pathBit);
+		}
+		for(String bit : morePathBits) {
+			if(StringUtil.isNotEmpty(bit)) {
+				pathInfo = NSFFileUtil.concat(pathInfo, bit);
+			}
+		}
+		
+		return new URI(scheme, userName, base.getHost(), -1, pathInfo, null, null);
+	}
 	
 	/**
 	 * <p>Takes an Domino-format name and converts it to LDAP format.</p>
@@ -178,9 +326,11 @@ public enum NSFFileUtil {
 	 * @since 2.0.0
 	 */
 	public static <T> List<T> findExtensions(Class<T> extensionClass) {
-		return AccessController.doPrivileged((PrivilegedAction<List<T>>)() ->
-			ExtensionManager.findServices(null, extensionClass.getClassLoader(), extensionClass.getName(), extensionClass)
-		);
+		return AccessController.doPrivileged((PrivilegedAction<List<T>>)() -> {
+			List<T> result = ExtensionManager.findServices(null, extensionClass.getClassLoader(), extensionClass.getName(), extensionClass);
+			ServiceLoader.load(extensionClass, extensionClass.getClassLoader()).forEach(result::add);
+			return result;
+		});
 	}
 	
 	/**
